@@ -17,21 +17,70 @@ lemma exists_cauchy_b (a : ℤ) (ha : 3 ≤ a) :
     ∃ b : ℤ, 0 < a ∧ 0 < b ∧ Odd b ∧ b ^ 2 < 4 * a ∧ b ^ 2 + 2 * b - 3 * a + 4 > 0 := by
   sorry
 
+/-- 8n + 3 is never of the form 4^a(8k + 7). -/
+lemma not_exception_eight_n_add_three (n : ℕ) :
+    ¬ Nat.is_three_square_exception (8 * n + 3) := by
+  intro ⟨a, k, heq⟩
+  cases a with
+  | zero =>
+    -- 8n + 3 = 8k + 7 is impossible mod 8
+    simp at heq
+    omega
+  | succ a' =>
+    -- 4^(a'+1) * (8k + 7) ≡ 0 (mod 4), but 8n + 3 ≡ 3 (mod 4)
+    have hmod : (8 * n + 3) % 4 = 3 := by omega
+    have hpow : 4 ^ (a' + 1) * (8 * k + 7) % 4 = 0 := by
+      have : 4 ^ (a' + 1) = 4 * 4 ^ a' := by ring
+      rw [this]
+      simp [Nat.mul_mod]
+    rw [heq] at hmod
+    omega
+
 /-- Helper: For odd `a` and odd `b` with `b² < 4a`, we have `4a - b² ≡ 3 (mod 8)`. -/
 lemma four_a_minus_b_sq_mod_eight (a b : ℕ) (ha : Odd a) (hb : Odd b)
     (hcond : b ^ 2 < 4 * a) : (4 * a - b ^ 2) % 8 = 3 := by
-  sorry
+  -- Odd a: 4a ≡ 4 (mod 8)
+  obtain ⟨k, hak⟩ := ha
+  have h4a : (4 * a) % 8 = 4 := by
+    rw [hak]; omega
+  -- Odd b: b² ≡ 1 (mod 8)
+  have hb2 : b ^ 2 % 8 = 1 := by
+    obtain h | h | h := Nat.sq_mod_eight b
+    · -- b² % 8 = 0 contradicts odd b
+      exfalso
+      have hkey : b ^ 2 % 8 = (b % 8) ^ 2 % 8 := Nat.pow_mod b 2 8
+      rw [hkey] at h
+      have h8 : b % 8 < 8 := Nat.mod_lt b (by decide : 0 < 8)
+      have h2 : b % 2 = b % 8 % 2 := (Nat.mod_mod_of_dvd b (by decide : 2 ∣ 8)).symm
+      rw [Nat.odd_iff] at hb
+      interval_cases (b % 8) <;> omega
+    · exact h
+    · -- b² % 8 = 4 contradicts odd b
+      exfalso
+      have hkey : b ^ 2 % 8 = (b % 8) ^ 2 % 8 := Nat.pow_mod b 2 8
+      rw [hkey] at h
+      have h8 : b % 8 < 8 := Nat.mod_lt b (by decide : 0 < 8)
+      have h2 : b % 2 = b % 8 % 2 := (Nat.mod_mod_of_dvd b (by decide : 2 ∣ 8)).symm
+      rw [Nat.odd_iff] at hb
+      interval_cases (b % 8) <;> omega
+  -- 4a - b² = 4 - 1 = 3 (mod 8)
+  have hle : b ^ 2 ≤ 4 * a := Nat.le_of_lt hcond
+  omega
 
 /-- 4a - b² is not of the exceptional form 4^e(8k+7). -/
 lemma four_a_minus_b_sq_not_exception (a b : ℕ) (ha_pos : 1 ≤ a) (hb_pos : 1 ≤ b)
     (ha_odd : Odd a) (hb_odd : Odd b) (hcond : b ^ 2 < 4 * a) :
     ¬ Nat.is_three_square_exception (4 * a - b ^ 2) := by
-  sorry
-
-/-- 8n + 3 is never of the form 4^a(8k + 7). -/
-lemma not_exception_eight_n_add_three (n : ℕ) :
-    ¬ Nat.is_three_square_exception (8 * n + 3) := by
-  sorry
+  have hmod3 := four_a_minus_b_sq_mod_eight a b ha_odd hb_odd hcond
+  have hle : b ^ 2 ≤ 4 * a := Nat.le_of_lt hcond
+  have hdiff_pos : 3 ≤ 4 * a - b ^ 2 := by omega
+  let m := (4 * a - b ^ 2 - 3) / 8
+  have heq : 4 * a - b ^ 2 = 8 * m + 3 := by
+    have hmod0 : (4 * a - b ^ 2 - 3) % 8 = 0 := by omega
+    have hdiv : 8 * m = 4 * a - b ^ 2 - 3 := Nat.mul_div_cancel' (Nat.dvd_of_mod_eq_zero hmod0)
+    omega
+  rw [heq]
+  exact not_exception_eight_n_add_three m
 
 /-- If n is a sum of three squares, it has a representation with integers x, y, z sorted x ≥ y ≥ z. -/
 lemma exists_sorted_three_squares_int (n : ℕ) (h : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) :
