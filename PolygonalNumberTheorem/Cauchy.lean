@@ -68,7 +68,7 @@ lemma four_a_minus_b_sq_mod_eight (a b : ℕ) (ha : Odd a) (hb : Odd b)
   omega
 
 /-- 4a - b² is not of the exceptional form 4^e(8k+7). -/
-lemma four_a_minus_b_sq_not_exception (a b : ℕ) (ha_pos : 1 ≤ a) (hb_pos : 1 ≤ b)
+lemma four_a_minus_b_sq_not_exception (a b : ℕ) (_ha_pos : 1 ≤ a) (_hb_pos : 1 ≤ b)
     (ha_odd : Odd a) (hb_odd : Odd b) (hcond : b ^ 2 < 4 * a) :
     ¬ Nat.is_three_square_exception (4 * a - b ^ 2) := by
   have hmod3 := four_a_minus_b_sq_mod_eight a b ha_odd hb_odd hcond
@@ -127,11 +127,36 @@ lemma three_terms_cauchy_schwarz_int (x y z : ℤ) :
 /-- Modular sign choice for Cauchy’s lemma. -/
 lemma choose_u_div_four (b x y z : ℤ) (hb : Odd b) (hx : Odd x) (hy : Odd y) (hz : Odd z) :
     ∃ u : ℤ, (u = z ∨ u = -z) ∧ (4 : ℤ) ∣ (b + x + y + u) := by
-  -- The sum b + x + y + z and b + x + y - z are both even (odd + odd = even).
-  -- Since they differ by 2z and z is odd, exactly one is divisible by 4.
-  -- Proof: b+x+y is odd. Adding z or -z gives even. The two sums differ by 2z.
-  -- If both were 2 mod 4, their diff (2z) would be 0 mod 4, but z odd means 2z ≡ 2 (mod 4).
-  sorry
+  have hsum_odd : Odd (b + x + y) := (hb.add_odd hx).add_odd hy
+  have heven_plus : Even (b + x + y + z) := hsum_odd.add_odd hz
+  have heven_minus : Even (b + x + y - z) := by
+    rw [sub_eq_add_neg]; exact hsum_odd.add_odd hz.neg
+  
+  by_cases h4 : 4 ∣ (b + x + y + z)
+  · use z; exact ⟨Or.inl rfl, h4⟩
+  · use -z; constructor
+    · right; rfl
+    · obtain ⟨k1, hk1⟩ := heven_plus
+      obtain ⟨k2, hk2⟩ := heven_minus
+      have hdiff : (b + x + y + z) - (b + x + y - z) = 2 * z := by ring
+      rw [hk1, hk2] at hdiff
+      have hzk : k1 - k2 = z := by linarith
+      
+      have hk1_odd : Odd k1 := by
+        rw [← Int.not_even_iff_odd]
+        intro he
+        obtain ⟨m, hm⟩ := he
+        have : 4 ∣ (b + x + y + z) := by rw [hk1, hm]; use m; ring
+        contradiction
+      
+      have hk2_even : Even k2 := by
+        have : Odd (k1 - k2) := by rw [hzk]; exact hz
+        rw [Int.odd_sub] at this
+        rwa [iff_true_intro hk1_odd, true_iff] at this
+        
+      obtain ⟨m, hm⟩ := hk2_even
+      rw [← sub_eq_add_neg, hk2, hm]
+      use m; ring
 
 /-- The main Cauchy's Lemma (Nathanson Lemma 1.12). -/
 theorem four_nonneg_sum_from_cauchy (a b : ℕ) (ha_pos : 1 ≤ a) (hb_pos : 1 ≤ b)
