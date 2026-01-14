@@ -79,7 +79,43 @@ lemma sum_three_squares_div_four (m x y z : ℕ) (h : x ^ 2 + y ^ 2 + z ^ 2 = 4 
 
 theorem not_exception_of_sum_three_squares (n : ℕ) :
     (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) → ¬ is_three_square_exception n := by
-  sorry
+  intro h ⟨a, k, heq⟩
+  induction a generalizing n
+  case zero =>
+    simp at heq
+    rw [heq] at h
+    obtain ⟨x, y, z, hsum⟩ := h
+    have : (x^2 + y^2 + z^2) % 8 = 7 := by
+      rw [hsum]
+      simp [Nat.add_mod]
+    exact sum_three_squares_not_seven_mod_eight x y z this
+  case succ a ih =>
+    -- n = 4^(a+1)(8k+7) = 4 * (4^a(8k+7))
+    have h4 : n % 4 = 0 := by 
+      rw [heq]
+      have : 4 ^ (Nat.succ a) = 4 * 4 ^ a := by rw [Nat.pow_succ, Nat.mul_comm]
+      rw [this, Nat.mul_assoc]
+      simp [Nat.mul_mod]
+    obtain ⟨x, y, z, hsum⟩ := h
+    have hsum_mod : (x^2 + y^2 + z^2) % 4 = 0 := by rw [hsum, h4]
+    obtain ⟨he_x, he_y, he_z⟩ := sum_three_squares_zero_mod_four_implies_all_even x y z hsum_mod
+    obtain ⟨x', hx'⟩ := he_x
+    obtain ⟨y', hy'⟩ := he_y
+    obtain ⟨z', hz'⟩ := he_z
+    rw [hx', hy', hz'] at hsum
+    -- 4(x'^2+y'^2+z'^2) = n
+    have h_div4 : 4 * (x'^2 + y'^2 + z'^2) = n := by
+      rw [← hsum]
+      ring
+    -- n = 4 * 4^a(8k+7)
+    have heq' : n = 4 * (4^a * (8*k + 7)) := by
+      rw [heq, Nat.pow_succ']
+      ring
+    -- 4 * (x'^2 + ...) = 4 * (4^a * ...)
+    have h_reduced : x'^2 + y'^2 + z'^2 = 4^a * (8*k + 7) := by
+      rw [← h_div4] at heq'
+      exact Nat.eq_of_mul_eq_mul_left (by decide : 0 < 4) heq'
+    exact ih (4^a * (8*k + 7)) ⟨x', y', z', h_reduced⟩ rfl
 
 lemma sum_three_squares_mul_sq (m k : ℕ) (h : ∃ x y z, x^2 + y^2 + z^2 = m) :
     ∃ x y z, x^2 + y^2 + z^2 = k^2 * m := by
