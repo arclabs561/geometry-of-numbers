@@ -68,13 +68,34 @@ lemma two_mul_polygonal (s n : ℕ) :
   cases n with
   | zero => simp
   | succ n =>
-    simp [Nat.succ_eq_add_one, pow_two]
+    simp [pow_two]
     ring
 
 lemma polygonal_four_eq_sq (n : ℕ) : polygonal 4 n = n ^ 2 := square_def n
 
 lemma odd_sq_eq_eight_triangular_add_one (n : ℕ) : (2 * n + 1) ^ 2 = 8 * triangular n + 1 := by
-  sorry
+  -- (2n+1)² = 4n² + 4n + 1
+  -- 8 * triangular n + 1 = 8 * (n + n*(n-1)/2) + 1
+  --                      = 8n + 4n*(n-1) + 1 = 8n + 4n² - 4n + 1 = 4n² + 4n + 1
+  -- Clear the /2 by multiplying both sides by 2, then divide.
+  have h_two_tri : 2 * triangular n = 2 * n + n * (n - 1) := by
+    have := two_mul_polygonal 3 n
+    simp at this
+    exact this
+  -- Multiply both sides by 2 and show equality
+  apply Nat.eq_of_mul_eq_mul_left (by decide : 0 < 2)
+  -- LHS: 2 * (2n+1)² = 2 * (4n² + 4n + 1) = 8n² + 8n + 2
+  -- RHS: 2 * (8 * triangular n + 1) = 16 * triangular n + 2 = 8 * (2 * triangular n) + 2
+  --     = 8 * (2n + n*(n-1)) + 2 = 16n + 8n² - 8n + 2 = 8n² + 8n + 2
+  calc
+    2 * (2 * n + 1) ^ 2 = 2 * (4 * n ^ 2 + 4 * n + 1) := by ring
+    _ = 8 * n ^ 2 + 8 * n + 2 := by ring
+    _ = 8 * (2 * n + n * (n - 1)) + 2 := by
+        cases n with
+        | zero => simp
+        | succ m => simp; ring
+    _ = 8 * (2 * triangular n) + 2 := by rw [h_two_tri]
+    _ = 2 * (8 * triangular n + 1) := by ring
 
 /-!
 ### The same identity in `ℤ`
