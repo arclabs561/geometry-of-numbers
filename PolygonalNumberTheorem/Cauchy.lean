@@ -127,6 +127,10 @@ lemma three_terms_cauchy_schwarz_int (x y z : ℤ) :
 /-- Modular sign choice for Cauchy’s lemma. -/
 lemma choose_u_div_four (b x y z : ℤ) (hb : Odd b) (hx : Odd x) (hy : Odd y) (hz : Odd z) :
     ∃ u : ℤ, (u = z ∨ u = -z) ∧ (4 : ℤ) ∣ (b + x + y + u) := by
+  -- The sum b + x + y + z and b + x + y - z are both even (odd + odd = even).
+  -- Since they differ by 2z and z is odd, exactly one is divisible by 4.
+  -- Proof: b+x+y is odd. Adding z or -z gives even. The two sums differ by 2z.
+  -- If both were 2 mod 4, their diff (2z) would be 0 mod 4, but z odd means 2z ≡ 2 (mod 4).
   sorry
 
 /-- The main Cauchy's Lemma (Nathanson Lemma 1.12). -/
