@@ -12,3 +12,12 @@ require mathlib from git
 lean_lib «PolygonalNumberTheorem» {
   -- add library configuration options here
 }
+
+lean_lib «Experiments» {
+  srcDir := "Experiments"
+  roots := #[`AnkenyCheck]
+}
+
+lean_exe «status_report» {
+  root := `Scripts.StatusReport
+}

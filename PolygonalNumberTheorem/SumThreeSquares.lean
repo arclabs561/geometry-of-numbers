@@ -1,8 +1,9 @@
-import Mathlib.NumberTheory.DirichletTheorem
+import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.NumberTheory.SumFourSquares
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
-import Mathlib.Data.Nat.Parity
+import Mathlib.Algebra.Ring.Parity
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic
 
 namespace Nat
@@ -14,10 +15,10 @@ open Finset
 /-- The set of quadratic residues modulo 8 is {0, 1, 4}. -/
 lemma sq_mod_eight (n : ℕ) : (n ^ 2) % 8 ∈ ({0, 1, 4} : Set ℕ) := by
   mod_cases h : n % 4
-  · rw [sq, ← Nat.mod_mul_mod, h]; decide
-  · rw [sq, ← Nat.mod_mul_mod, h]; decide
-  · rw [sq, ← Nat.mod_mul_mod, h]; decide
-  · rw [sq, ← Nat.mod_mul_mod, h]; decide
+  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
+  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
+  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
+  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
 
 /-- The sum of three squares cannot be 7 modulo 8. -/
 lemma sum_three_squares_not_seven_mod_eight (x y z : ℕ) :
@@ -25,8 +26,10 @@ lemma sum_three_squares_not_seven_mod_eight (x y z : ℕ) :
   have hx := sq_mod_eight x
   have hy := sq_mod_eight y
   have hz := sq_mod_eight z
-  fin_cases (x^2)%8 <;> fin_cases (y^2)%8 <;> fin_cases (z^2)%8 <;>
-  · simp_all [Nat.add_mod]
+  -- Brute force the small finite set of combinations
+  rcases hx with hx | hx | hx <;> rcases hy with hy | hy | hy <;> rcases hz with hz | hz | hz
+  all_goals
+    rw [Nat.add_mod, Nat.add_mod _ (z^2), hx, hy, hz]
     decide
 
 /-- If the sum of three squares is divisible by 4, then each square must be even. -/
@@ -35,8 +38,8 @@ lemma even_of_sum_three_squares_div_four (x y z : ℕ) (h : 4 ∣ x^2 + y^2 + z^
   have h_mod_4 : (x^2 + y^2 + z^2) % 4 = 0 := Nat.mod_eq_zero_of_dvd h
   have sq_mod_4 (n : ℕ) : n^2 % 4 = 0 ∨ n^2 % 4 = 1 := by
     mod_cases hn : n % 2
-    · left; rw [sq, ← Nat.mod_mul_mod, hn]; decide
-    · right; rw [sq, ← Nat.mod_mul_mod, hn]; decide
+    · left; rw [pow_two, ← Nat.mul_mod_mod, hn]; decide
+    · right; rw [pow_two, ← Nat.mul_mod_mod, hn]; decide
   have hx := sq_mod_4 x
   have hy := sq_mod_4 y
   have hz := sq_mod_4 z
@@ -132,8 +135,8 @@ theorem sum_three_squares_iff_of_squarefree_proof
     (h_sq_free : ∀ n, Squarefree n → ¬ is_three_square_exception n → ∃ x y z, x^2 + y^2 + z^2 = n) :
     ∀ n, ¬ is_three_square_exception n → ∃ x y z, x^2 + y^2 + z^2 = n := by
   intro n hn_bad
-  have h_decomp : ∃ s k, n = s^2 * k ∧ Squarefree k := Nat.sq_mul_squarefree n
-  obtain ⟨s, k, rfl, hk_free⟩ := h_decomp
+  have h_decomp : ∃ k s, n = k * s^2 ∧ Squarefree k := Nat.sq_mul_squarefree n
+  obtain ⟨k, s, rfl, hk_free⟩ := h_decomp
   by_cases s_zero : s = 0
   · simp [s_zero]
     use 0, 0, 0; simp
@@ -160,14 +163,19 @@ Key Steps:
     So `q` exists.
 -/
 
-open DirichletTheorem
-
 /-- Use Dirichlet to find a prime with properties. -/
 lemma exists_prime_mod_4n_neg_1 (n : ℕ) (h_n_pos : n > 0) :
     ∃ q, Nat.Prime q ∧ q ≡ 4 * n - 1 [MOD 4 * n] := by
-  have h_coprime_4n : (4 * n).Coprime (4 * n - 1) := by
+  have h_coprime : Coprime (4 * n - 1) (4 * n) := by
+    rw [Nat.coprime_comm]
     exact Nat.coprime_self_sub_one (4 * n) (Nat.mul_pos (show 4>0 by decide) h_n_pos)
-  have h_infinite := DirichletTheorem.infinite_setOf_prime_and_eq_mod h_coprime_4n
+  have h_unit : IsUnit ((4 * n - 1 : ℕ) : ZMod (4 * n)) := by
+    rw [ZMod.isUnit_iff_coprime]
+    -- n > 0 => 4*n > 0, so 4*n is not 0 in Nat, but ZMod 0 is Int.
+    -- ZMod (4*n) needs NeZero instance if we want specific behavior?
+    -- Mathlib usually handles ZMod n where n is Nat.
+    exact h_coprime
+  have h_infinite := Nat.infinite_setOf_prime_and_eq_mod h_unit
   rw [Set.infinite_coe_iff] at h_infinite
   obtain ⟨q, hq_prime, hq_mod⟩ := h_infinite.exists
   use q
@@ -177,42 +185,40 @@ lemma exists_prime_mod_4n_neg_1 (n : ℕ) (h_n_pos : n > 0) :
 Properties of the Ankeny prime q:
 1. q is prime
 2. q ≡ -1 (mod 4)  => (-1/q) = -1
+3. q ≡ -1 (mod n)  => (q/n) = (-1/n) (using reciprocity for odd n)
 -/
 lemma ankeny_prime_properties (n q : ℕ) (hq_prime : Nat.Prime q)
     (hq_mod : q ≡ 4 * n - 1 [MOD 4 * n]) :
-    LegendreSymbol.legendre (-1 : ℤ) q = -1 := by
+    legendreSym (-1 : ℤ) q = -1 := by
   -- q ≡ 4n - 1 ≡ -1 ≡ 3 (mod 4)
   have h_q_mod_4 : q % 4 = 3 := by
-    have h_mod : q % (4 * n) = (4 * n - 1) % (4 * n) := hq_mod
-    rw [Nat.mod_eq_of_lt (Nat.sub_lt (Nat.mul_pos (show 4>0 by decide) (Nat.pos_of_prime hq_prime)) (show 1>0 by decide))] at h_mod
-    have h4 : 4 ∣ 4 * n := Nat.dvd_mul_right 4 n
-    rw [← Nat.mod_add_div q (4*n)]
-    -- Too complicated. Use modEq properties directly.
     apply Nat.ModEq.mod_eq_of_lt
     · apply Nat.ModEq.trans hq_mod
-      -- 4n - 1 = 4(n-1) + 3 if n >= 1
-      sorry -- Skip exact calc, focus on Legendre
-    · sorry -- q is prime implies q >= 2, 3 < 4
-  
-  -- If we assume q % 4 = 3, then it works.
-  -- Let's trust the arithmetic for now and finish the Legendre part.
-  -- We'll assume h_q_mod_4 for the moment to check the Legendre API.
-  have h_q_mod_4_assume : q % 4 = 3 := sorry 
+      -- 4*n - 1 = 4*(n-1) + 3 if n >= 1
+      rw [show 4*n - 1 = 4*(n - 1) + 3 from sorry]
+      apply Nat.ModEq.symm
+      apply Nat.modEq_add_self 4
+    · -- q is prime
+      cases q <;> try simp at hq_prime
+      -- q % 4 < 4 is trivial
+      sorry
   
   have hq_odd : q % 2 = 1 := by
-    rw [h_q_mod_4_assume]
+    rw [h_q_mod_4]
     decide
-  rw [LegendreSymbol.legendre_neg_one q (hq_prime.ne_two_of_odd (Nat.odd_iff.2 hq_odd))]
-  simp [h_q_mod_4_assume]
-  -- (-1)^((q-1)/2). If q=4k+3, (q-1)/2 = 2k+1. (-1)^(odd) = -1.
-  -- Mathlib simplifies (-1 : ℤ) ^ n to if Even n then 1 else -1.
-  have : Odd ((q - 1) / 2) := by
-    have h_eq : q = 4 * (q / 4) + 3 := (Nat.div_add_mod q 4).symm.trans (congr_arg _ h_q_mod_4_assume)
-    rw [h_eq]
-    rw [show 4 * (q / 4) + 3 - 1 = 2 * (2 * (q / 4) + 1) by ring]
-    rw [Nat.mul_div_right _ (show 2 > 0 by decide)]
-    exact odd_two_mul_add_one (q / 4)
-  simp [this]
+  
+  -- The ne_two condition needs to be explicit
+  have hq_ne_2 : q ≠ 2 := by
+    intro h
+    rw [h] at h_q_mod_4
+    contradiction
+
+  rw [legendreSym.eq_neg_one_iff q]
+  · simp [h_q_mod_4]
+    -- (-1)^((q-1)/2) = -1
+    sorry
+  · exact hq_prime.ne_zero
+  · exact hq_ne_2
 
 end AnkenyProof
 
