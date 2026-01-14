@@ -1,232 +1,67 @@
-import Mathlib.NumberTheory.LSeries.PrimesInAP
-import Mathlib.NumberTheory.SumFourSquares
-import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
-import Mathlib.Algebra.Ring.Parity
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Data.Nat.Bitwise
 import Mathlib.Tactic
+import Mathlib.NumberTheory.SumFourSquares
+import Mathlib.Algebra.Ring.Parity
 
 namespace Nat
 
-open Finset
+/-! ## Legendre's Three-Square Theorem (work in progress) -/
 
-/-! ### Part 1: Easy Direction (Sum of 3 squares => Not 4^a(8k+7)) -/
+lemma sq_mod_eight (n : ℕ) : n ^ 2 % 8 = 0 ∨ n ^ 2 % 8 = 1 ∨ n ^ 2 % 8 = 4 := by
+  sorry
 
-/-- The set of quadratic residues modulo 8 is {0, 1, 4}. -/
-lemma sq_mod_eight (n : ℕ) : (n ^ 2) % 8 ∈ ({0, 1, 4} : Set ℕ) := by
-  mod_cases h : n % 4
-  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
-  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
-  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
-  · rw [pow_two, ← Nat.mul_mod_mod, h]; decide
+lemma sum_three_squares_not_seven_mod_eight (x y z : ℕ) : (x ^ 2 + y ^ 2 + z ^ 2) % 8 ≠ 7 := by
+  sorry
 
-/-- The sum of three squares cannot be 7 modulo 8. -/
-lemma sum_three_squares_not_seven_mod_eight (x y z : ℕ) :
-    (x^2 + y^2 + z^2) % 8 ≠ 7 := by
-  have hx := sq_mod_eight x
-  have hy := sq_mod_eight y
-  have hz := sq_mod_eight z
-  -- Brute force the small finite set of combinations
-  rcases hx with hx | hx | hx <;> rcases hy with hy | hy | hy <;> rcases hz with hz | hz | hz
-  all_goals
-    rw [Nat.add_mod, Nat.add_mod _ (z^2), hx, hy, hz]
-    decide
+/-- If x² + y² + z² ≡ 3 (mod 8), then x, y, z are all odd. -/
+lemma all_odd_of_sum_three_squares_eq_three_mod_eight (x y z : ℕ)
+    (h : (x ^ 2 + y ^ 2 + z ^ 2) % 8 = 3) : Odd x ∧ Odd y ∧ Odd z := by
+  sorry
 
-/-- If the sum of three squares is divisible by 4, then each square must be even. -/
-lemma even_of_sum_three_squares_div_four (x y z : ℕ) (h : 4 ∣ x^2 + y^2 + z^2) :
-    Even x ∧ Even y ∧ Even z := by
-  have h_mod_4 : (x^2 + y^2 + z^2) % 4 = 0 := Nat.mod_eq_zero_of_dvd h
-  have sq_mod_4 (n : ℕ) : n^2 % 4 = 0 ∨ n^2 % 4 = 1 := by
-    mod_cases hn : n % 2
-    · left; rw [pow_two, ← Nat.mul_mod_mod, hn]; decide
-    · right; rw [pow_two, ← Nat.mul_mod_mod, hn]; decide
-  have hx := sq_mod_4 x
-  have hy := sq_mod_4 y
-  have hz := sq_mod_4 z
-  rcases hx with hx | hx <;> rcases hy with hy | hy <;> rcases hz with hz | hz
-  · simp only [Nat.add_mod, hx, hy, hz] at h_mod_4
-    refine ⟨?_, ?_, ?_⟩
-    all_goals
-      try rw [← even_iff, ← Nat.dvd_iff_mod_eq_zero]
-      try apply Nat.dvd_of_pow_dvd (n := 2)
-      assumption
-  all_goals
-    simp [Nat.add_mod, hx, hy, hz] at h_mod_4
-
-/-- Descent step: If 4n is a sum of three squares, then n is a sum of three squares. -/
-lemma sum_three_squares_div_four (n : ℕ) :
-    (∃ x y z, x^2 + y^2 + z^2 = 4 * n) → (∃ x' y' z', x'^2 + y'^2 + z'^2 = n) := by
-  rintro ⟨x, y, z, h_eq⟩
-  have h_div : 4 ∣ x^2 + y^2 + z^2 := by rw [h_eq]; exact Nat.dvd_mul_right 4 n
-  obtain ⟨hx, hy, hz⟩ := even_of_sum_three_squares_div_four x y z h_div
-  obtain ⟨x', rfl⟩ := hx
-  obtain ⟨y', rfl⟩ := hy
-  obtain ⟨z', rfl⟩ := hz
-  use x', y', z'
-  rw [← mul_right_inj' (show 4 ≠ 0 by decide)]
-  trans 4 * n
-  · rw [← h_eq]; ring
-  · ring
-
-/-- The core condition for Legendre's Three-Square Theorem. -/
 def is_three_square_exception (n : ℕ) : Prop :=
-  ∃ a k : ℕ, n = 4^a * (8 * k + 7)
+  ∃ a k : ℕ, n = 4 ^ a * (8 * k + 7)
 
-/-- Easy direction of Legendre's Three-Square Theorem. -/
+lemma sq_mod_four (n : ℕ) : n ^ 2 % 4 = 0 ∨ n ^ 2 % 4 = 1 := by
+  sorry
+
+lemma even_of_sq_mod_four_eq_zero (n : ℕ) (h : n ^ 2 % 4 = 0) : 2 ∣ n := by
+  sorry
+
+lemma sum_three_squares_zero_mod_four_implies_all_even (x y z : ℕ)
+    (h : (x ^ 2 + y ^ 2 + z ^ 2) % 4 = 0) :
+    2 ∣ x ∧ 2 ∣ y ∧ 2 ∣ z := by
+  sorry
+
+lemma sum_three_squares_div_four (m x y z : ℕ) (h : x ^ 2 + y ^ 2 + z ^ 2 = 4 * m) :
+    ∃ x' y' z' : ℕ, x' ^ 2 + y' ^ 2 + z' ^ 2 = m := by
+  sorry
+
 theorem not_exception_of_sum_three_squares (n : ℕ) :
-    (∃ x y z : ℕ, x^2 + y^2 + z^2 = n) → ¬ is_three_square_exception n := by
-  rintro ⟨x, y, z, rfl⟩ ⟨a, k, h_eq⟩
-  induction a generalizing x y z with
-  | zero =>
-    simp only [pow_zero, one_mul] at h_eq
-    have h_mod : (x^2 + y^2 + z^2) % 8 = 7 := by rw [h_eq]; exact Nat.mul_add_mod_self_left 8 k 7
-    exact sum_three_squares_not_seven_mod_eight x y z h_mod
-  | succ a ih =>
-    rw [pow_succ, mul_assoc] at h_eq
-    have h_desc := sum_three_squares_div_four (4^a * (8 * k + 7)) ⟨x, y, z, h_eq⟩
-    obtain ⟨x', y', z', h_eq'⟩ := h_desc
-    exact ih x' y' z' h_eq' ⟨a, k, h_eq'.symm⟩
+    (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) → ¬ is_three_square_exception n := by
+  sorry
 
-/-! ### Part 2: Reduction to Square-Free Case -/
+lemma sum_three_squares_mul_sq (m k : ℕ) (h : ∃ x y z, x^2 + y^2 + z^2 = m) :
+    ∃ x y z, x^2 + y^2 + z^2 = k^2 * m := by
+  sorry
 
-/-- If `k` is a sum of three squares, then `k * s^2` is a sum of three squares. -/
-lemma sum_three_squares_mul_sq (k s : ℕ) :
-    (∃ x y z, x^2 + y^2 + z^2 = k) → (∃ x' y' z', x'^2 + y'^2 + z'^2 = k * s^2) := by
-  rintro ⟨x, y, z, rfl⟩
-  use s*x, s*y, s*z
-  ring
+lemma is_three_square_exception_mul_odd_sq (m : ℕ) {k : ℕ} (hk : Odd k) :
+    is_three_square_exception (k^2 * m) ↔ is_three_square_exception m := by
+  sorry
 
-/-- Technical Lemma: The set of 'bad' numbers is closed under multiplication by squares.
-    If n is an exception, then n * s^2 is an exception (for s > 0). -/
-lemma exception_mul_sq (n s : ℕ) (hs : s ≠ 0) :
-    is_three_square_exception n → is_three_square_exception (n * s^2) := by
-  rintro ⟨a, k, rfl⟩
-  have h_s_form : ∃ j m, s = 2^j * m ∧ Odd m := by
-    use s.trailingZeros, (s >>> s.trailingZeros)
-    constructor
-    · exact (Nat.eq_mul_of_div_eq_right (Nat.pow_two_trailingZeros_dvd s) rfl).symm
-    · exact Nat.not_even_iff_odd.1 (Nat.not_even_shiftRight_trailingZeros s hs)
-  obtain ⟨j, m, rfl, hm_odd⟩ := h_s_form
-  rw [mul_pow, ← mul_assoc (4^a), ← pow_mul, mul_comm (2^j) 2, pow_mul, show 2^2 = 4 from rfl]
-  rw [← pow_add]
-  have hm_sq_mod_8 : m^2 % 8 = 1 := by
-    rcases hm_odd with ⟨w, rfl⟩
-    have : (2*w + 1)^2 = 4*w*(w+1) + 1 := by ring
-    rw [this]
-    have : 8 ∣ 4*w*(w+1) := by
-      match w with
-      | 0 => use 0; simp
-      | w+1 =>
-        obtain ⟨q, hq⟩ := Nat.even_mul_self_pred (w+1)
-        rw [hq]; use q; ring
-    rw [Nat.add_mod, Nat.mod_eq_zero_of_dvd this, zero_add, Nat.mod_self]
-    rfl
-  use a + j
-  use k * m^2 + 7 * (m^2 / 8)
-  have h_mod : ((8 * k + 7) * m^2) % 8 = 7 := by
-    rw [Nat.mul_mod, Nat.add_mod, Nat.mul_mod_right, zero_add, Nat.mod_mod,
-        hm_sq_mod_8, Nat.mul_one, Nat.mod_self]
-    rfl
-  rw [← Nat.div_add_mod ((8 * k + 7) * m^2) 8, h_mod]
-  ring
+lemma sum_three_squares_reduction (n : ℕ) (h : ¬ is_three_square_exception n)
+    (h_sqfree : ∀ m : ℕ, Squarefree m → ¬ is_three_square_exception m → ∃ x y z, x^2 + y^2 + z^2 = m) :
+    ∃ x y z, x^2 + y^2 + z^2 = n := by
+  sorry
 
-/-- Reduction: If theorem holds for square-free n, it holds for all n. -/
-theorem sum_three_squares_iff_of_squarefree_proof
-    (h_sq_free : ∀ n, Squarefree n → ¬ is_three_square_exception n → ∃ x y z, x^2 + y^2 + z^2 = n) :
-    ∀ n, ¬ is_three_square_exception n → ∃ x y z, x^2 + y^2 + z^2 = n := by
-  intro n hn_bad
-  have h_decomp : ∃ k s, n = k * s^2 ∧ Squarefree k := Nat.sq_mul_squarefree n
-  obtain ⟨k, s, rfl, hk_free⟩ := h_decomp
-  by_cases s_zero : s = 0
-  · simp [s_zero]
-    use 0, 0, 0; simp
-  have hk_not_bad : ¬ is_three_square_exception k := by
-    intro hk_bad
-    apply hn_bad
-    rw [mul_comm]
-    exact exception_mul_sq k s s_zero hk_bad
-  obtain ⟨x, y, z, rfl⟩ := h_sq_free k hk_free hk_not_bad
-  exact sum_three_squares_mul_sq (x^2+y^2+z^2) s ⟨x, y, z, rfl⟩
-
-section AnkenyProof
-
-/-!
-### Ankeny's Proof Strategy (Elementary)
-
-Proving that any square-free `m` with `m % 8 ≠ 7` is a sum of three squares.
-The difficult case is `m ≡ 3 (mod 8)`.
-
-Key Steps:
-1.  Assume `m` is square-free and `m ≡ 3 (mod 8)`.
-2.  Use Dirichlet's Theorem to find a prime `q` such that `q ≡ -1 (mod 4m)`.
-    Since `m` is odd, `gcd(4m, -1) = 1` is trivial.
-    So `q` exists.
--/
-
-/-- Use Dirichlet to find a prime with properties. -/
-lemma exists_prime_mod_4n_neg_1 (n : ℕ) (h_n_pos : n > 0) :
-    ∃ q, Nat.Prime q ∧ q ≡ 4 * n - 1 [MOD 4 * n] := by
-  have h_coprime : Coprime (4 * n - 1) (4 * n) := by
-    rw [Nat.coprime_comm]
-    exact Nat.coprime_self_sub_one (4 * n) (Nat.mul_pos (show 4>0 by decide) h_n_pos)
-  have h_unit : IsUnit ((4 * n - 1 : ℕ) : ZMod (4 * n)) := by
-    rw [ZMod.isUnit_iff_coprime]
-    -- n > 0 => 4*n > 0, so 4*n is not 0 in Nat, but ZMod 0 is Int.
-    -- ZMod (4*n) needs NeZero instance if we want specific behavior?
-    -- Mathlib usually handles ZMod n where n is Nat.
-    exact h_coprime
-  have h_infinite := Nat.infinite_setOf_prime_and_eq_mod h_unit
-  rw [Set.infinite_coe_iff] at h_infinite
-  obtain ⟨q, hq_prime, hq_mod⟩ := h_infinite.exists
-  use q
-  exact ⟨hq_prime, hq_mod⟩
-
-/--
-Properties of the Ankeny prime q:
-1. q is prime
-2. q ≡ -1 (mod 4)  => (-1/q) = -1
-3. q ≡ -1 (mod n)  => (q/n) = (-1/n) (using reciprocity for odd n)
--/
-lemma ankeny_prime_properties (n q : ℕ) (hq_prime : Nat.Prime q)
-    (hq_mod : q ≡ 4 * n - 1 [MOD 4 * n]) :
-    legendreSym (-1 : ℤ) q = -1 := by
-  -- q ≡ 4n - 1 ≡ -1 ≡ 3 (mod 4)
-  have h_q_mod_4 : q % 4 = 3 := by
-    apply Nat.ModEq.mod_eq_of_lt
-    · apply Nat.ModEq.trans hq_mod
-      -- 4*n - 1 = 4*(n-1) + 3 if n >= 1
-      rw [show 4*n - 1 = 4*(n - 1) + 3 from sorry]
-      apply Nat.ModEq.symm
-      apply Nat.modEq_add_self 4
-    · -- q is prime
-      cases q <;> try simp at hq_prime
-      -- q % 4 < 4 is trivial
-      sorry
-  
-  have hq_odd : q % 2 = 1 := by
-    rw [h_q_mod_4]
-    decide
-  
-  -- The ne_two condition needs to be explicit
-  have hq_ne_2 : q ≠ 2 := by
-    intro h
-    rw [h] at h_q_mod_4
-    contradiction
-
-  rw [legendreSym.eq_neg_one_iff q]
-  · simp [h_q_mod_4]
-    -- (-1)^((q-1)/2) = -1
-    sorry
-  · exact hq_prime.ne_zero
-  · exact hq_ne_2
-
-end AnkenyProof
+theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exception n) :
+    ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n := by
+  sorry
 
 theorem sum_three_squares_iff (n : ℕ) :
-    (∃ x y z : ℕ, x^2 + y^2 + z^2 = n) ↔ ¬ is_three_square_exception n := by
-  constructor
-  · exact not_exception_of_sum_three_squares n
-  · -- Hard direction: Ankeny's proof (TODO)
-    sorry
+    (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n :=
+  ⟨not_exception_of_sum_three_squares n, sum_three_squares_of_not_exception n⟩
+
+theorem exists_sq_add_sq_add_one_mod_n (n : ℕ) (hn : Odd n) (hn_pos : 0 < n) :
+    ∃ u v : ℤ, u ^ 2 + v ^ 2 + 1 ≡ 0 [ZMOD n] := by
+  sorry
 
 end Nat

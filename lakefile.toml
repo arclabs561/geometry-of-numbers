@@ -12,7 +12,9 @@ maxSynthPendingDepth = 3
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.26.0"
+# Note: `lakefile.lean` is authoritative for mathlib in this repo.
+# Keep this in sync to avoid accidental divergence.
+rev = "cced109deab25b4322e1a12b877335e092322b74"
 
 [[lean_lib]]
 name = "PolygonalNumberTheorem"
