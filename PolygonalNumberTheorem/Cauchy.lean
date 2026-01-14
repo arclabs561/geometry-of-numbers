@@ -36,12 +36,44 @@ lemma not_exception_eight_n_add_three (n : ℕ) :
 /-- If n is a sum of three squares, it has a representation with integers x, y, z sorted x ≥ y ≥ z. -/
 lemma exists_sorted_three_squares_int (n : ℕ) (h : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) :
     ∃ x y z : ℤ, 0 ≤ x ∧ 0 ≤ y ∧ 0 ≤ z ∧ x ≥ y ∧ y ≥ z ∧ x ^ 2 + y ^ 2 + z ^ 2 = n := by
-  sorry
+  obtain ⟨a, b, c, habc⟩ := h
+  -- Sort a, b, c into descending order and cast to ℤ
+  have hsym : ∀ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = a ^ 2 + b ^ 2 + c ^ 2 →
+      (x : ℤ) ^ 2 + (y : ℤ) ^ 2 + (z : ℤ) ^ 2 = n := by
+    intros x y z hxyz
+    have : (x ^ 2 + y ^ 2 + z ^ 2 : ℕ) = n := by rw [hxyz, habc]
+    exact_mod_cast this
+  -- Choose the sorted triple based on ordering
+  rcases Nat.le_total a b with hab | hba
+  · rcases Nat.le_total b c with hbc | hcb
+    -- a ≤ b ≤ c
+    · exact ⟨c, b, a, by simp, by simp, by simp, by exact_mod_cast hbc, by exact_mod_cast hab, hsym c b a (by ring)⟩
+    · rcases Nat.le_total a c with hac | hca
+      -- a ≤ c ≤ b
+      · exact ⟨b, c, a, by simp, by simp, by simp, by exact_mod_cast hcb, by exact_mod_cast hac, hsym b c a (by ring)⟩
+      -- c < a ≤ b
+      · exact ⟨b, a, c, by simp, by simp, by simp, by exact_mod_cast hab, by exact_mod_cast hca, hsym b a c (by ring)⟩
+  · rcases Nat.le_total b c with hbc | hcb
+    · rcases Nat.le_total a c with hac | hca
+      -- b ≤ a ≤ c
+      · exact ⟨c, a, b, by simp, by simp, by simp, by exact_mod_cast hac, by exact_mod_cast hba, hsym c a b (by ring)⟩
+      -- b ≤ c < a
+      · exact ⟨a, c, b, by simp, by simp, by simp, by exact_mod_cast hca, by exact_mod_cast hbc, hsym a c b (by ring)⟩
+    -- c ≤ b ≤ a
+    · exact ⟨a, b, c, by simp, by simp, by simp, by exact_mod_cast hba, by exact_mod_cast hcb, hsym a b c (by ring)⟩
 
 /-- The Cauchy-Schwarz inequality for three terms in ℤ. -/
 lemma three_terms_cauchy_schwarz_int (x y z : ℤ) :
     (x + y + z) ^ 2 ≤ 3 * (x ^ 2 + y ^ 2 + z ^ 2) := by
-  sorry
+  -- 3(x² + y² + z²) - (x + y + z)² = (x-y)² + (x-z)² + (y-z)² ≥ 0
+  have h : 3 * (x ^ 2 + y ^ 2 + z ^ 2) - (x + y + z) ^ 2 =
+           (x - y) ^ 2 + (x - z) ^ 2 + (y - z) ^ 2 := by ring
+  have h_pos : (x - y) ^ 2 + (x - z) ^ 2 + (y - z) ^ 2 ≥ 0 := by
+    have h1 : (x - y) ^ 2 ≥ 0 := sq_nonneg _
+    have h2 : (x - z) ^ 2 ≥ 0 := sq_nonneg _
+    have h3 : (y - z) ^ 2 ≥ 0 := sq_nonneg _
+    linarith
+  linarith
 
 /-- Modular sign choice for Cauchy’s lemma. -/
 lemma choose_u_div_four (b x y z : ℤ) (hb : Odd b) (hx : Odd x) (hy : Odd y) (hz : Odd z) :
