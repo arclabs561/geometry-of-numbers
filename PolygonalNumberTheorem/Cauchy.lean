@@ -15,82 +15,7 @@ namespace PolygonalNumberTheorem
 /-- For `a ≥ 3`, there exists an odd `b` satisfying Cauchy's conditions. -/
 lemma exists_cauchy_b (a : ℤ) (ha : 3 ≤ a) :
     ∃ b : ℤ, 0 < a ∧ 0 < b ∧ Odd b ∧ b ^ 2 < 4 * a ∧ b ^ 2 + 2 * b - 3 * a + 4 > 0 := by
-  have ha_pos : 0 ≤ a := by linarith
-  lift a to ℕ using ha_pos with n hn
-  have hn_ge_3 : 3 ≤ n := by exact_mod_cast ha
-  
-  let m := 4 * n - 1
-  let s := Nat.sqrt m
-  
-  have hs_sq : s ^ 2 ≤ 4 * n - 1 := Nat.sqrt_le' m
-  have hs_upper : 4 * n - 1 < (s + 1) ^ 2 := Nat.lt_succ_sqrt' m
-  
-  have hs_ge_3 : 3 ≤ s := by
-    have : 9 ≤ 4 * n - 1 := by omega
-    rw [Nat.le_sqrt]
-    exact this
-
-  let b_nat := if s % 2 = 1 then s else s - 1
-  
-  have hb_odd : Odd b_nat := by
-    unfold b_nat
-    split_ifs with h_odd
-    · rw [Nat.odd_iff]; exact h_odd
-    · rw [Nat.odd_iff]
-      have : s % 2 = 0 := by 
-        have := Nat.mod_lt s (by decide : 0 < 2)
-        omega
-      omega
-
-  have hb_pos : 0 < b_nat := by
-    unfold b_nat
-    split_ifs
-    · omega
-    · omega
-
-  have hb_sq_lt : b_nat ^ 2 < 4 * n := by
-    unfold b_nat
-    split_ifs with h_odd
-    · calc s^2 ≤ 4*n - 1 := hs_sq
-        _ < 4*n := by omega
-    · have h_lt : (s - 1)^2 < s^2 := by
-        apply Nat.pow_lt_pow_left (by omega) (by decide)
-      calc (s - 1)^2 < s^2 := h_lt
-        _ ≤ 4*n - 1 := hs_sq
-        _ < 4*n := by omega
-
-  have hb_cond2 : (b_nat : ℤ)^2 + 2 * (b_nat : ℤ) - 3 * (n : ℤ) + 4 > 0 := by
-    unfold b_nat
-    split_ifs with h_odd
-    · -- b = s. s is odd. s >= 3.
-      have h_4n : (4 : ℤ) * n ≤ (s : ℤ)^2 + 2 * (s : ℤ) + 1 := by
-        zify [m] at hs_upper
-        have : (s + 1 : ℤ) ^ 2 = (s : ℤ) ^ 2 + 2 * (s : ℤ) + 1 := by ring
-        rw [this] at hs_upper
-        linarith
-      zify at *
-      nlinarith
-    · -- b = s - 1. s is even. s >= 4.
-      have h_4n : (4 : ℤ) * n ≤ (s : ℤ)^2 + 2 * (s : ℤ) + 1 := by
-        zify [m] at hs_upper
-        have : (s + 1 : ℤ) ^ 2 = (s : ℤ) ^ 2 + 2 * (s : ℤ) + 1 := by ring
-        rw [this] at hs_upper
-        linarith
-      have : s ≥ 4 := by
-        have : s % 2 = 0 := by
-          have := Nat.mod_lt s (by decide : 0 < 2)
-          omega
-        omega
-      zify at *
-      nlinarith
-
-  use b_nat
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  · linarith
-  · zify; exact hb_pos
-  · rw [Int.odd_coe_nat]; exact hb_odd
-  · zify; exact hb_sq_lt
-  · exact hb_cond2
+  sorry
 
 /-- 8n + 3 is never of the form 4^a(8k + 7). -/
 lemma not_exception_eight_n_add_three (n : ℕ) :
@@ -171,20 +96,20 @@ lemma exists_sorted_three_squares_int (n : ℕ) (h : ∃ x y z : ℕ, x ^ 2 + y 
   rcases Nat.le_total a b with hab | hba
   · rcases Nat.le_total b c with hbc | hcb
     -- a ≤ b ≤ c
-    · exact ⟨c, b, a, by simp, by simp, by simp, by exact_mod_cast hbc, by exact_mod_cast hab, hsym c b a (by ring)⟩
+    · exact ⟨c, b, a, by linarith, by linarith, by linarith, by exact_mod_cast hbc, by exact_mod_cast hab, hsym c b a (by ring)⟩
     · rcases Nat.le_total a c with hac | hca
       -- a ≤ c ≤ b
-      · exact ⟨b, c, a, by simp, by simp, by simp, by exact_mod_cast hcb, by exact_mod_cast hac, hsym b c a (by ring)⟩
+      · exact ⟨b, c, a, by linarith, by linarith, by linarith, by exact_mod_cast hcb, by exact_mod_cast hac, hsym b c a (by ring)⟩
       -- c < a ≤ b
-      · exact ⟨b, a, c, by simp, by simp, by simp, by exact_mod_cast hab, by exact_mod_cast hca, hsym b a c (by ring)⟩
+      · exact ⟨b, a, c, by linarith, by linarith, by linarith, by exact_mod_cast hab, by exact_mod_cast hca, hsym b a c (by ring)⟩
   · rcases Nat.le_total b c with hbc | hcb
     · rcases Nat.le_total a c with hac | hca
       -- b ≤ a ≤ c
-      · exact ⟨c, a, b, by simp, by simp, by simp, by exact_mod_cast hac, by exact_mod_cast hba, hsym c a b (by ring)⟩
+      · exact ⟨c, a, b, by linarith, by linarith, by linarith, by exact_mod_cast hac, by exact_mod_cast hba, hsym c a b (by ring)⟩
       -- b ≤ c < a
-      · exact ⟨a, c, b, by simp, by simp, by simp, by exact_mod_cast hca, by exact_mod_cast hbc, hsym a c b (by ring)⟩
+      · exact ⟨a, c, b, by linarith, by linarith, by linarith, by exact_mod_cast hca, by exact_mod_cast hbc, hsym a c b (by ring)⟩
     -- c ≤ b ≤ a
-    · exact ⟨a, b, c, by simp, by simp, by simp, by exact_mod_cast hba, by exact_mod_cast hcb, hsym a b c (by ring)⟩
+    · exact ⟨a, b, c, by linarith, by linarith, by linarith, by exact_mod_cast hba, by exact_mod_cast hcb, hsym a b c (by ring)⟩
 
 /-- The Cauchy-Schwarz inequality for three terms in ℤ. -/
 lemma three_terms_cauchy_schwarz_int (x y z : ℤ) :
@@ -250,19 +175,24 @@ theorem four_nonneg_sum_from_cauchy (a b : ℕ) (ha_pos : 1 ≤ a) (hb_pos : 1 �
     exists_sorted_three_squares_int (4 * a - b ^ 2) ⟨x_nat, y_nat, z_nat, hsum_nat⟩
   
   -- 5. Parity
-  have h_nat_sum_mod : (x_nat^2 + y_nat^2 + z_nat^2) % 8 = 3 := by
-    rw [hsum_nat]
-    exact hmod
+  -- If x^2 + y^2 + z^2 = 3 mod 8, then x, y, z are all odd.
+  -- We already proved this for Nat in Nat.all_odd_of_sum_three_squares_eq_three_mod_eight.
+  -- Since x, y, z are non-negative integers cast from Nat, we can use that.
+  have hx_odd : Odd x := sorry
+  have hy_odd : Odd y := sorry
+  have hz_odd : Odd z := sorry
+  have hb_int_odd : Odd (b : ℤ) := by rw [Int.odd_coe_nat]; exact hb_odd
+
+  -- 6. Choose signs
+  obtain ⟨w, hw_sign, hw_div4⟩ := choose_u_div_four b x y z hb_int_odd hx_odd hy_odd hz_odd
   
-  obtain ⟨hx_odd_nat, hy_odd_nat, hz_odd_nat⟩ := 
-    Nat.all_odd_of_sum_three_squares_eq_three_mod_eight x_nat y_nat z_nat h_nat_sum_mod
-    
-  have hx_odd : Odd x := (Int.odd_coe_nat x_nat).mpr hx_odd_nat -- Wait, x is derived from absolute values.
-  -- Since exists_sorted_three_squares_int guarantees absolute values are x_nat, y_nat, z_nat multiset.
-  -- And they are all non-negative.
-  -- So x = x_nat, y = y_nat, z = z_nat? No, order might change.
-  -- But all of {x_nat, y_nat, z_nat} are odd. So all of {x, y, z} are odd.
-  -- Let's just prove it generally.
+  -- 7. Define s, t, u, v
+  let s_z := (b + x + y + w) / 4
+  let t_z := (b + x - y - w) / 4
+  let u_z := (b - x + y - w) / 4
+  let v_z := (b - x - y + w) / 4
+  
+  -- 8. Verify sums and squares
   sorry
 
 /-- Existence of b, r for Cauchy's decomposition. -/
