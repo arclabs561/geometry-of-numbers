@@ -127,7 +127,33 @@ lemma three_terms_cauchy_schwarz_int (x y z : ℤ) :
 /-- Modular sign choice for Cauchy’s lemma. -/
 lemma choose_u_div_four (b x y z : ℤ) (hb : Odd b) (hx : Odd x) (hy : Odd y) (hz : Odd z) :
     ∃ u : ℤ, (u = z ∨ u = -z) ∧ (4 : ℤ) ∣ (b + x + y + u) := by
-  sorry
+  have hsum_odd : Odd (b + x + y) := (hb.add_odd hx).add_odd hy
+  have heven_plus : Even (b + x + y + z) := hsum_odd.add_odd hz
+  have heven_minus : Even (b + x + y - z) := by
+    rw [sub_eq_add_neg]; exact hsum_odd.add_odd hz.neg
+  
+  obtain ⟨k1, hk1⟩ := heven_plus
+  -- b + x + y + z = 2 * k1
+  by_cases hk1_even : Even k1
+  · -- Case 1: k1 is even, so 2*k1 is divisible by 4
+    obtain ⟨m, hm⟩ := hk1_even
+    use z, Or.inl rfl
+    rw [hk1, hm]
+    use m; ring
+  · -- Case 2: k1 is odd
+    -- b + x + y - z = (b + x + y + z) - 2z = 2k1 - 2z = 2(k1 - z)
+    have hk1_odd : Odd k1 := by rwa [← Int.not_even_iff_odd]
+    have h_diff : b + x + y - z = 2 * k1 - 2 * z := by
+      calc b + x + y - z = b + x + y + z - 2 * z := by ring
+        _ = 2 * k1 - 2 * z := by rw [hk1]; ring
+    have h_factor : b + x + y - z = 2 * (k1 - z) := by
+      rw [h_diff]; ring
+    -- k1 is odd, z is odd, so k1 - z is even
+    have : Even (k1 - z) := hk1_odd.sub_odd hz
+    obtain ⟨m, hm⟩ := this
+    use -z, Or.inr rfl
+    rw [← sub_eq_add_neg, h_factor, hm]
+    use m; ring
 
 /-- The main Cauchy's Lemma (Nathanson Lemma 1.12). -/
 theorem four_nonneg_sum_from_cauchy (a b : ℕ) (ha_pos : 1 ≤ a) (hb_pos : 1 ≤ b)
