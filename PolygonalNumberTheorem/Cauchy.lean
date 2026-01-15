@@ -15,7 +15,82 @@ namespace PolygonalNumberTheorem
 /-- For `a ≥ 3`, there exists an odd `b` satisfying Cauchy's conditions. -/
 lemma exists_cauchy_b (a : ℤ) (ha : 3 ≤ a) :
     ∃ b : ℤ, 0 < a ∧ 0 < b ∧ Odd b ∧ b ^ 2 < 4 * a ∧ b ^ 2 + 2 * b - 3 * a + 4 > 0 := by
-  sorry
+  have ha_pos : 0 ≤ a := by linarith
+  lift a to ℕ using ha_pos with n hn
+  have hn_ge_3 : 3 ≤ n := by exact_mod_cast ha
+  
+  let m := 4 * n - 1
+  let s := Nat.sqrt m
+  
+  have hs_sq : s ^ 2 ≤ 4 * n - 1 := Nat.sqrt_le' m
+  have hs_upper : 4 * n - 1 < (s + 1) ^ 2 := Nat.lt_succ_sqrt' m
+  
+  have hs_ge_3 : 3 ≤ s := by
+    have : 9 ≤ 4 * n - 1 := by omega
+    rw [Nat.le_sqrt]
+    exact this
+
+  let b_nat := if s % 2 = 1 then s else s - 1
+  
+  have hb_odd : Odd b_nat := by
+    unfold b_nat
+    split_ifs with h_odd
+    · rw [Nat.odd_iff]; exact h_odd
+    · rw [Nat.odd_iff]
+      have : s % 2 = 0 := by 
+        have := Nat.mod_lt s (by decide : 0 < 2)
+        omega
+      omega
+
+  have hb_pos : 0 < b_nat := by
+    unfold b_nat
+    split_ifs
+    · omega
+    · omega
+
+  have hb_sq_lt : b_nat ^ 2 < 4 * n := by
+    unfold b_nat
+    split_ifs with h_odd
+    · calc s^2 ≤ 4*n - 1 := hs_sq
+        _ < 4*n := by omega
+    · have h_lt : (s - 1)^2 < s^2 := by
+        apply Nat.pow_lt_pow_left (by omega) (by decide)
+      calc (s - 1)^2 < s^2 := h_lt
+        _ ≤ 4*n - 1 := hs_sq
+        _ < 4*n := by omega
+
+  have hb_cond2 : (b_nat : ℤ)^2 + 2 * (b_nat : ℤ) - 3 * (n : ℤ) + 4 > 0 := by
+    unfold b_nat
+    split_ifs with h_odd
+    · -- b = s. s is odd. s >= 3.
+      have h_4n : (4 : ℤ) * n ≤ (s : ℤ)^2 + 2 * (s : ℤ) + 1 := by
+        zify [m] at hs_upper
+        have : (s + 1 : ℤ) ^ 2 = (s : ℤ) ^ 2 + 2 * (s : ℤ) + 1 := by ring
+        rw [this] at hs_upper
+        linarith
+      zify at *
+      nlinarith
+    · -- b = s - 1. s is even. s >= 4.
+      have h_4n : (4 : ℤ) * n ≤ (s : ℤ)^2 + 2 * (s : ℤ) + 1 := by
+        zify [m] at hs_upper
+        have : (s + 1 : ℤ) ^ 2 = (s : ℤ) ^ 2 + 2 * (s : ℤ) + 1 := by ring
+        rw [this] at hs_upper
+        linarith
+      have : s ≥ 4 := by
+        have : s % 2 = 0 := by
+          have := Nat.mod_lt s (by decide : 0 < 2)
+          omega
+        omega
+      zify at *
+      nlinarith
+
+  use b_nat
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · linarith
+  · zify; exact hb_pos
+  · rw [Int.odd_coe_nat]; exact hb_odd
+  · zify; exact hb_sq_lt
+  · exact hb_cond2
 
 /-- 8n + 3 is never of the form 4^a(8k + 7). -/
 lemma not_exception_eight_n_add_three (n : ℕ) :
@@ -160,6 +235,34 @@ theorem four_nonneg_sum_from_cauchy (a b : ℕ) (ha_pos : 1 ≤ a) (hb_pos : 1 �
     (ha_odd : Odd a) (hb_odd : Odd b)
     (hcond1 : b ^ 2 < 4 * a) (hcond2 : 3 * a < b ^ 2 + 2 * b + 4) :
     ∃ s t u v : ℕ, a = s ^ 2 + t ^ 2 + u ^ 2 + v ^ 2 ∧ b = s + t + u + v := by
+  -- 1. Mod 8 check
+  have hmod : (4 * a - b ^ 2) % 8 = 3 := four_a_minus_b_sq_mod_eight a b ha_odd hb_odd hcond1
+  
+  -- 2. Not exception
+  have hnot_exc : ¬ Nat.is_three_square_exception (4 * a - b ^ 2) :=
+    four_a_minus_b_sq_not_exception a b ha_pos hb_pos ha_odd hb_odd hcond1
+  
+  -- 3. Legendre
+  obtain ⟨x_nat, y_nat, z_nat, hsum_nat⟩ := Nat.sum_three_squares_of_not_exception (4 * a - b ^ 2) hnot_exc
+  
+  -- 4. Sorted integers
+  obtain ⟨x, y, z, hx_pos, hy_pos, hz_pos, hxy, hyz, hsum⟩ := 
+    exists_sorted_three_squares_int (4 * a - b ^ 2) ⟨x_nat, y_nat, z_nat, hsum_nat⟩
+  
+  -- 5. Parity
+  have h_nat_sum_mod : (x_nat^2 + y_nat^2 + z_nat^2) % 8 = 3 := by
+    rw [hsum_nat]
+    exact hmod
+  
+  obtain ⟨hx_odd_nat, hy_odd_nat, hz_odd_nat⟩ := 
+    Nat.all_odd_of_sum_three_squares_eq_three_mod_eight x_nat y_nat z_nat h_nat_sum_mod
+    
+  have hx_odd : Odd x := (Int.odd_coe_nat x_nat).mpr hx_odd_nat -- Wait, x is derived from absolute values.
+  -- Since exists_sorted_three_squares_int guarantees absolute values are x_nat, y_nat, z_nat multiset.
+  -- And they are all non-negative.
+  -- So x = x_nat, y = y_nat, z = z_nat? No, order might change.
+  -- But all of {x_nat, y_nat, z_nat} are odd. So all of {x, y, z} are odd.
+  -- Let's just prove it generally.
   sorry
 
 /-- Existence of b, r for Cauchy's decomposition. -/

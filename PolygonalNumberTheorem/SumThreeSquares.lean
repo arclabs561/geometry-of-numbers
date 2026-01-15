@@ -79,33 +79,26 @@ lemma sum_three_squares_div_four (m x y z : ℕ) (h : x ^ 2 + y ^ 2 + z ^ 2 = 4 
 
 theorem not_exception_of_sum_three_squares (n : ℕ) :
     (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) → ¬ is_three_square_exception n := by
-  intro h ⟨a, k, heq⟩
-  induction a generalizing n with
+  intro h
+  rintro ⟨a, k, rfl⟩
+  -- We prove by induction on `a` that `4^a * (8*k+7)` cannot be a sum of three squares.
+  induction a with
   | zero =>
-    simp at heq
-    rw [heq] at h
-    obtain ⟨x, y, z, hsum⟩ := h
-    have : (x^2 + y^2 + z^2) % 8 = 7 := by
-      rw [hsum]
+    rcases h with ⟨x, y, z, hsum⟩
+    -- Mod 8: RHS is 7, but a sum of three squares is never 7 mod 8.
+    have h8 : (8 * k + 7) % 8 = 7 := by
       simp [Nat.add_mod]
+    have : (x ^ 2 + y ^ 2 + z ^ 2) % 8 = 7 := by
+      simp [hsum, h8]
     exact sum_three_squares_not_seven_mod_eight x y z this
   | succ a ih =>
-    rw [Nat.pow_succ, Nat.mul_assoc] at heq
-    have h4 : n % 4 = 0 := by rw [heq]; simp [Nat.mul_mod]
-    obtain ⟨x, y, z, hsum⟩ := h
-    have hsum_mod : (x^2 + y^2 + z^2) % 4 = 0 := by rw [hsum, h4]
-    obtain ⟨he_x, he_y, he_z⟩ := sum_three_squares_zero_mod_four_implies_all_even x y z hsum_mod
-    obtain ⟨x', hx'⟩ := he_x
-    obtain ⟨y', hy'⟩ := he_y
-    obtain ⟨z', hz'⟩ := he_z
-    rw [hx', hy', hz'] at hsum
-    have h_div4_eq : 4 * (x'^2 + y'^2 + z'^2) = 4 * (4^a * (8*k + 7)) := by
-      calc 4 * (x'^2 + y'^2 + z'^2) = (2*x')^2 + (2*y')^2 + (2*z')^2 := by ring
-        _ = n := hsum
-        _ = 4 ^ a * (4 * (8 * k + 7)) := heq
-        _ = 4 * (4 ^ a * (8 * k + 7)) := by ring
-    have h_reduced : x'^2 + y'^2 + z'^2 = 4^a * (8*k + 7) := Nat.eq_of_mul_eq_mul_left (by decide : 0 < 4) h_div4_eq
-    exact ih (4^a * (8*k + 7)) ⟨x', y', z', h_reduced⟩ rfl
+    rcases h with ⟨x, y, z, hsum⟩
+    -- `4^(a+1) * (8*k+7) = 4 * (4^a * (8*k+7))`, so we can apply the “divide by 4” lemma.
+    have h4 : x ^ 2 + y ^ 2 + z ^ 2 = 4 * (4 ^ a * (8 * k + 7)) := by
+      simpa [Nat.pow_succ, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using hsum
+    rcases sum_three_squares_div_four (m := 4 ^ a * (8 * k + 7)) (x := x) (y := y) (z := z) h4 with
+      ⟨x', y', z', hsum'⟩
+    exact ih ⟨x', y', z', hsum'⟩
 
 lemma sum_three_squares_mul_sq (m k : ℕ) (h : ∃ x y z, x^2 + y^2 + z^2 = m) :
     ∃ x y z, x^2 + y^2 + z^2 = k^2 * m := by
@@ -118,10 +111,14 @@ lemma sum_three_squares_mul_sq (m k : ℕ) (h : ∃ x y z, x^2 + y^2 + z^2 = m) 
 
 /-- Helper: If n is odd, n^2 % 8 = 1 -/
 lemma sq_mod_eight_odd (n : ℕ) (h : Odd n) : n ^ 2 % 8 = 1 := by
+  -- TODO: This lemma is convenient, but not needed to keep the project compiling.
+  -- We'll come back and prove it once the main Cauchy pipeline is unblocked.
   sorry
 
 lemma is_three_square_exception_mul_odd_sq (m : ℕ) {k : ℕ} (hk : Odd k) :
     is_three_square_exception (k^2 * m) ↔ is_three_square_exception m := by
+  -- TODO: This should be true (odd squares are `≡ 1 (mod 8)` and don't change the 2-adic valuation),
+  -- but the current proof script is broken. We'll restore it once we unbreak the build and can iterate.
   sorry
 
 lemma sum_three_squares_reduction (n : ℕ) (h : ¬ is_three_square_exception n)
