@@ -111,9 +111,37 @@ lemma sum_three_squares_mul_sq (m k : ℕ) (h : ∃ x y z, x^2 + y^2 + z^2 = m) 
 
 /-- Helper: If n is odd, n^2 % 8 = 1 -/
 lemma sq_mod_eight_odd (n : ℕ) (h : Odd n) : n ^ 2 % 8 = 1 := by
-  -- TODO: This lemma is convenient, but not needed to keep the project compiling.
-  -- We'll come back and prove it once the main Cauchy pipeline is unblocked.
-  sorry
+  -- Reduce to the finite cases `n % 8 ∈ {0,1,2,3,4,5,6,7}`.
+  have hkey : n ^ 2 % 8 = (n % 8) ^ 2 % 8 := Nat.pow_mod n 2 8
+  rw [hkey]
+  have hn2 : n % 2 = 1 := (Nat.odd_iff).1 h
+  have hmod2 : n % 8 % 2 = 1 := by
+    -- use `2 ∣ 8` to relate `%2` and `%8`
+    have h2 : n % 2 = n % 8 % 2 := (Nat.mod_mod_of_dvd n (by decide : 2 ∣ 8)).symm
+    -- rewrite `hn2` through `h2` (avoid `simp` recursion)
+    simpa [h2.symm] using hn2
+  have h8 : n % 8 < 8 := Nat.mod_lt n (by decide : 0 < 8)
+  interval_cases hn8 : n % 8
+  · -- 0
+    have : False := by simpa [hn8] using hmod2
+    cases this
+  · -- 1
+    simp
+  · -- 2
+    have : False := by simpa [hn8] using hmod2
+    cases this
+  · -- 3
+    simp
+  · -- 4
+    have : False := by simpa [hn8] using hmod2
+    cases this
+  · -- 5
+    simp
+  · -- 6
+    have : False := by simpa [hn8] using hmod2
+    cases this
+  · -- 7
+    simp
 
 lemma is_three_square_exception_mul_odd_sq (m : ℕ) {k : ℕ} (hk : Odd k) :
     is_three_square_exception (k^2 * m) ↔ is_three_square_exception m := by

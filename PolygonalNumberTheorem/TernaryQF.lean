@@ -21,10 +21,6 @@ structure TernaryQF where
 namespace TernaryQF
 
 /-- Convert to a symmetric Matrix (Fin 3) (Fin 3) ℤ.
-    Note: Off-diagonal elements in the matrix are usually `a_ij`.
-    The quadratic form is `x^T A x`.
-    Wait, the standard notation for QF is often `a x^2 + b y^2 + ... + 2 f y z ...`
-    Let's align with the definition:
     Q(x,y,z) = a11 x² + a22 y² + a33 z² + 2 a12 xy + 2 a13 xz + 2 a23 yz
 -/
 def toMatrix (F : TernaryQF) : Matrix (Fin 3) (Fin 3) ℤ :=
@@ -75,16 +71,23 @@ def IsReduced (F : TernaryQF) : Prop :=
   0 ≤ 2 * F.a23 ∧ 2 * F.a23 ≤ F.a22 ∧
   F.a22 ≤ F.a33
 
-/-- The Three-Square Theorem equivalent: Every positive definite ternary form
-    of determinant 1 is equivalent to the sum of three squares. -/
-theorem equiv_sumThreeSquares_of_det_one (F : TernaryQF) (hpos : F.PosDef) (hdet : F.det = 1) :
-    F.Equiv sumThreeSquares := by
-  -- 1. Every form is equivalent to a reduced form.
-  -- 2. The only reduced form with determinant 1 is sumThreeSquares.
+/-- Hermite's constant for ternary forms implies a11 * a22 * a33 ≤ 2 * det for reduced forms. -/
+lemma reduced_coeff_bound (F : TernaryQF) (_hpos : F.PosDef) (_hred : F.IsReduced) :
+    F.a11 * F.a22 * F.a33 ≤ 2 * F.det := by
   sorry
 
-/-- The discriminant of a ternary quadratic form.
-    In some literature, Δ = -det(A). We use det(A). -/
+theorem reduced_det_one_is_sum_three_squares (F : TernaryQF) (hpos : F.PosDef) 
+    (hred : F.IsReduced) (hdet : F.det = 1) :
+    F = sumThreeSquares := by
+  sorry
+
+/-- Every positive definite ternary form of determinant 1 is equivalent 
+    to the sum of three squares. -/
+theorem equiv_sumThreeSquares_of_det_one (F : TernaryQF) (hpos : F.PosDef) (hdet : F.det = 1) :
+    F.Equiv sumThreeSquares := by
+  sorry
+
+/-- The discriminant of a ternary quadratic form. -/
 def disc (F : TernaryQF) : ℤ := F.det
 
 /-- Adjoint (or reciprocal) form of a ternary form. -/
