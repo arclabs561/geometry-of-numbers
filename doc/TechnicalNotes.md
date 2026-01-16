@@ -12,7 +12,8 @@
 *   **Problem**: Requires extensive infrastructure for quadratic forms (genus, mass formula, etc.) that is partially missing or very complex in current Mathlib4.
 *   **Decision**: Shelved in favor of the more elementary (though technically involved) Minkowski Descent.
 
-## 3. Ankeny's Descent (Archive/Ankeny.lean)
-*   **Approach**: Use a specific prime `q` and a refined lattice to descend directly.
-*   **Status**: Highly promising, but requires Dirichlet's Theorem on primes in arithmetic progressions to pick `q`.
-*   **Decision**: Kept as a reference in `Archive/` in case the Minkowski route becomes too difficult.
+## 4. Discovery: Cauchy's Proof only requires $n \equiv 3 \pmod 8$
+*   **Discovery**: The integer $4a - b^2$ that appears in Cauchy's Lemma is always $\equiv 3 \pmod 8$ when $a$ and $b$ are odd.
+*   **Parity Proof**: $4a \equiv 4 \pmod 8$ and $b^2 \equiv 1 \pmod 8$, so $4a - b^2 \equiv 3 \pmod 8$.
+*   **Impact**: We only need to prove the representation theorem for the specific case $n \equiv 3 \pmod 8$. This case avoids all powers-of-4 logic and the most difficult exception classes.
+*   **Revised Roadmap**: Focus `PolygonalNumberTheorem/Legendre/Minkowski.lean` specifically on $n \equiv 3 \pmod 8$ using a descent from $kn$ to $n$.

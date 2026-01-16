@@ -23,25 +23,34 @@ def find_lattice_points(n, u, v, radius_sq):
 def test_n(n):
     # Find u, v such that u^2 + v^2 + 1 = 0 mod n
     found = False
+    best_k = float('inf')
     for u in range(n):
         for v in range(n):
             if (u**2 + v**2 + 1) % n == 0:
-                points = find_lattice_points(n, u, v, 2*n)
+                # Radius squared up to 4n or something
+                points = find_lattice_points(n, u, v, 10*n)
                 nonzero = [p for p in points if p[0]**2 + p[1]**2 + p[2]**2 > 0]
                 if nonzero:
-                    # Sort by sum of squares
                     nonzero.sort(key=lambda x: x[3])
                     best = nonzero[0]
-                    print(f"n={n}, u={u}, v={v}, best_point={best[:3]}, sum_sq={best[3]}")
-                    if best[3] == n:
-                        print("  SUCCESS: found sum of 3 squares!")
-                    else:
-                        print(f"  FAILED: found {best[3]} instead of {n}")
+                    k = best[3] / n
+                    if k < best_k:
+                        best_k = k
+                        best_point = best[:3]
+                        best_u, best_v = u, v
                 found = True
-                break
-        if found: break
+                # Keep searching for better u, v?
+        if found: 
+            print(f"n={n:4}, u={best_u:4}, v={best_v:4}, k={best_k:6.2f}, best_point={best_point}")
+            if best_k == 1.0:
+                print("  SUCCESS: found sum of 3 squares!")
+            elif int(best_k) == best_k:
+                print(f"  FOUND: representation of {int(best_k)}n")
+            else:
+                print(f"  STRANGE: k={best_k}")
+            break
     if not found:
         print(f"n={n}: No u, v found")
 
-for n in [1019, 10007, 10009]:
+for n in [3, 5, 7, 11, 13, 15, 19]:
     test_n(n)
