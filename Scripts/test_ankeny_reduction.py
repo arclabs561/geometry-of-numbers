@@ -33,6 +33,11 @@ def test_ankeny(n):
         print("  No b found")
         return
     print(f"  Found b={b}")
+
+    # Basis determinant sanity check for the integer lattice parametrization:
+    # v1 = (n, 0, 0), v2 = (2q, 2q, 0), v3 = (b, b, 1)  => det = 2*n*q
+    det = n * (2*q) * 1
+    print(f"  Expected covolume det = 2*n*q = {det}")
     
     # Search for (x, y, z) in L with Q = 2nq
     target_Q = 2 * n * q
