@@ -1,6 +1,6 @@
 import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
-import PolygonalNumberTheorem.LowDim
+import Archive.LowDim
 
 /-!
 # Ternary Quadratic Forms

@@ -18,6 +18,10 @@ lean_lib «Experiments» {
   roots := #[`AnkenyCheck]
 }
 
+lean_lib «Archive» {
+  srcDir := "Archive"
+}
+
 lean_exe «status_report» {
   root := `Scripts.StatusReport
 }
