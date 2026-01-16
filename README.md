@@ -14,31 +14,29 @@ lake build
 lake exe status_report
 ```
 
+If `lake` isn’t on your PATH, try `"$HOME/.elan/bin/lake"` instead.
+
 Note: this workspace also has a sibling directory `../PolygonalNumberTheorem/` with
 scratch Lean files. We’re merging useful bits into this repo (copying, not deleting).
 
 ## Status
 
-| Component | Status |
-|-----------|--------|
-| Legendre easy direction | Done |
-| Legendre hard direction | 1 sorry |
-| Gauss's Eureka (triangular) | Done (mod Legendre) |
-| Lagrange (squares) | Via Mathlib |
-| Cauchy's lemma | 1 sorry |
-| Fermat polygonal (s ≥ 5) | 2 sorrys |
-
-**Total: 5 sorrys** (all depend on the Legendre hard direction)
+`lake build` succeeds, but the development files still contain `sorry` placeholders.
+Treat anything labeled “done” as “typechecks”, not “fully proved”.
 
 ## Structure
 
 ```
 PolygonalNumberTheorem/
-  Basic.lean           -- polygonal(s,n) definition, algebraic identities
-  LowDim.lean          -- 2x2, 3x3 determinant formulas
-  TernaryQF.lean       -- Ternary quadratic forms x² + y² + z²
-  SumThreeSquares.lean -- Legendre's theorem (both directions)
-  Cauchy.lean          -- Cauchy's lemma, Gauss Eureka, main theorem
+  Core/Basic.lean            -- polygonal(s,n) definition + algebra spine
+  Core/ModularSquares.lean   -- modular “u²+v²+1≡0” root existence (WIP)
+  Legendre/Exceptions.lean   -- exception set: 4^a(8k+7)
+  Legendre/Minkowski.lean    -- Minkowski/descent scaffolding (WIP)
+  Legendre/Main.lean         -- Legendre statement + glue to proof attempt (WIP)
+  Cauchy/Main.lean           -- Cauchy lemma + polygonal theorem scaffolding (WIP)
+
+Scripts/
+  StatusReport.lean          -- prints the current (manual) status summary
 ```
 
 ## Key Theorems

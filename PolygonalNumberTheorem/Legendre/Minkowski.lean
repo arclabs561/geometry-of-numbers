@@ -44,34 +44,42 @@ noncomputable def descent_basis (n : ℕ) (u v : ℤ) (hn : 0 < n) :
     have hnR : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hn)
     have h_nz : (n : ℝ) * (n : ℝ) ≠ 0 := mul_ne_zero hnR hnR
     rw [h]; exact h_nz
-  have hA : IsUnit A.det := isUnit_iff_ne_zero.mpr hdet
-  b0.map (Matrix.toLinearEquiv b0 A hA)
+  b0.map (Matrix.toLinearEquiv b0 A (isUnit_iff_ne_zero.mpr hdet))
 
 /-- The lattice of points `(x, y, z)` in `ℝ³` satisfying congruences mod n. -/
 def descent_lattice (n : ℕ) (u v : ℤ) : AddSubgroup E where
-  carrier := { p | ∃ x y z : ℤ, p = (fun i => (match i with | 0 => x | 1 => y | 2 => z : ℝ)) ∧
+  carrier := { p | ∃ x y z : ℤ, p 0 = (x : ℝ) ∧ p 1 = (y : ℝ) ∧ p 2 = (z : ℝ) ∧
                                 x ≡ u * z [ZMOD n] ∧ y ≡ v * z [ZMOD n] }
   add_mem' := by
-    rintro _ _ ⟨x1, y1, z1, rfl, hx1, hy1⟩ ⟨x2, y2, z2, rfl, hx2, hy2⟩
+    rintro _ _ ⟨x1, y1, z1, hx1_p, hy1_p, hz1_p, hx1, hy1⟩ ⟨x2, y2, z2, hx2_p, hy2_p, hz2_p, hx2, hy2⟩
     use x1 + x2, y1 + y2, z1 + z2
+    constructor; · simp [hx1_p, hx2_p]
+    constructor; · simp [hy1_p, hy2_p]
+    constructor; · simp [hz1_p, hz2_p]
     constructor
-    · ext i; fin_cases i <;> simp
-    · constructor
-      · simp [hx1, hx2, mul_add]; exact Int.ModEq.add hx1 hx2
-      · simp [hy1, hy2, mul_add]; exact Int.ModEq.add hy1 hy2
+    · rw [mul_add]; exact hx1.add hx2
+    · rw [mul_add]; exact hy1.add hy2
   zero_mem' := by
     use 0, 0, 0
-    constructor
-    · ext i; fin_cases i <;> simp
-    · constructor <;> simp
+    constructor; · simp
+    constructor; · simp
+    constructor; · simp
+    constructor <;> simp
   neg_mem' := by
-    rintro _ ⟨x, y, z, rfl, hx, hy⟩
+    rintro _ ⟨x, y, z, hx_p, hy_p, hz_p, hx, hy⟩
     use -x, -y, -z
+    constructor; · simp [hx_p]
+    constructor; · simp [hy_p]
+    constructor; · simp [hz_p]
     constructor
-    · ext i; fin_cases i <;> simp
-    · constructor
-      · rw [mul_neg]; exact hx.neg
-      · rw [mul_neg]; exact hy.neg
+    · rw [mul_neg]; exact hx.neg
+    · rw [mul_neg]; exact hy.neg
+
+/-- Characterize the descent lattice as explicit integer combinations. -/
+lemma mem_descent_lattice_iff (n : ℕ) (u v : ℤ) (p : E) :
+    p ∈ descent_lattice n u v ↔
+    ∃ x y z : ℤ, p 0 = (x : ℝ) ∧ p 1 = (y : ℝ) ∧ p 2 = (z : ℝ) ∧
+                 x ≡ u * z [ZMOD n] ∧ y ≡ v * z [ZMOD n] := Iff.rfl
 
 /-- Characterize the descent lattice as the Z-span of the basis. -/
 lemma descent_lattice_eq_zspan (n : ℕ) (u v : ℤ) (hn : 0 < n) :
@@ -82,10 +90,10 @@ lemma descent_lattice_eq_zspan (n : ℕ) (u v : ℤ) (hn : 0 < n) :
 lemma mem_descent_lattice_norm_sq_mod (n : ℕ) (u v : ℤ) (p : E)
     (hp : p ∈ descent_lattice n u v)
     (h_local : u^2 + v^2 + 1 ≡ 0 [ZMOD n]) :
-    ∃ x y z : ℤ, p = (fun i => (match i with | 0 => x | 1 => y | 2 => z : ℝ)) ∧
+    ∃ x y z : ℤ, p 0 = (x : ℝ) ∧ p 1 = (y : ℝ) ∧ p 2 = (z : ℝ) ∧
                  x^2 + y^2 + z^2 ≡ 0 [ZMOD n] := by
-  obtain ⟨x, y, z, rfl, hx, hy⟩ := hp
-  use x, y, z, rfl
+  obtain ⟨x, y, z, hx0, hy0, hz0, hx, hy⟩ := hp
+  use x, y, z, hx0, hy0, hz0
   have hsum : x^2 + y^2 + z^2 ≡ (u * z)^2 + (v * z)^2 + z^2 [ZMOD n] := by
     apply Int.ModEq.add
     · apply Int.ModEq.add
@@ -97,7 +105,14 @@ lemma mem_descent_lattice_norm_sq_mod (n : ℕ) (u v : ℤ) (p : E)
   rw [mul_zero] at h_final
   exact hsum.trans (h_norm_id ▸ h_final)
 
-/-- Every odd integer `n` satisfies the modular root condition. -/
+/-- The volume of the fundamental domain of the descent lattice. -/
+lemma descent_lattice_covolume (n : ℕ) (u v : ℤ) (hn : 0 < n) :
+    ∃ F : Set E,
+      IsAddFundamentalDomain (descent_lattice n u v) F volume ∧
+      volume F = (n ^ 2 : ℝ≥0∞) := by
+  sorry
+
+/-- There exist `u, v` such that `u² + v² + 1 ≡ 0 (mod n)` for odd `n`. -/
 lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
     ∃ u v : ℤ, u^2 + v^2 + 1 ≡ 0 [ZMOD n] := by
   sorry

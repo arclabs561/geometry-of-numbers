@@ -41,29 +41,25 @@ Proof: By descent. If 4|n and n is sum of 3 squares, then all three squares are
 even (mod 4 argument), so n/4 is also a sum of 3 squares. Repeat until n is not
 divisible by 4. Then n ≡ 0,1,2,3,4,5,6 (mod 8), never 7.
 
-## Recommended Path: Minkowski
+## Recommended Path: Minkowski (via descent, focused on \(n \equiv 3 \pmod 8\))
 
-The geometry-of-numbers approach is cleanest for formalization:
+The straightforward “one-shot” Minkowski volume argument is delicate here because the
+useful lattice for enforcing the congruence conditions tends to have covolume \(n^2\),
+and the ball volume bound is not uniformly strong enough to land a point with the
+right norm for all \(n\) we care about.
 
-### Step 1: Odd n ≢ 7 (mod 8)
+The approach currently reflected in the code is therefore a **Minkowski + descent**
+strategy:
 
-For odd n, the lattice is ℤ³. We need a point (x,y,z) ∈ ℤ³ with 0 < x²+y²+z² ≤ n.
+- Prove representability for numbers in the specific residue class \(n \equiv 3 \pmod 8\)
+  (this is the only case needed for Cauchy’s lemma, via \(4a - b^2 \equiv 3 \pmod 8\)).
+- Use Minkowski to show **some** multiple \(k n\) is represented by \(x^2+y^2+z^2\),
+  then use a descent step to reduce from \(k n\) to \(n\).
 
-The ball B(√n) has volume (4π/3)n^{3/2}. For n ≥ 2, this exceeds 8 = 2³·det(ℤ³),
-so Minkowski's theorem gives a nonzero lattice point.
+Implementation notes:
 
-### Step 2: n ≡ 2 (mod 4)
-
-Since n ≡ 2 (mod 4) implies n ≢ 7 (mod 8), and squares mod 4 are {0,1}, we need
-exactly two odd squares. Similar Minkowski argument on a sublattice.
-
-### Step 3: n ≡ 1 (mod 4)
-
-Similar to Step 1, but may need sublattice for parity.
-
-### Step 4: Descent for n ≡ 0 (mod 4)
-
-Already done in `SumThreeSquares.lean`: if 4|n and n = x²+y²+z², then n/4 = x'²+y'²+z'².
+- The current scaffold lives in `PolygonalNumberTheorem/Legendre/Minkowski.lean`.
+- The exception set definition is in `PolygonalNumberTheorem/Legendre/Exceptions.lean`.
 
 ## Mathlib Resources
 
