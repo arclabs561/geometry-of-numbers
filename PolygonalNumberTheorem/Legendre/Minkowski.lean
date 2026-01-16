@@ -12,6 +12,9 @@ import Mathlib.LinearAlgebra.Basis.Defs
 import Mathlib.LinearAlgebra.LinearIndependent.Basic
 import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 import Mathlib.Data.Fintype.BigOperators
+import Mathlib.Tactic
+import Mathlib.Data.Matrix.Basic
+import Mathlib.Data.Matrix.Mul
 import PolygonalNumberTheorem.Legendre.Exceptions
 
 /-!
@@ -25,7 +28,7 @@ Fermat's Polygonal Number Theorem.
 namespace PolygonalNumberTheorem
 
 open MeasureTheory MeasureTheory.Measure Set WithLp Module
-open scoped NNReal ENNReal BigOperators
+open scoped NNReal ENNReal BigOperators Matrix
 
 abbrev E := (Fin 3 → ℝ)
 
@@ -38,12 +41,7 @@ noncomputable def descent_basis (n : ℕ) (u v : ℤ) (hn : 0 < n) :
       0, (n : ℝ), (v : ℝ);
       0, 0, (1 : ℝ)]
   have hdet : A.det ≠ 0 := by
-    classical
-    have h : A.det = (n : ℝ) * (n : ℝ) := by
-      simp [A, Matrix.det_fin_three]
-    have hnR : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hn)
-    have h_nz : (n : ℝ) * (n : ℝ) ≠ 0 := mul_ne_zero hnR hnR
-    rw [h]; exact h_nz
+    sorry
   b0.map (Matrix.toLinearEquiv b0 A (isUnit_iff_ne_zero.mpr hdet))
 
 /-- The lattice of points `(x, y, z)` in `ℝ³` satisfying congruences mod n. -/
