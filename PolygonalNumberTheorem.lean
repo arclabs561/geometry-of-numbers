@@ -1,4 +1,5 @@
 import PolygonalNumberTheorem.Core.Basic
 import PolygonalNumberTheorem.Core.ModularSquares
 import PolygonalNumberTheorem.Legendre.Main
+import PolygonalNumberTheorem.Legendre.Ankeny
 import PolygonalNumberTheorem.Cauchy.Main

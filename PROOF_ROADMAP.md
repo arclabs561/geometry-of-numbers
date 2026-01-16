@@ -41,25 +41,27 @@ Proof: By descent. If 4|n and n is sum of 3 squares, then all three squares are
 even (mod 4 argument), so n/4 is also a sum of 3 squares. Repeat until n is not
 divisible by 4. Then n ≡ 0,1,2,3,4,5,6 (mod 8), never 7.
 
-## Recommended Path: Minkowski (via descent, focused on \(n \equiv 3 \pmod 8\))
+## Recommended Path: Ankeny's Method (Geometry of Numbers, focused on \(n \equiv 3 \pmod 8\))
 
-The straightforward “one-shot” Minkowski volume argument is delicate here because the
-useful lattice for enforcing the congruence conditions tends to have covolume \(n^2\),
-and the ball volume bound is not uniformly strong enough to land a point with the
-right norm for all \(n\) we care about.
+The current active path is **Ankeny's 1957 proof**, which uses Minkowski's theorem on a
+carefully constructed lattice to find a representation of \(2nq\) as a specific ternary form,
+which then reduces to a sum of two squares via Euler's theorem.
 
-The approach currently reflected in the code is therefore a **Minkowski + descent**
-strategy:
+### Case: \(n \equiv 3 \pmod 8\)
 
-- Prove representability for numbers in the specific residue class \(n \equiv 3 \pmod 8\)
-  (this is the only case needed for Cauchy’s lemma, via \(4a - b^2 \equiv 3 \pmod 8\)).
-- Use Minkowski to show **some** multiple \(k n\) is represented by \(x^2+y^2+z^2\),
-  then use a descent step to reduce from \(k n\) to \(n\).
+This case is sufficient for Cauchy's Polygonal Number Theorem.
 
-Implementation notes:
+1.  **Prime Selection**: Find prime \(q \equiv 1 \pmod 4\) such that \(q \equiv -1/2 \pmod n\).
+    Existence follows from Dirichlet's theorem on arithmetic progressions.
+2.  **Lattice Construction**: Use a lattice with covolume \(2nq\) satisfying congruences.
+3.  **Minkowski Application**: Guaranteed point gives \(2qx^2 + y^2 + nz^2 = 2nq\).
+4.  **Reduction**: Show \(n - x^2\) is a sum of two squares \(u^2 + v^2\), yielding \(n = x^2 + u^2 + v^2\).
 
-- The current scaffold lives in `PolygonalNumberTheorem/Legendre/Minkowski.lean`.
-- The exception set definition is in `PolygonalNumberTheorem/Legendre/Exceptions.lean`.
+Implementation:
+
+- Main scaffold: `PolygonalNumberTheorem/Legendre/Ankeny.lean`
+- Dirichlet dependency: `Mathlib.NumberTheory.LSeries.PrimesInAP`
+- 2-squares dependency: `Mathlib.NumberTheory.SumTwoSquares`
 
 ## Mathlib Resources
 
