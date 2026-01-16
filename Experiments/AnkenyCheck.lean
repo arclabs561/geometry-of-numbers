@@ -1,6 +1,7 @@
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
 import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
+import Mathlib.NumberTheory.SumTwoSquares
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic
 
@@ -22,6 +23,17 @@ open scoped NumberTheorySymbols
 #check ZMod.isSquare_of_jacobiSym_eq_one
 #check ZMod.chineseRemainder
 #check Int.modEq_and_modEq_iff_modEq_mul
+
+-- Scratch probes for the `reduction_to_sum_three_squares` step:
+-- (We want to reuse Fermat/SumTwoSquares results instead of re-proving them.)
+#check Nat.Prime.sq_add_sq
+#check Nat.eq_sq_add_sq_of_isSquare_mod_neg_one
+#check Nat.eq_sq_add_sq_iff
+#check Nat.eq_sq_add_sq_iff_eq_sq_mul
+
+-- “Toy” application: if we can show `IsSquare (-1 : ZMod n)`, we get a sum-of-two-squares witness.
+example {n : ℕ} (h : IsSquare (-1 : ZMod n)) : ∃ x y : ℕ, n = x ^ 2 + y ^ 2 :=
+  Nat.eq_sq_add_sq_of_isSquare_mod_neg_one h
 
 def checkAnkenyCondition (n : ℕ) (q : ℕ) : String :=
   if n % 8 != 3 then "n not 3 mod 8"
