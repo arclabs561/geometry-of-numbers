@@ -13,6 +13,7 @@ import Mathlib.Tactic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
 import PolygonalNumberTheorem.Legendre.Exceptions
+import PolygonalNumberTheorem.Legendre.AnkenyLemmas
 
 /-!
 # Ankeny's 1957 Proof of Legendre's Three-Squares Theorem
@@ -32,10 +33,83 @@ open scoped NNReal ENNReal BigOperators Matrix
     For `n ≡ 3 (mod 8)`, there exists a prime `q ≡ 1 (mod 4)` such that `q ≡ -1/2 (mod n)`. -/
 lemma exists_ankeny_prime (n : ℕ) (hn : n % 8 = 3) :
     ∃ q : ℕ, Nat.Prime q ∧ q % 4 = 1 ∧ (q : ZMod n) = - (2 : ZMod n)⁻¹ := by
-  -- 1. Combine congruences mod 4 and mod n via CRT.
-  -- 2. Check gcd(target, 4n) = 1.
-  -- 3. Apply Dirichlet's theorem.
-  sorry
+  have hn_odd : n % 2 = 1 := by omega
+  let h4n := coprime_four_n n hn_odd
+  let a4 : ZMod 4 := 1
+  let an : ZMod n := - (2 : ZMod n)⁻¹
+  obtain ⟨a, ha⟩ := (ZMod.chineseRemainder h4n).surjective (a4, an)
+  
+  have h_unit : IsUnit a := by
+    have hu2 : IsUnit (2 : ZMod n) := isUnit_two_zmod n hn_odd
+    have hu2inv : IsUnit ((2 : ZMod n)⁻¹) := by
+      -- `ZMod` has a total `Inv`, but for units we can certify `a⁻¹` is a unit using the
+      -- characteristic lemmas `inv_mul_of_unit` / `mul_inv_of_unit`.
+      refine (isUnit_iff_exists_inv).2 ?_
+      exact ⟨(2 : ZMod n), (ZMod.inv_mul_of_unit (2 : ZMod n) hu2)⟩
+    have hun : IsUnit an := by
+      dsimp [an]
+      exact IsUnit.neg hu2inv
+    have : IsUnit ((ZMod.chineseRemainder h4n) a) := by
+      -- Transport to `ZMod 4 × ZMod n` via `ha`, then use `Prod.isUnit_iff`.
+      -- `ha : chineseRemainder a = (a4, an)`
+      -- so it suffices to show `IsUnit (a4, an)`.
+      -- (Then `a4 = 1` and `an` is a unit because `2` is a unit mod odd `n`.)
+      rw [ha, Prod.isUnit_iff]
+      exact ⟨by simpa [a4], hun⟩
+    -- Pull `IsUnit` back across the ring equivalence.
+    exact (MulEquiv.isUnit_map (f := (ZMod.chineseRemainder h4n)) (x := a)).1 this
+  
+  let m := a.val
+  have h_nz : 4 * n ≠ 0 := by omega
+  haveI : NeZero (4 * n) := ⟨h_nz⟩
+  have h_m : (m : ZMod (4 * n)) = a := by
+    rw [ZMod.natCast_val, show (ZMod.cast : ZMod (4 * n) → ZMod (4 * n)) = id from ZMod.cast_id']
+    rfl
+  have hm_unit : IsUnit (m : ZMod (4 * n)) := h_m.symm ▸ h_unit
+  
+  obtain ⟨q, hqp, hq_mod⟩ := (Nat.infinite_setOf_prime_and_eq_mod hm_unit).nonempty
+  use q
+  constructor; · exact hqp
+  
+  have hq_a : (q : ZMod (4 * n)) = a := hq_mod.trans h_m
+  constructor
+  · -- q % 4 = 1
+    have h_comp_fst :
+        ∀ x : ZMod (4 * n),
+          ZMod.castHom (dvd_mul_right 4 n) (ZMod 4) x = (ZMod.chineseRemainder h4n x).1 := by
+      intro x
+      -- `ZMod.chineseRemainder` maps via `castHom` into the product; `fst` recovers the mod-4 cast.
+      simp [ZMod.chineseRemainder, ZMod.castHom_apply]
+    let f : ZMod (4 * n) →+* ZMod 4 := ZMod.castHom (dvd_mul_right 4 n) (ZMod 4)
+    have ha1 : (ZMod.chineseRemainder h4n a).1 = a4 := by
+      -- `ha : chineseRemainder a = (a4, an)`
+      simpa using congrArg Prod.fst ha
+    have hfa : f a = a4 := by
+      simpa [f] using (h_comp_fst a).trans ha1
+    have hq4z : (q : ZMod 4) = a4 := by
+      have hq4' : f (q : ZMod (4 * n)) = f a := congrArg f hq_a
+      -- `f` on a natural cast is just the natural cast in `ZMod 4`.
+      simpa [f, ZMod.castHom_apply, ZMod.cast_natCast (h := dvd_mul_right 4 n), hfa] using hq4'
+    have : q % 4 = 1 := by
+      have hval : (q : ZMod 4).val = (a4 : ZMod 4).val := congrArg ZMod.val hq4z
+      -- Fix the argument order: `ZMod.val_natCast 4 q`.
+      simpa [a4, ZMod.val_natCast] using hval
+    exact this
+  · -- q ≡ -1/2 mod n
+    have h_comp_snd :
+        ∀ x : ZMod (4 * n),
+          ZMod.castHom (dvd_mul_left n 4) (ZMod n) x = (ZMod.chineseRemainder h4n x).2 := by
+      intro x
+      simp [ZMod.chineseRemainder, ZMod.castHom_apply]
+    let f : ZMod (4 * n) →+* ZMod n := ZMod.castHom (dvd_mul_left n 4) (ZMod n)
+    have ha2 : (ZMod.chineseRemainder h4n a).2 = an := by
+      simpa using congrArg Prod.snd ha
+    have hfa : f a = an := by
+      simpa [f] using (h_comp_snd a).trans ha2
+    have hqn : (q : ZMod n) = an := by
+      have hqn' : f (q : ZMod (4 * n)) = f a := congrArg f hq_a
+      simpa [f, ZMod.castHom_apply, ZMod.cast_natCast (h := dvd_mul_left n 4), hfa] using hqn'
+    exact hqn
 
 /-- Existence of `b` such that `b² ≡ -n (mod 4q)`. -/
 lemma exists_ankeny_b (n q : ℕ) (hn : n % 8 = 3) (hq : Nat.Prime q) (hq1 : q % 4 = 1)
