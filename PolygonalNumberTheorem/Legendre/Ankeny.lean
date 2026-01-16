@@ -1,6 +1,7 @@
 import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.Data.ZMod.Basic
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
+import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 import Mathlib.Analysis.Convex.Measure
 import Mathlib.MeasureTheory.Group.GeometryOfNumbers
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
@@ -28,6 +29,7 @@ namespace PolygonalNumberTheorem
 
 open MeasureTheory MeasureTheory.Measure Set Module Matrix
 open scoped NNReal ENNReal BigOperators Matrix
+open scoped NumberTheorySymbols
 
 /-- Existence of the Ankeny prime `q`.
     For `n ≡ 3 (mod 8)`, there exists a prime `q ≡ 1 (mod 4)` such that `q ≡ -1/2 (mod n)`. -/
@@ -115,8 +117,18 @@ lemma exists_ankeny_prime (n : ℕ) (hn : n % 8 = 3) :
 lemma exists_ankeny_b (n q : ℕ) (hn : n % 8 = 3) (hq : Nat.Prime q) (hq1 : q % 4 = 1)
     (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) :
     ∃ b : ℤ, b^2 ≡ - (n : ℤ) [ZMOD (4 * q)] := by
-  -- 1. Show (-n/q) = 1 using quadratic reciprocity.
-  -- 2. Lift solution mod q to mod 4q.
+  -- TODO (Ankeny 1957): pick `q` so that `-n` is a square mod `q`, then lift.
+  --
+  -- The intended proof path is:
+  -- - From `hq_mod` show `n ∣ 2q + 1`, hence `-2q ≡ 1 (mod n)`.
+  -- - Use Jacobi symbol computations:
+  --   `J(-2q | n) = J(1 | n) = 1`, and since `n ≡ 3 (mod 8)` we have `J(-2 | n) = 1`,
+  --   hence `J(q | n) = 1`.
+  -- - With `q % 4 = 1`, quadratic reciprocity gives `J(n | q) = 1`, and since also `J(-1|q)=1`,
+  --   conclude `J(-n | q) = 1`.
+  -- - For prime `q`, `J(-n|q)=1` implies `IsSquare (-(n:ℤ) : ZMod q)`.
+  -- - Finally, lift the square root to modulus `4*q` using `ZMod.chineseRemainder` and turn it
+  --   back into an `Int.ModEq` statement.
   sorry
 
 /-- The Ankeny lattice `L = { (x,y,z) : x ≡ y (mod n), y ≡ bz (mod 2q) }`. -/

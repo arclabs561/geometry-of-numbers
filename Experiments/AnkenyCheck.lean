@@ -1,5 +1,6 @@
-import Mathlib.Data.Nat.Prime
+import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
+import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic
 
@@ -12,17 +13,22 @@ This is not a proof. It’s a small “compute the congruence conditions” scri
 -/
 
 open Nat
+open scoped NumberTheorySymbols
+
+-- Scratch “API probes” for the `exists_ankeny_b` step in `Legendre/Ankeny.lean`.
+#check jacobiSym.at_neg_two
+#check jacobiSym.quadratic_reciprocity_one_mod_four
+#check jacobiSym.mod_left'
+#check ZMod.isSquare_of_jacobiSym_eq_one
+#check ZMod.chineseRemainder
+#check Int.modEq_and_modEq_iff_modEq_mul
 
 def checkAnkenyCondition (n : ℕ) (q : ℕ) : String :=
-  if ¬ n.Squarefree then "n not squarefree"
-  else if n % 8 != 3 then "n not 3 mod 8"
+  if n % 8 != 3 then "n not 3 mod 8"
   else if ¬ q.Prime then "q not prime"
   else if q % (4 * n) != (4 * n - 1) then "q not -1 mod 4n"
   else
-    let leg_minus_one := LegendreSymbol.legendre (-1 : ℤ) q
-    let leg_n := LegendreSymbol.legendre n q
-    let leg_minus_n := LegendreSymbol.legendre (-n : ℤ) q
-    s!"n={n}, q={q}: (-1/q)={leg_minus_one}, (n/q)={leg_n}, (-n/q)={leg_minus_n}"
+    s!"n={n}, q={q}: passes basic congruence checks"
 
 -- Find the first such prime q for a given n
 def findAnkenyPrime (n : ℕ) (search_limit : ℕ) : Option ℕ :=
@@ -36,5 +42,5 @@ def main : IO Unit := do
     | some q => IO.println (checkAnkenyCondition n q)
     | none => IO.println s!"No prime found for n={n} within limit"
 
-#eval main
+-- `#eval` is intentionally omitted here; keep this file as a static scratchpad.
 
