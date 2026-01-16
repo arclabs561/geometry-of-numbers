@@ -331,13 +331,140 @@ def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ :=
 
 /-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`. -/
 lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ)
+    (hn_odd : n % 2 = 1)
+    (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
     (h_lat : (fun i => match i with | 0 => (x:ℝ) | 1 => (y:ℝ) | 2 => (z:ℝ)) ∈ ankeny_lattice n q b)
     (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) :
     (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * n * q)] := by
-  -- Proof:
-  -- Q ≡ -x^2 + y^2 ≡ 0 (mod n)
-  -- Q ≡ (bz)^2 + nz^2 ≡ 0 (mod 2q)
-  sorry
+  -- Unpack lattice membership into the two congruence conditions.
+  rcases h_lat with ⟨x', y', z', hx', hy', hz', hxy, hybz⟩
+  -- The membership witness must match the input `(x,y,z)` (by `Int.cast` injectivity into `ℝ`).
+  have hx_int : x' = x := by
+    -- hx' : (x:ℝ) = (x':ℝ)
+    have : ((x' : ℝ) = (x : ℝ)) := by simpa using hx'.symm
+    exact_mod_cast this
+  have hy_int : y' = y := by
+    have : ((y' : ℝ) = (y : ℝ)) := by simpa using hy'.symm
+    exact_mod_cast this
+  have hz_int : z' = z := by
+    have : ((z' : ℝ) = (z : ℝ)) := by simpa using hz'.symm
+    exact_mod_cast this
+
+  have hxy' : x ≡ y [ZMOD (n : ℤ)] := by simpa [hx_int, hy_int] using hxy
+  have hybz' : y ≡ b * z [ZMOD (2 * q : ℤ)] := by
+    simpa [hy_int, hz_int, Nat.cast_mul] using hybz
+
+  -- First, show `Q ≡ 0 (mod n)`.
+  have hu2n : IsUnit (2 : ZMod n) := isUnit_two_zmod n hn_odd
+  have h2q_zmod : (2 : ZMod n) * (q : ZMod n) = (-1 : ZMod n) := by
+    have hmul : (2 : ZMod n) * (2 : ZMod n)⁻¹ = 1 :=
+      ZMod.mul_inv_of_unit (2 : ZMod n) hu2n
+    calc
+      (2 : ZMod n) * (q : ZMod n)
+          = (2 : ZMod n) * (- (2 : ZMod n)⁻¹) := by simpa [hq_mod]
+      _ = - ((2 : ZMod n) * (2 : ZMod n)⁻¹) := by simp [mul_neg]
+      _ = -1 := by simpa [hmul]
+  have hn_dvd : n ∣ (2 * q + 1) := by
+    have hz : ((2 * q + 1 : ℕ) : ZMod n) = 0 := by
+      -- cast `(2*q+1)` into `ZMod n` and simplify using `h2q_zmod`.
+      simpa [Nat.cast_add, Nat.cast_mul, h2q_zmod] using
+        congrArg (fun t => t + (1 : ZMod n)) h2q_zmod
+    exact (ZMod.natCast_eq_zero_iff (2 * q + 1) n).1 hz
+  have h2q_mod_n : ((2 * q : ℤ)) ≡ (-1 : ℤ) [ZMOD (n : ℤ)] := by
+    -- `n ∣ 2q+1` implies `2q ≡ -1 (mod n)`.
+    apply (Int.modEq_iff_dvd).2
+    have : (n : ℤ) ∣ (2 * q + 1 : ℤ) := Int.natCast_dvd_natCast.2 hn_dvd
+    -- `(-1) - (2q) = -(2q+1)`
+    simpa [sub_eq_add_neg, add_assoc, add_comm, add_left_comm, mul_assoc, mul_comm, mul_left_comm]
+      using (Int.dvd_neg.2 this)
+
+  have hx2y2 : x ^ 2 ≡ y ^ 2 [ZMOD (n : ℤ)] :=
+    Int.ModEq.pow 2 hxy'
+
+  have hQ_mod_n : (ankeny_Q n q x y z) ≡ 0 [ZMOD (n : ℤ)] := by
+    -- Reduce `Q` mod `n`:
+    -- `n*z^2 ≡ 0`, and `2q*x^2 ≡ (-1)*x^2`, and `y^2 ≡ x^2`.
+    have hz0 : (n : ℤ) ∣ (n * z ^ 2 : ℤ) := by exact dvd_mul_right _ _
+    have hterm_z : (n * z ^ 2 : ℤ) ≡ 0 [ZMOD (n : ℤ)] := hz0.modEq_zero_int
+    have hterm_2qx : ((2 * q : ℤ) * x ^ 2) ≡ ((-1 : ℤ) * x ^ 2) [ZMOD (n : ℤ)] :=
+      (Int.ModEq.mul_right (x ^ 2) h2q_mod_n)
+    have hy2x2 : (y ^ 2 : ℤ) ≡ (x ^ 2 : ℤ) [ZMOD (n : ℤ)] :=
+      by simpa [pow_two, mul_assoc, mul_comm, mul_left_comm] using hx2y2.symm
+    -- Now assemble.
+    -- Start from `Q = 2*q*x^2 + y^2 + n*z^2`.
+    have h :=
+      (hterm_2qx.add (hy2x2.add hterm_z))  -- note: parentheses are `2q*x^2 + (y^2 + n*z^2)`
+    -- normalize associativity and the `ankeny_Q` definition
+    simpa [ankeny_Q, mul_assoc, add_assoc, add_left_comm, add_comm] using h
+
+  -- Second, show `Q ≡ 0 (mod 2q)`.
+  have hQ_mod_2q : (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * q : ℤ)] := by
+    -- `2*q*x^2` is 0 mod `2*q`.
+    have h0a : (2 * q : ℤ) ∣ (2 * (q : ℤ) * x ^ 2) := by
+      -- `2*q` divides `2*q*x^2`.
+      refine dvd_mul_of_dvd_left ?_ (x ^ 2)
+      simp [Nat.cast_mul, mul_assoc]
+    have hterm0 : (2 * (q : ℤ) * x ^ 2) ≡ 0 [ZMOD (2 * q : ℤ)] := h0a.modEq_zero_int
+    -- From `y ≡ b*z (mod 2q)`, get `y^2 ≡ (b*z)^2`.
+    have hy2 : y ^ 2 ≡ (b * z) ^ 2 [ZMOD (2 * q : ℤ)] :=
+      Int.ModEq.pow 2 hybz'
+    -- From `hb : b^2 ≡ -n (mod 2q)`, deduce `(b^2 + n) ≡ 0`.
+    have hb0 : (b ^ 2 + (n : ℤ)) ≡ 0 [ZMOD (2 * q : ℤ)] := by
+      -- add `n` to both sides of `b^2 ≡ -n`
+      have := hb.add_right (n : ℤ)
+      -- RHS: `(-n) + n = 0`
+      simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using this
+    -- Multiply `hb0` by `z^2` to get `(b^2 + n) * z^2 ≡ 0`.
+    have hb0_mul : (b ^ 2 + (n : ℤ)) * z ^ 2 ≡ 0 [ZMOD (2 * q : ℤ)] := by
+      -- `mul_right` gives `… ≡ 0 * z^2`; `simp` turns that into `… ≡ 0`.
+      simpa using (Int.ModEq.mul_right (z ^ 2) hb0)
+    -- Bundle `(b*z)^2 + n*z^2` as `(b^2 + n) * z^2` using a literal equality.
+    have hsum_eq : ((b * z) ^ 2 + (n : ℤ) * z ^ 2) = (b ^ 2 + (n : ℤ)) * z ^ 2 := by
+      simp [pow_two]
+      ring
+    have hsum :
+        ((b * z) ^ 2 + (n : ℤ) * z ^ 2) ≡ ((b ^ 2 + (n : ℤ)) * z ^ 2) [ZMOD (2 * q : ℤ)] := by
+      simpa [hsum_eq] using
+        (Int.ModEq.rfl :
+          ((b * z) ^ 2 + (n : ℤ) * z ^ 2) ≡ ((b * z) ^ 2 + (n : ℤ) * z ^ 2) [ZMOD (2 * q : ℤ)])
+    -- Now assemble: first show `y^2 + n*z^2 ≡ 0 (mod 2q)`, then add the `2q*x^2` term (which is 0).
+    have hy2' :
+        (y ^ 2 + (n : ℤ) * z ^ 2) ≡ ((b * z) ^ 2 + (n : ℤ) * z ^ 2) [ZMOD (2 * q : ℤ)] :=
+      hy2.add_right _
+    have hrest : (y ^ 2 + (n : ℤ) * z ^ 2) ≡ 0 [ZMOD (2 * q : ℤ)] :=
+      hy2'.trans (hsum.trans hb0_mul)
+    have htotal :
+        (2 * (q : ℤ) * x ^ 2 + (y ^ 2 + (n : ℤ) * z ^ 2)) ≡ 0 [ZMOD (2 * q : ℤ)] :=
+      hterm0.add hrest
+    simpa [ankeny_Q, mul_assoc, add_assoc, add_comm, add_left_comm] using htotal
+
+  -- Combine the two congruences using coprimality: `gcd(n, 2q) = 1`.
+  have hcop_nq : Nat.Coprime n q := by
+    -- `q ≡ -1/2 (mod n)` implies `q` is a unit in `ZMod n`.
+    have huq : IsUnit (q : ZMod n) := by
+      have hu2 : IsUnit (2 : ZMod n) := isUnit_two_zmod n hn_odd
+      have hu2inv : IsUnit ((2 : ZMod n)⁻¹) := by
+        refine (isUnit_iff_exists_inv).2 ?_
+        exact ⟨(2 : ZMod n), (ZMod.inv_mul_of_unit (2 : ZMod n) hu2)⟩
+      have : IsUnit (-(2 : ZMod n)⁻¹) := IsUnit.neg hu2inv
+      simpa [hq_mod] using this
+    exact ((ZMod.isUnit_iff_coprime q n).1 huq).symm
+  have hcop_n2 : Nat.Coprime n 2 := by
+    have h2 : Nat.Coprime 2 n := by
+      apply (Nat.prime_two.coprime_iff_not_dvd).mpr
+      intro h
+      have : n % 2 = 0 := Nat.dvd_iff_mod_eq_zero.mp h
+      rw [hn_odd] at this; contradiction
+    exact h2.symm
+  have hcop_n2q : Nat.Coprime n (2 * q) := (hcop_n2.mul_right hcop_nq)
+  have hmn : (n : ℤ).natAbs.Coprime (2 * q : ℤ).natAbs := by
+    simpa using hcop_n2q
+  have hboth : (ankeny_Q n q x y z) ≡ 0 [ZMOD (n : ℤ)] ∧ (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * q : ℤ)] :=
+    ⟨hQ_mod_n, hQ_mod_2q⟩
+  have : (ankeny_Q n q x y z) ≡ 0 [ZMOD ((n : ℤ) * (2 * q : ℤ))] :=
+    (Int.modEq_and_modEq_iff_modEq_mul (a := ankeny_Q n q x y z) (b := 0) (m := (n : ℤ)) (n := (2 * q : ℤ)) hmn).1 hboth
+  -- normalize `n * (2*q)` to `2*n*q`
+  simpa [mul_assoc, mul_comm, mul_left_comm, Nat.cast_mul] using this
 
 /-- Minkowski application: there exists a representation `2qx² + y² + nz² = 2nq`. -/
 lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : Nat.Prime q)
