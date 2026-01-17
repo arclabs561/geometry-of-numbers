@@ -35,6 +35,12 @@ def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
   let row_j := B j
   B.updateRow k row_j |>.updateRow j row_k
 
+/-- Gram-Schmidt orthogonalization step for the LLL conditions.
+    Most implementations use floating-point or rational approximations for these values. -/
+noncomputable def gram_schmidt_step {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) : 
+    (Fin n → Fin n → ℝ) × (Fin n → ℝ) :=
+  sorry
+
 /-- Compute the potential function D = Π d_i, where d_i is the determinant of the 
     sublattice spanned by the first i vectors. 
     This function is used to prove the termination of the LLL algorithm. -/

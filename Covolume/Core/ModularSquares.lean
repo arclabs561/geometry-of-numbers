@@ -40,24 +40,22 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p k : ℕ) [hp : Fact p.Pr
   | zero => use 0, 0; simp [Int.ModEq]
   | succ k' ih =>
     obtain ⟨u0, v0, h0⟩ := ih
-    -- Lift from p^k' to p^{k'+1} using Hensel's lemma logic.
-    -- For k'=0, use prime case existence.
-    -- For k'>0, at least one of u0, v0 is a unit mod p.
+    -- We seek x, y such that (u0 + x*p^k')^2 + (v0 + y*p^k')^2 + 1 ≡ 0 (mod p^{k'+1}).
+    -- Expanding yields: (u0^2 + v0^2 + 1) + 2*p^k'*(u0*x + v0*y) + p^{2k'}*(x^2 + y^2) ≡ 0 (mod p^{k'+1}).
+    -- Since k' >= 0, p^{2k'} is 0 mod p^{k'+1} for k' >= 1.
+    -- The case k' = 0 uses the prime case solvability.
     sorry
 
 /-- Odd modulus case: for odd `n`, there exist integers `u, v` such that
 `u^2 + v^2 + 1 ≡ 0 [ZMOD n]`. -/
 lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
     ∃ u v : ℤ, u^2 + v^2 + 1 ≡ 0 [ZMOD n] := by
-  -- For n = 1, (0,0) works.
+  -- For n = 1, (0,0) is a valid solution.
   rcases n with _ | n
   · simp [Odd] at hn
   rcases n with _ | n'
   · use 0, 0; simp [Int.ModEq]
-  
-  -- Use prime factorization and CRT
-  -- n + 2 is >= 2 and odd.
-  let n_pos := n' + 2
+  -- For n > 1, use prime power decomposition and CRT.
   sorry
 
 end Covolume

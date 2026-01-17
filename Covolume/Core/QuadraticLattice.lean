@@ -20,12 +20,17 @@ namespace Covolume
 structure QuadraticLattice (n : ℕ) (Q : QuadraticForm ℤ (Fin n → ℤ)) where
   /-- The geometric lattice in ℝⁿ. -/
   lattice : Submodule ℤ (Fin n → ℝ)
-  /-- The volume of the fundamental domain. -/
+  /-- Proof that the submodule has discrete topology. -/
+  discrete : DiscreteTopology lattice
+  /-- Proof that it is a full-rank discrete subgroup. -/
+  is_lattice : IsZLattice ℝ lattice
+  /-- The volume of the fundamental domain (determinant of the lattice). -/
   covolume : ℝ
-  /-- Relation between lattice norm and quadratic form representation. -/
-  represents_iff : ∀ (m : ℤ) (v : Fin n → ℤ), 
-    Q v = m ↔ (fun i => (v i : ℝ)) ∈ lattice ∧ ‖(fun i => (v i : ℝ))‖^2 = (m : ℝ)
-  /-- Proof that the volume matches the determinant of the basis. -/
+  /-- The lattice norm squared matches the quadratic form value for integer vectors. -/
+  norm_sq_eq : ∀ (v : Fin n → ℤ), ‖(fun i => (v i : ℝ))‖^2 = (Q v : ℝ)
+  /-- Integer vectors are in the lattice iff they satisfy specific congruences (embedded in the lattice definition). -/
+  mem_lattice_iff : ∀ (v : Fin n → ℤ), (fun i => (v i : ℝ)) ∈ lattice ↔ True -- Placeholder for specific lattice congruences
+  /-- The measure of the fundamental domain matches the covolume. -/
   volume_eq : sorry
 
 end Covolume
