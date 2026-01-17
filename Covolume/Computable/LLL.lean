@@ -16,6 +16,8 @@ This file contains a computable implementation of the Lenstra–Lenstra–Lovás
 
 namespace Covolume.Computable
 
+open InnerProductSpace WithLp
+
 /-- The status of an LLL reduction step. -/
 inductive LLLStatus
   | reduced
@@ -40,11 +42,14 @@ def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
     μ_{i,j} = (b_i, b*_j) / (b*_j, b*_j) -/
 noncomputable def gram_schmidt_projections {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) : 
     (Fin n → Fin n → ℝ) :=
-  sorry
+  fun i j => 
+    let Bstar := gramSchmidt ℝ (fun k => toLp 2 (B k))
+    inner ℝ (toLp 2 (B i)) (Bstar j) / ‖Bstar j‖^2
 
 /-- Compute the squared norm of the i-th Gram-Schmidt vector. -/
 noncomputable def gso_norm_sq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) : ℝ :=
-  sorry
+  let Bstar := gramSchmidt ℝ (fun k => toLp 2 (B k))
+  ‖Bstar i‖^2
 
 /-- Compute the potential function D = Π d_i, where d_i is the determinant of the 
     sublattice spanned by the first i vectors. 
