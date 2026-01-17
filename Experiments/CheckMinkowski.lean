@@ -11,6 +11,7 @@ import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.LinearAlgebra.Basis.Defs
 import Mathlib.Data.Set.Countable
 import Mathlib.Tactic
+import Covolume.Legendre.Ankeny
 
 noncomputable section
 
@@ -59,6 +60,9 @@ open MeasureTheory MeasureTheory.Measure
 #check MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_le_measure
 #check ZLattice.covolume_eq_det
 #check ZLattice.covolume_eq_measure_fundamentalDomain
+#check Covolume.exists_ankeny_prime
+#check Covolume.exists_ankeny_b
+#check Covolume.exists_ankeny_representation
 
 /-!
 ## Toy 1: ZSpan fundamental domain and volume for a simple ℤ-span lattice in `ℝ^3`
@@ -459,4 +463,47 @@ def checkMinkowskiAvailable : IO Unit := do
 def main : IO Unit := checkMinkowskiAvailable
 
 #eval main
+
+/-!
+## Ankeny: Minkowski “call-site” skeleton
+
+This section is intentionally small: it sets up the *convex symmetric set* we want to feed to
+Minkowski, but does not yet prove the key measure inequality (that is the real work).
+
+The Ankeny quadratic form on `ℝ^3` is
+\[
+  Q(x) = 2q x_0^2 + x_1^2 + n x_2^2.
+\]
+The associated ellipsoid is the preimage of a Euclidean ball under a diagonal linear map.
+-/
+
+section AnkenyMinkowskiSkeleton
+
+open MeasureTheory
+
+abbrev E3 := Fin 3 → ℝ
+
+-- Weighted quadratic form on `E3`.
+def ankenyQReal (n q : ℝ) (x : E3) : ℝ :=
+  (2 * q) * (x 0) ^ 2 + (x 1) ^ 2 + n * (x 2) ^ 2
+
+-- The open ellipsoid `{x | Q(x) < R^2}`.
+def ankenyEllipsoid (n q R : ℝ) : Set E3 :=
+  {x | ankenyQReal n q x < R ^ 2}
+
+-- Symmetry is automatic because the defining expression is a sum of squares.
+lemma ankenyEllipsoid_symm (n q R : ℝ) : ∀ x ∈ ankenyEllipsoid n q R, -x ∈ ankenyEllipsoid n q R := by
+  intro x hx
+  -- `Q(-x) = Q(x)`
+  dsimp [ankenyEllipsoid, ankenyQReal] at hx ⊢
+  simpa using hx
+
+-- Convexity: this is true because it is a preimage of a ball under a linear map.
+-- We leave this as a marker for the exact lemma we will use (so downstream work is guided).
+-- (The easiest route is: pick `T = diagLin (Real.sqrt (2q)) 1 (Real.sqrt n)` and rewrite.)
+-- TODO (next): prove `Convex ℝ (ankenyEllipsoid n q R)` once `T` is defined and `det T ≠ 0`.
+example (n q R : ℝ) : True := by
+  trivial
+
+end AnkenyMinkowskiSkeleton
 
