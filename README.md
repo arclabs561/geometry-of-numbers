@@ -21,6 +21,19 @@ If `lake` isn’t on your PATH, try `"$HOME/.elan/bin/lake"` instead.
 Note: this workspace also has a sibling directory `../Covolume/` with
 scratch Lean files. We’re merging useful bits into this repo (copying, not deleting).
 
+## Strategy: Make or Break
+
+This project is built on three strategic pillars to avoid the common pitfalls of formalization projects:
+
+### 1. The "Systems Kernel" (Infrastructure over Scripting)
+Instead of a one-off proof, we build the `QuadraticLattice` bridge. This interface connects `QuadraticForm ℤ` to `AddSubgroup (Fin n → ℝ)`, allowing us to solve representation problems by embedding local (p-adic) obstructions into geometric lattice density.
+
+### 2. The Computable Core
+We target a **verified LLL implementation**. By bridging abstract Measure Theory with computable matrix algorithms, `Covolume` becomes a tool for real-world verification in cryptography and optimization.
+
+### 3. Parallel Constructive Track
+To avoid the "Measure Theory Wall," we maintain a constructive track for small-case verification while using abstract Minkowski for existence proofs.
+
 ## Status
 
 `lake build` succeeds, but the development files still contain `sorry` placeholders.
