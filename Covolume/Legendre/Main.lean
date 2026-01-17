@@ -2,8 +2,8 @@ import Mathlib.Data.Nat.Basic
 import Mathlib.Algebra.Group.Nat.Even
 import Mathlib.Data.Int.Basic
 import Mathlib.Tactic
-import PolygonalNumberTheorem.Legendre.Exceptions
-import PolygonalNumberTheorem.Legendre.Ankeny
+import Covolume.Legendre.Exceptions
+import Covolume.Legendre.Ankeny
 
 namespace Nat
 

@@ -19,7 +19,7 @@
 ## Current Status (Jan 2026)
 *   Main theorem `fermat_polygonal` is defined but uses `sorry`.
 *   Active development is split:
-    - `PolygonalNumberTheorem/Legendre/AnkenyLemmas.lean` is the cleanest component (0 `sorry`).
-    - `PolygonalNumberTheorem/Legendre/Ankeny.lean` is the main scaffold (several `sorry`).
-    - `PolygonalNumberTheorem/Cauchy/Main.lean` is the polygonal theorem scaffold (`sorry`).
+    - `Covolume/Legendre/AnkenyLemmas.lean` is the cleanest component (0 `sorry`).
+    - `Covolume/Legendre/Ankeny.lean` is the main scaffold (several `sorry`).
+    - `Covolume/Cauchy/Main.lean` is the polygonal theorem scaffold (`sorry`).
 *   Numeric sanity: `uv run Experiments/ankeny_check.py` checks small instances of the Ankeny reduction setup (not a proof).

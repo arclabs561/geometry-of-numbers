@@ -3,7 +3,7 @@ import Mathlib.Algebra.Group.Nat.Even
 import Mathlib.Data.Int.Basic
 import Mathlib.Tactic
 
-namespace PolygonalNumberTheorem
+namespace Covolume
 
 /-!
 ## Polygonal numbers
@@ -272,4 +272,4 @@ theorem cauchy_polygonal_identity (s : ℕ) (hs : 3 ≤ s) (t u v w : ℕ) :
   rw [ht, hu, hv, hw]
   ring
 
-end PolygonalNumberTheorem
+end Covolume

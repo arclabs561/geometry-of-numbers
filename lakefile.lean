@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-package «polygonal-number-theorem» {
+package «covolume» {
   -- add package configuration options here
 }
 
@@ -9,7 +9,7 @@ require mathlib from git
   "https://github.com/leanprover-community/mathlib4" @ "cced109deab25b4322e1a12b877335e092322b74"
 
 @[default_target]
-lean_lib «PolygonalNumberTheorem» {
+lean_lib «Covolume» {
   -- add library configuration options here
 }
 

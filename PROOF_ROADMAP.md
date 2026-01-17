@@ -24,9 +24,9 @@ fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 **`sum_three_squares_of_not_exception`** is intended to be routed through **Ankeny (1957)** (geometry-of-numbers).
 At the moment this route **typechecks** but is not yet fully proved (several `sorry` remain).
 
-### Ankeny's Proof (`Legendre/Ankeny.lean`)
+### Ankeny's Proof (`Covolume/Legendre/Ankeny.lean`)
 
-1.  **Ankeny Lemmas (proved)**: `Legendre/AnkenyLemmas.lean` currently has **0** `sorry` and contains the
+1.  **Ankeny Lemmas (proved)**: `Covolume/Legendre/AnkenyLemmas.lean` currently has **0** `sorry` and contains the
     squarefree decomposition + the mod‑8 squarefree-part lemma.
 2.  **Lattice definition (typechecks)**: `ankeny_lattice` is defined as an `AddSubgroup (Fin 3 → ℝ)` encoding:
     \(x \equiv y \pmod n\) and \(y \equiv bz \pmod{2q}\).
@@ -36,7 +36,7 @@ At the moment this route **typechecks** but is not yet fully proved (several `so
 4.  **Minkowski step (missing)**: `ankeny_lattice_covolume` + `exists_ankeny_representation` are scaffolds.
 5.  **Descent / reduction (missing)**: `reduction_to_sum_three_squares` is a scaffold; see also `Experiments/AnkenyReduction.lean`.
 
-## Cauchy's Lemma (`Cauchy/Main.lean`)
+## Cauchy's Lemma (`Covolume/Cauchy/Main.lean`)
 
 Once we have the three-square theorem, `four_nonneg_sum_from_cauchy` follows by reducing the general `s`-gonal case to the sum of four `s`-gonal numbers.
 
@@ -44,11 +44,11 @@ Once we have the three-square theorem, `four_nonneg_sum_from_cauchy` follows by 
 
 | Task | Status | Location |
 |------|--------|----------|
-| **Core Algebra** | Mixed | `Core/Basic.lean` (proved), `Core/ModularSquares.lean` (WIP; `sorry`) |
-| **Ankeny Lemmas** | ✅ proved | `Legendre/AnkenyLemmas.lean` (0 `sorry`) |
-| **Ankeny main file** | 🚧 scaffold | `Legendre/Ankeny.lean` (multiple `sorry`) |
-| **Cauchy reduction** | 🚧 scaffold | `Cauchy/Main.lean` (`sorry`) |
-| **Gauss Eureka** | 🚧 scaffold | `Cauchy/Main.lean` (`sorry`) |
+| **Core Algebra** | Mixed | `Covolume/Core/Basic.lean` (proved), `Covolume/Core/ModularSquares.lean` (WIP; `sorry`) |
+| **Ankeny Lemmas** | ✅ proved | `Covolume/Legendre/AnkenyLemmas.lean` (0 `sorry`) |
+| **Ankeny main file** | 🚧 scaffold | `Covolume/Legendre/Ankeny.lean` (multiple `sorry`) |
+| **Cauchy reduction** | 🚧 scaffold | `Covolume/Cauchy/Main.lean` (`sorry`) |
+| **Gauss Eureka** | 🚧 scaffold | `Covolume/Cauchy/Main.lean` (`sorry`) |
 
 ## Evidence / experiments (why the scaffolds are shaped this way)
 
@@ -57,7 +57,7 @@ Once we have the three-square theorem, `four_nonneg_sum_from_cauchy` follows by 
 - `uv run Experiments/ankeny_check.py` performs small numeric searches for witnesses in the Ankeny setup.
   This is not a proof, but it has been useful for validating the intended algebra before formalization.
 
-## Notes on `Legendre/Minkowski.lean`
+## Notes on `Covolume/Legendre/Minkowski.lean`
 
-`Legendre/Minkowski.lean` is an exploratory Minkowski-centric attempt. We are currently prioritizing
+`Covolume/Legendre/Minkowski.lean` is an exploratory Minkowski-centric attempt. We are currently prioritizing
 the Ankeny route, but Minkowski experiments remain useful as a reference for the measure-theory API.

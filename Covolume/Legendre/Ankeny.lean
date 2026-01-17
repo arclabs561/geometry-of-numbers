@@ -17,10 +17,10 @@ import Mathlib.NumberTheory.SumTwoSquares
 import Mathlib.Tactic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
-import PolygonalNumberTheorem.Legendre.Exceptions
-import PolygonalNumberTheorem.Legendre.AnkenyLemmas
+import Covolume.Legendre.Exceptions
+import Covolume.Legendre.AnkenyLemmas
 
-namespace PolygonalNumberTheorem
+namespace Covolume
 
 open MeasureTheory MeasureTheory.Measure Set Module Matrix
 open scoped NNReal ENNReal BigOperators Matrix
@@ -75,23 +75,6 @@ def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ := 2 * q * x^2 + y^2 + n * z^2
 
 /-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`. -/
 lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ) (hn : n % 8 = 3) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) (h_lat : (fun i => match i with | 0 => (x:ℝ) | 1 => (y:ℝ) | 2 => (z:ℝ)) ∈ ankeny_lattice n q b) (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) : (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * n * q)] := by
-  -- TODO(ankeny): Fill this algebraic lemma (no Minkowski yet).
-  --
-  -- What we want, informally:
-  -- - From `h_lat`, extract the two defining congruences:
-  --   1) `x ≡ y [ZMOD n]`
-  --   2) `y ≡ b*z [ZMOD (2*q)]`
-  -- - Use `hq_mod` to show `2*q ≡ -1 [ZMOD n]` (in ℤ). This is the only place
-  --   we use `ZMod` (invertibility of 2 modulo odd n).
-  -- - Then prove two separate congruences:
-  --   * mod n:     `Q = 2*q*x^2 + y^2 + n*z^2 ≡ -x^2 + x^2 + 0 ≡ 0`
-  --   * mod (2*q): `Q ≡ y^2 + n*z^2 ≡ (b*z)^2 + n*z^2 = (b^2+n)*z^2 ≡ 0`
-  --     using `hb : b^2 ≡ -n [ZMOD 2*q]`.
-  -- - Combine the two via CRT / `Int.modEq_and_modEq_iff_modEq_mul` using that
-  --   `n` and `2*q` are coprime (follows from `hq_mod` ⇒ `IsUnit (q : ZMod n)`).
-  --
-  -- The earlier attempt got stuck on brittle `rw` patterns and mismatched `^2`
-  -- vs `*` expansions. Keep the statement stable; fill later.
   sorry
 
 /-- Minkowski application: there exists a representation `2qx² + y² + nz² = 2nq`. -/
@@ -128,4 +111,4 @@ theorem sum_three_squares_of_three_mod_eight (n : ℕ) (hn : n % 8 = 3) :
   rw [← h_final, ← hm_eq_int]
   -- `ring` was previously here, but the goal is already closed after rewriting.
 
-end PolygonalNumberTheorem
+end Covolume

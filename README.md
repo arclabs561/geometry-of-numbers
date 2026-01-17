@@ -1,6 +1,8 @@
-# Polygonal Number Theorem
+# Covolume
 
-Formalization of **Legendre's Three-Square Theorem** and the **Fermat/Cauchy Polygonal Number Theorem** in Lean 4.
+A Constructive Geometry of Numbers Library for Lean 4.
+
+This library formalizes the **Ankeny-Minkowski pipeline** to prove **Legendre's Three-Square Theorem** and the **Fermat/Cauchy Polygonal Number Theorem**. It establishes a reusable framework for lattice systems and geometric number theory.
 
 Dual-licensed under MIT or Apache-2.0.
 
@@ -16,7 +18,7 @@ lake exe status_report
 
 If `lake` isn’t on your PATH, try `"$HOME/.elan/bin/lake"` instead.
 
-Note: this workspace also has a sibling directory `../PolygonalNumberTheorem/` with
+Note: this workspace also has a sibling directory `../Covolume/` with
 scratch Lean files. We’re merging useful bits into this repo (copying, not deleting).
 
 ## Status
@@ -36,7 +38,7 @@ As of Jan 2026 (rough accounting):
 ## Structure
 
 ```
-PolygonalNumberTheorem/
+Covolume/
   Core/Basic.lean            -- polygonal(s,n) definition + algebra spine
   Core/ModularSquares.lean   -- modular “u²+v²+1≡0” root existence (WIP)
   Legendre/Exceptions.lean   -- exception set: 4^a(8k+7)

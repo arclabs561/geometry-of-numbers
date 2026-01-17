@@ -1,7 +1,7 @@
-name = "polygonal-number-theorem"
+name = "covolume"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["PolygonalNumberTheorem"]
+defaultTargets = ["Covolume"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -17,4 +17,4 @@ scope = "leanprover-community"
 rev = "cced109deab25b4322e1a12b877335e092322b74"
 
 [[lean_lib]]
-name = "PolygonalNumberTheorem"
+name = "Covolume"

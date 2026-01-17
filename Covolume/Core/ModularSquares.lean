@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Tactic.LinearCombination
 import Mathlib.FieldTheory.Finite.Basic
 
-namespace PolygonalNumberTheorem
+namespace Covolume
 
 /-!
 # Modular “two squares + one” solvability
@@ -61,4 +61,4 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
     ∃ u v : ℤ, u^2 + v^2 + 1 ≡ 0 [ZMOD n] := by
   sorry
 
-end PolygonalNumberTheorem
+end Covolume

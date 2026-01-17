@@ -15,7 +15,7 @@ import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Tactic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
-import PolygonalNumberTheorem.Legendre.Exceptions
+import Covolume.Legendre.Exceptions
 
 /-!
 # Minkowski Descent for Legendre's Three-Squares Theorem
@@ -32,7 +32,7 @@ Ultimately we want:
   a sum of three squares”.
 
 This file is one attempt at packaging the Minkowski step as a reusable “descent lattice” lemma.
-The fully-worked Ankeny (1957) proof lives in `PolygonalNumberTheorem/Legendre/Ankeny.lean`.
+The fully-worked Ankeny (1957) proof lives in `Covolume/Legendre/Ankeny.lean`.
 
 ## Intuition first (the data flow)
 
@@ -69,7 +69,7 @@ The geometry-of-numbers step looks like this:
   Prefer returning an explicit lattice together with inclusion lemmas, as in the Ankeny file.
 -/
 
-namespace PolygonalNumberTheorem
+namespace Covolume
 
 open MeasureTheory MeasureTheory.Measure Set WithLp Module
 open scoped NNReal ENNReal BigOperators Matrix
@@ -224,4 +224,4 @@ theorem minkowski_three_squares (n : ℕ) (_h : ¬ Nat.is_three_square_exception
     ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n := by
   sorry
 
-end PolygonalNumberTheorem
+end Covolume

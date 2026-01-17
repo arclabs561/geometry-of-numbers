@@ -5,11 +5,11 @@ import Mathlib.Tactic
 /-!
 # Ankeny Descent (scratch)
 
-This file is a *copy* of the sibling workspace scratch file `../PolygonalNumberTheorem/AnkenyDescent.lean`.
+This file is a *copy* of the sibling workspace scratch file `../Covolume/AnkenyDescent.lean`.
 We keep it here so the repo contains the whole exploration surface.
 
 Status: not integrated into the main proof. The current recommended path is the Minkowski pivot
-in [`PolygonalNumberTheorem.MinkowskiDescent`], but Ankeny remains a plausible alternative if we
+in [`Covolume.MinkowskiDescent`], but Ankeny remains a plausible alternative if we
 decide to pull in primes-in-AP / Dirichlet infrastructure.
 -/
 

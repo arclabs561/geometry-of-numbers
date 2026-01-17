@@ -1,5 +1,5 @@
-import PolygonalNumberTheorem.Core.Basic
-import PolygonalNumberTheorem.Legendre.Main
+import Covolume.Core.Basic
+import Covolume.Legendre.Main
 import Mathlib.NumberTheory.SumFourSquares
 import Mathlib.Data.Nat.Sqrt
 import Mathlib.Tactic.Linarith
@@ -16,7 +16,7 @@ import Mathlib.Data.Int.Cast.Field
 open Nat Real
 open BigOperators
 
-namespace PolygonalNumberTheorem
+namespace Covolume
 
 /-- If a real interval has length `> 2`, it contains an odd integer. -/
 lemma exists_odd_in_interval {L U : ℝ} (hLU : L + 2 < U) :
@@ -36,14 +36,17 @@ theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
     obtain ⟨a, b, c, habc⟩ := gauss_eureka n
     use ![a, b, c]
     dsimp [triangular] at habc
-    -- The sum over Fin 3 needs to match Triangular sum
-    sorry
+    rw [← habc]
+    simp [Fin.sum_univ_succ]
+    ring
   · -- s = 4: Lagrange's Four-Square Theorem.
     obtain ⟨a, b, c, d, habcd⟩ := Nat.sum_four_squares n
     use ![a, b, c, d]
-    -- The sum over Fin 4 needs to match Square sum
-    sorry
+    simp [polygonal_four_eq_sq]
+    rw [← habcd]
+    simp [Fin.sum_univ_succ]
+    ring
   · -- s ≥ 5: Cauchy's proof route.
     sorry
 
-end PolygonalNumberTheorem
+end Covolume

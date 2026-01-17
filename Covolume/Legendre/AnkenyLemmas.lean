@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Squarefree
 import Mathlib.Tactic
 
-namespace PolygonalNumberTheorem
+namespace Covolume
 
 /-- gcd(4, n) = 1 for odd n. -/
 lemma coprime_four_n (n : ℕ) (hn : n % 2 = 1) : Nat.Coprime 4 n := by
@@ -80,4 +80,4 @@ lemma squarefree_part_mod_eight (n s m : ℕ) (heq : n = s^2 * m) (hn : n % 8 = 
   rw [hn, hs_sq_mod, one_mul] at h_mod
   exact (Nat.mod_mod m 8).symm.trans h_mod.symm
 
-end PolygonalNumberTheorem
+end Covolume

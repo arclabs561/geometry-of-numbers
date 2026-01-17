@@ -63,7 +63,7 @@ open MeasureTheory MeasureTheory.Measure
 /-!
 ## Toy 1: ZSpan fundamental domain and volume for a simple ℤ-span lattice in `ℝ^3`
 
-This mirrors what we ended up doing in `PolygonalNumberTheorem/Legendre/Ankeny.lean`,
+This mirrors what we ended up doing in `Covolume/Legendre/Ankeny.lean`,
 but pared down to the minimum: pick a basis `B`, then `F := ZSpan.fundamentalDomain B`,
 then:
 

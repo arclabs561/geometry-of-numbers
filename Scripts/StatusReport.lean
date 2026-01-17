@@ -1,9 +1,9 @@
-import PolygonalNumberTheorem.Legendre.Main
-import PolygonalNumberTheorem.Cauchy.Main
+import Covolume.Legendre.Main
+import Covolume.Cauchy.Main
 
 def main : IO Unit := do
-  IO.println "Polygonal Number Theorem Project Status"
-  IO.println "======================================="
+  IO.println "Covolume Project Status"
+  IO.println "======================="
   IO.println ""
   IO.println "This is a lightweight status printout."
   IO.println "It does not prove anything by itself; it just summarizes where the code is."
@@ -14,10 +14,10 @@ def main : IO Unit := do
 
   IO.println "## Legendre's Three-Square Theorem"
   IO.println ""
-  IO.println "  - Entry point: `PolygonalNumberTheorem/Legendre/Main.lean`"
-  IO.println "  - Support: `PolygonalNumberTheorem/Legendre/Exceptions.lean`"
-  IO.println "  - Recommended: `PolygonalNumberTheorem/Legendre/Ankeny.lean` (Ankeny 1957)"
-  IO.println "  - Alternative: `PolygonalNumberTheorem/Legendre/Minkowski.lean` (descent scaffold)"
+  IO.println "  - Entry point: `Covolume/Legendre/Main.lean`"
+  IO.println "  - Support: `Covolume/Legendre/Exceptions.lean`"
+  IO.println "  - Recommended: `Covolume/Legendre/Ankeny.lean` (Ankeny 1957)"
+  IO.println "  - Alternative: `Covolume/Legendre/Minkowski.lean` (descent scaffold)"
   IO.println ""
   IO.println "  Notes:"
   IO.println "  - Easy direction is present but incomplete (contains `sorry`)."
@@ -25,8 +25,8 @@ def main : IO Unit := do
   IO.println ""
   IO.println "## Polygonal Number Theorem"
   IO.println ""
-  IO.println "  - Entry point: `PolygonalNumberTheorem/Cauchy/Main.lean`"
-  IO.println "  - Algebra spine: `PolygonalNumberTheorem/Core/Basic.lean`"
+  IO.println "  - Entry point: `Covolume/Cauchy/Main.lean`"
+  IO.println "  - Algebra spine: `Covolume/Core/Basic.lean`"
   IO.println ""
   IO.println "  Notes:"
   IO.println "  - `gauss_eureka` and `fermat_polygonal` currently contain `sorry`."
