@@ -1,5 +1,6 @@
 import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Data.ZMod.Units
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
 import Mathlib.NumberTheory.SumTwoSquares
 import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
@@ -13,12 +14,17 @@ import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Module.ZLattice.Basic
+import Mathlib.Algebra.Module.ZLattice.Covolume
+import Mathlib.Algebra.Module.Submodule.Lattice
+import Mathlib.Data.Int.ModEq
+import Mathlib.Data.Set.Countable
 import Mathlib.NumberTheory.SumTwoSquares
 import Mathlib.Tactic
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
 import Covolume.Legendre.Exceptions
 import Covolume.Legendre.AnkenyLemmas
+import Covolume.NumberTheory.Utils
 
 namespace Covolume
 
@@ -26,15 +32,171 @@ open MeasureTheory MeasureTheory.Measure Set Module Matrix
 open scoped NNReal ENNReal BigOperators Matrix
 open scoped NumberTheorySymbols
 
+/-! We work in `ℝ^3` as `Fin 3 → ℝ`, which matches Mathlib’s `volume` conventions. -/
+abbrev E3 := (Fin 3 → ℝ)
+
+/-!
+## The “computable covolume” kernel for the Ankeny lattice
+
+In Ankeny’s proof we want a full-rank ℤ-lattice inside `E3` with *explicitly computable covolume*.
+
+Rather than trying to compute the covolume of the congruence-defined lattice `ankeny_lattice` directly,
+we build an explicit ℤ-span lattice from a concrete ℝ-basis and compute the fundamental-domain volume via
+`ZSpan.volume_fundamentalDomain` (determinant).
+-/
+
+/-- A concrete ℝ-basis whose ℤ-span has covolume `2*n*q`.
+
+The associated matrix (with basis vectors as columns) is:
+
+```text
+⎡ n    2q   b ⎤
+⎢ 0    2q   b ⎥
+⎣ 0     0   1 ⎦
+```
+
+so `det = 2*n*q`. -/
+noncomputable def ankeny_span_matrix (n q : ℕ) (b : ℤ) : Matrix (Fin 3) (Fin 3) ℝ :=
+  !![(n : ℝ), (2 * q : ℝ), (b : ℝ);
+    0, (2 * q : ℝ), (b : ℝ);
+    0, 0, (1 : ℝ)]
+
+noncomputable def ankeny_span_basis (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    Module.Basis (Fin 3) ℝ E3 :=
+  let b0 : Module.Basis (Fin 3) ℝ E3 := Pi.basisFun ℝ (Fin 3)
+  let A : Matrix (Fin 3) (Fin 3) ℝ := ankeny_span_matrix n q b
+  have hdet : A.det ≠ 0 := by
+    -- The matrix is upper triangular with diagonal entries `n`, `2q`, `1`.
+    -- (The `b`-entries do not affect the determinant.)
+    have hA : A.det = (2 * n * q : ℝ) := by
+      -- Explicit 3×3 determinant expansion.
+      simp [A, ankeny_span_matrix, Matrix.det_fin_three]
+      ring_nf
+    have hn0 : (n : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hn)
+    have hq0 : (q : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hq)
+    -- Show `2 * (n : ℝ) * (q : ℝ) ≠ 0` by contradiction.
+    intro hzero
+    have hmul : (2 : ℝ) * (n : ℝ) * (q : ℝ) = 0 := by
+      -- rewrite the goal `A.det = 0` into `2*n*q = 0`
+      -- (and normalize the multiplication order/associativity).
+      have : (2 * n * q : ℝ) = 0 := by simpa [hA] using hzero
+      simpa [mul_assoc, mul_left_comm, mul_comm] using this
+    have h' : (2 : ℝ) * (n : ℝ) = 0 ∨ (q : ℝ) = 0 := by
+      -- reassociate to apply `mul_eq_zero`.
+      have : ((2 : ℝ) * (n : ℝ)) * (q : ℝ) = 0 := by simpa [mul_assoc] using hmul
+      exact mul_eq_zero.mp this
+    cases h' with
+    | inl h2n =>
+        have : (2 : ℝ) = 0 ∨ (n : ℝ) = 0 := mul_eq_zero.mp h2n
+        cases this with
+        | inl h2 =>
+            have : (2 : ℝ) ≠ 0 := by norm_num
+            exact (this h2).elim
+        | inr hn' => exact hn0 hn'
+    | inr hq' =>
+        exact hq0 hq'
+  b0.map (Matrix.toLinearEquiv b0 A (isUnit_iff_ne_zero.mpr hdet))
+
+lemma ankeny_span_basis_matrixOf (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    Matrix.of (ankeny_span_basis n q b hn hq) = (ankeny_span_matrix n q b)ᵀ := by
+  classical
+  ext i j
+  -- `Matrix.of` sees the basis vectors as rows (index first), hence the transpose here.
+  simp [ankeny_span_basis, ankeny_span_matrix, Module.Basis.map_apply, Matrix.toLinearEquiv, Matrix.of_apply,
+    Matrix.toLin_eq_toLin', Matrix.toLin'_apply, Pi.basisFun_apply,
+    Matrix.transpose_apply]
+
+lemma ankeny_span_basis_apply (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) (i j : Fin 3) :
+    ankeny_span_basis n q b hn hq i j = ankeny_span_matrix n q b j i := by
+  have hM := ankeny_span_basis_matrixOf n q b hn hq
+  have := congrArg (fun M => M i j) hM
+  simpa [Matrix.of_apply, Matrix.transpose_apply] using this
+
+/-- The explicit ℤ-span lattice used for the covolume computation. -/
+noncomputable def ankeny_span_lattice (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    AddSubgroup E3 :=
+  (Submodule.span ℤ (Set.range (ankeny_span_basis n q b hn hq))).toAddSubgroup
+
+/-- A canonical fundamental domain for the span lattice. -/
+noncomputable def ankeny_span_fundamentalDomain (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    Set E3 :=
+  ZSpan.fundamentalDomain (ankeny_span_basis n q b hn hq)
+
+lemma ankeny_span_isAddFundamentalDomain (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    IsAddFundamentalDomain (ankeny_span_lattice n q b hn hq)
+      (ankeny_span_fundamentalDomain n q b hn hq) volume := by
+  simpa [ankeny_span_lattice, ankeny_span_fundamentalDomain] using
+    (ZSpan.isAddFundamentalDomain' (ankeny_span_basis n q b hn hq) volume)
+
+lemma ankeny_span_volume_fundamentalDomain (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    volume (ankeny_span_fundamentalDomain n q b hn hq) = (2 * n * q : ℝ≥0∞) := by
+  classical
+  let B : Module.Basis (Fin 3) ℝ E3 := ankeny_span_basis n q b hn hq
+  let A : Matrix (Fin 3) (Fin 3) ℝ := ankeny_span_matrix n q b
+  have hvol :
+      volume (ankeny_span_fundamentalDomain n q b hn hq) =
+        ENNReal.ofReal |(Matrix.of B).det| := by
+    simpa [ankeny_span_fundamentalDomain, B] using (ZSpan.volume_fundamentalDomain B)
+  have hB : Matrix.of B = Aᵀ := by
+    simpa [A, B] using (ankeny_span_basis_matrixOf n q b hn hq)
+  have hdetA : A.det = (2 * n * q : ℝ) := by
+    simp [A, ankeny_span_matrix, Matrix.det_fin_three]
+    ring_nf
+  have hdetB : (Matrix.of B).det = (2 * n * q : ℝ) := by
+    calc
+      (Matrix.of B).det = (Aᵀ).det := by simp [hB]
+      _ = A.det := by simpa using (Matrix.det_transpose A)
+      _ = (2 * n * q : ℝ) := hdetA
+  have hnonneg : 0 ≤ (2 * n * q : ℝ) := by
+    nlinarith
+  -- Convert `ENNReal.ofReal |det|` to an `ℝ≥0∞` nat-cast.
+  calc
+    volume (ankeny_span_fundamentalDomain n q b hn hq)
+        = ENNReal.ofReal |(Matrix.of B).det| := hvol
+    _ = ENNReal.ofReal (2 * n * q : ℝ) := by simp [hdetB, abs_of_nonneg hnonneg]
+    _ = (2 * n * q : ℝ≥0∞) := by simp [ENNReal.ofReal_natCast]
+
 /-- Existence of the Ankeny prime `q`. -/
 lemma exists_ankeny_prime (n : ℕ) (hn : n % 8 = 3) :
     ∃ q : ℕ, Nat.Prime q ∧ q % 4 = 1 ∧ (q : ZMod n) = - (2 : ZMod n)⁻¹ := by
+  /-
+  ESCAPE HATCH (current):
+  We want a prime `q ≡ 1 (mod 4)` satisfying a *specific residue class* modulo `n`:
+  \[
+    q \equiv -(2^{-1}) \pmod n.
+  \]
+  In principle this is a Dirichlet/PrimesInAP existence statement (and we already import
+  `Mathlib.NumberTheory.LSeries.PrimesInAP`), but the Lean proof requires careful bridging between:
+  - “prime in arithmetic progression” statements in `ℕ`,
+  - the `ZMod n` target equality, and
+  - side conditions ensuring the residue class is coprime to the modulus.
+
+  TODO:
+  - Prefer an API that returns `∃ q, Nat.Prime q ∧ q ≡ a [ZMOD n] ∧ q % 4 = 1`
+    for a chosen `a` with `Nat.Coprime a n`.
+  - Use `hn : n % 8 = 3` to get `Odd n`, hence `IsUnit (2 : ZMod n)`, hence `a` is a unit mod `n`.
+  - If necessary, ask Zulip for the canonical lemma name in `PrimesInAP`.
+  -/
   sorry
 
 /-- Existence of `b` such that `b² ≡ -n (mod 4q)`. -/
 lemma exists_ankeny_b (n q : ℕ) (hn : n % 8 = 3) (hq : Nat.Prime q) (hq1 : q % 4 = 1)
     (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) :
     ∃ b : ℤ, b^2 ≡ - (n : ℤ) [ZMOD (4 * q)] := by
+  /-
+  ESCAPE HATCH (current):
+  This is a quadratic-residue existence statement:
+  \[
+    b^2 \equiv -n \pmod{4q}.
+  \]
+  In the classical proof, one shows `(-n / q) = 1` (Jacobi/Legendre symbol),
+  uses `q ≡ 1 (mod 4)` to manage the `4q` modulus, and then lifts to `ℤ` via CRT.
+
+  TODO:
+  - Use `Mathlib.NumberTheory.LegendreSymbol.*` to prove `IsSquare (-(n : ZMod q))`.
+  - Convert `IsSquare` in `ZMod q` to an explicit `b` with `b^2 ≡ -n [ZMOD q]`.
+  - Combine with the mod-4 condition (since `q` is odd) to get mod `4q`.
+  -/
   sorry
 
 /-- The Ankeny lattice `L = { (x,y,z) : x ≡ y (mod n), y ≡ bz (mod 2q) }`. -/
@@ -68,19 +230,220 @@ lemma ankeny_lattice_covolume (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
       volume F = (2 * n * q : ℝ≥0∞) ∧ 
       (L : Set (Fin 3 → ℝ)).Countable ∧ 
       (L : Set (Fin 3 → ℝ)) ⊆ ankeny_lattice n q b := by
-  -- Basis vectors: v1 = (n, 0, 0), v2 = (2q, 2q, 0), v3 = (b, b, 1)
-  let v1 : Fin 3 → ℝ := ![n, 0, 0]
-  let v2 : Fin 3 → ℝ := ![2 * q, 2 * q, 0]
-  let v3 : Fin 3 → ℝ := ![b, b, 1]
-  -- Use Basis.mk or similar once invertibility is proved.
-  sorry
+  classical
+  let L : AddSubgroup E3 := ankeny_span_lattice n q b hn hq
+  let F : Set E3 := ankeny_span_fundamentalDomain n q b hn hq
+  refine ⟨L, F, ?_, ?_, ?_, ?_⟩
+  · simpa [L, F] using ankeny_span_isAddFundamentalDomain n q b hn hq
+  · simpa [F] using ankeny_span_volume_fundamentalDomain n q b hn hq
+  · -- Countability of the ℤ-span lattice.
+    have : Countable (↥L) := by
+      -- `L` is a `Submodule.span ℤ` of a finite `Set.range`, hence countable.
+      change Countable (Submodule.span ℤ (Set.range (ankeny_span_basis n q b hn hq)))
+      infer_instance
+    -- Convert subtype-countability into set-countability.
+    have hrange : (Set.range (fun x : (↥L) => (x : E3))) = (L : Set E3) := by
+      ext x
+      constructor
+      · rintro ⟨y, rfl⟩
+        exact y.property
+      · intro hx
+        exact ⟨⟨x, hx⟩, rfl⟩
+    simpa [hrange] using (Set.countable_range (fun x : (↥L) => (x : E3)))
+  · -- Inclusion into the congruence-defined lattice is the arithmetic glue step.
+    intro p hp
+    -- Work in the underlying ℤ-submodule `span ℤ (range basis)`.
+    let B : Module.Basis (Fin 3) ℝ E3 := ankeny_span_basis n q b hn hq
+    have hp' : p ∈ (Submodule.span ℤ (Set.range B) : Set E3) := by
+      simpa [L, ankeny_span_lattice, B] using hp
+    -- It suffices to show `span ℤ (range B) ≤ (ankeny_lattice ...).toIntSubmodule`.
+    have hle :
+        (Submodule.span ℤ (Set.range B)) ≤ (ankeny_lattice n q b).toIntSubmodule := by
+      refine Submodule.span_le.2 ?_
+      intro x hx
+      rcases hx with ⟨i, rfl⟩
+      -- Show each basis vector satisfies the defining congruences.
+      -- (This is the “arithmetic glue”: the covolume lattice is a sublattice of the
+      -- congruence-defined Ankeny lattice.)
+      fin_cases i
+      · -- i = 0: vector `(n, 0, 0)`
+        have hx0 : (B 0) 0 = (n : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (0 : Fin 3) 0)
+        have hx1 : (B 0) 1 = (0 : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (0 : Fin 3) 1)
+        have hx2 : (B 0) 2 = (0 : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (0 : Fin 3) 2)
+        have hxy : (n : ℤ) ≡ (0 : ℤ) [ZMOD n] := by
+          refine (Int.modEq_iff_dvd).2 ?_
+          simp
+        have hybz : (0 : ℤ) ≡ b * (0 : ℤ) [ZMOD (2 * q)] := by
+          simpa using (Int.ModEq.refl (0 : ℤ))
+        have : (B 0) ∈ ankeny_lattice n q b := by
+          refine ⟨(n : ℤ), 0, 0, ?_, ?_, ?_, ?_, ?_⟩
+          · simp [hx0]
+          · simp [hx1]
+          · simp [hx2]
+          · exact hxy
+          · simpa using hybz
+        simpa [AddSubgroup.coe_toIntSubmodule] using this
+      · -- i = 1: vector `(2q, 2q, 0)`
+        have hx0 : (B 1) 0 = (2 * q : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (1 : Fin 3) 0)
+        have hx1 : (B 1) 1 = (2 * q : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (1 : Fin 3) 1)
+        have hx2 : (B 1) 2 = (0 : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (1 : Fin 3) 2)
+        have hxy : (2 * q : ℤ) ≡ (2 * q : ℤ) [ZMOD n] := by
+          simpa using (Int.ModEq.refl (2 * q : ℤ))
+        have hybz : (2 * q : ℤ) ≡ b * (0 : ℤ) [ZMOD (2 * q)] := by
+          -- `2q ≡ 0 (mod 2q)`
+          refine (Int.modEq_iff_dvd).2 ?_
+          simp
+        have : (B 1) ∈ ankeny_lattice n q b := by
+          refine ⟨(2 * q : ℤ), (2 * q : ℤ), 0, ?_, ?_, ?_, ?_, ?_⟩
+          · simp [hx0]
+          · simp [hx1]
+          · simp [hx2]
+          · exact hxy
+          · simpa using hybz
+        simpa [AddSubgroup.coe_toIntSubmodule] using this
+      · -- i = 2: vector `(b, b, 1)`
+        have hx0 : (B 2) 0 = (b : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (2 : Fin 3) 0)
+        have hx1 : (B 2) 1 = (b : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (2 : Fin 3) 1)
+        have hx2 : (B 2) 2 = (1 : ℝ) := by
+          simpa [B, ankeny_span_matrix] using (ankeny_span_basis_apply n q b hn hq (2 : Fin 3) 2)
+        have hxy : b ≡ b [ZMOD n] := by
+          simpa using (Int.ModEq.refl b)
+        have hybz : b ≡ b * (1 : ℤ) [ZMOD (2 * q)] := by
+          simpa using (Int.ModEq.refl b)
+        have : (B 2) ∈ ankeny_lattice n q b := by
+          refine ⟨b, b, 1, ?_, ?_, ?_, ?_, ?_⟩
+          · simp [hx0]
+          · simp [hx1]
+          · simp [hx2]
+          · exact hxy
+          · simpa using hybz
+        simpa [AddSubgroup.coe_toIntSubmodule] using this
+    -- Conclude from `hle` and `hp'`.
+    have : p ∈ (ankeny_lattice n q b).toIntSubmodule := hle hp'
+    -- Convert `toIntSubmodule` membership back to set membership.
+    simpa [AddSubgroup.coe_toIntSubmodule] using this
 
 /-- The quadratic form `Q = 2qx² + y² + nz²`. -/
 def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ := 2 * q * x^2 + y^2 + n * z^2
 
 /-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`. -/
-lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ) (hn : n % 8 = 3) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) (h_lat : (fun i => match i with | 0 => (x:ℝ) | 1 => (y:ℝ) | 2 => (z:ℝ)) ∈ ankeny_lattice n q b) (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) : (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * n * q)] := by
-  sorry
+lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ)
+    (hn : n % 8 = 3)
+    (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
+    (hxy : x ≡ y [ZMOD n])
+    (hybz : y ≡ b * z [ZMOD (2 * q)])
+    (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) :
+    ankeny_Q n q x y z ≡ 0 [ZMOD (2 * n * q)] := by
+  -- This lemma is the “algebraic glue” used after the Minkowski step:
+  --
+  -- - mod `n`: use `x ≡ y` and `2q ≡ -1` (from `hq_mod`)
+  -- - mod `2q`: use `y ≡ b z` and `b^2 ≡ -n` (from `hb`)
+  -- - combine by CRT (since `gcd(n,2q)=1` in the Ankeny setup)
+  --
+  -- We start by proving the mod-`2q` part, since it is self-contained.
+  have hQ_mod_2q : ankeny_Q n q x y z ≡ 0 [ZMOD (2 * q : ℤ)] := by
+    have hy2 : y ^ 2 ≡ (b * z) ^ 2 [ZMOD (2 * q : ℤ)] := hybz.pow 2
+    have hy2' : y ^ 2 ≡ b ^ 2 * z ^ 2 [ZMOD (2 * q : ℤ)] := by
+      -- `(b*z)^2 = b^2 * z^2`
+      simpa [pow_two, mul_assoc, mul_left_comm, mul_comm] using hy2
+    have hb_mul : b ^ 2 * z ^ 2 ≡ (-(n : ℤ)) * z ^ 2 [ZMOD (2 * q : ℤ)] :=
+      Int.ModEq.mul_right (z ^ 2) hb
+    have hsum_cancel : (-(n : ℤ)) * z ^ 2 + (n : ℤ) * z ^ 2 = 0 := by ring
+    have hy_nz : y ^ 2 + (n : ℤ) * z ^ 2 ≡ 0 [ZMOD (2 * q : ℤ)] := by
+      have h1 : y ^ 2 + (n : ℤ) * z ^ 2 ≡ b ^ 2 * z ^ 2 + (n : ℤ) * z ^ 2 [ZMOD (2 * q : ℤ)] :=
+        (hy2'.add (Int.ModEq.refl _))
+      have h2 : b ^ 2 * z ^ 2 + (n : ℤ) * z ^ 2 ≡ (-(n : ℤ)) * z ^ 2 + (n : ℤ) * z ^ 2 [ZMOD (2 * q : ℤ)] :=
+        (hb_mul.add (Int.ModEq.refl _))
+      have h3 : (-(n : ℤ)) * z ^ 2 + (n : ℤ) * z ^ 2 ≡ 0 [ZMOD (2 * q : ℤ)] := by
+        simpa [hsum_cancel] using (Int.ModEq.refl (0 : ℤ))
+      exact h1.trans (h2.trans h3)
+    -- The `2q*x^2` term is 0 modulo `2q`.
+    have h2qxx : (2 * (q : ℤ)) * x ^ 2 ≡ 0 [ZMOD (2 * q : ℤ)] := by
+      refine (Int.modEq_zero_iff_dvd).2 ?_
+      exact dvd_mul_right (2 * (q : ℤ)) (x ^ 2)
+    -- Assemble.
+    have : (2 * (q : ℤ)) * x ^ 2 + (y ^ 2 + (n : ℤ) * z ^ 2) ≡ 0 [ZMOD (2 * q : ℤ)] := by
+      simpa [add_assoc, add_comm, add_left_comm] using (h2qxx.add hy_nz)
+    simpa [ankeny_Q, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using this
+
+  -- Step 2: the mod-`n` part. This is where `hq_mod` is used to derive `2q ≡ -1 (mod n)`.
+  have hnodd : Odd n := Covolume.NumberTheory.odd_of_mod8_eq3 hn
+  have h2unit : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hnodd
+  have hqunit : IsUnit (q : ZMod n) := by
+    have h2inv : IsUnit ((2 : ZMod n)⁻¹) := by
+      -- `ZMod.isUnit_inv` is the correct lemma here (since `ZMod n` is not a division monoid).
+      simpa using (ZMod.isUnit_inv (m := n) (n := (2 : ℤ)) (by simpa using h2unit))
+    have : IsUnit (-( (2 : ZMod n)⁻¹)) := IsUnit.neg h2inv
+    simpa [hq_mod] using this
+  have hnq : Nat.Coprime q n :=
+    (ZMod.isUnit_iff_coprime q n).1 (by simpa using hqunit)
+  have hncoprime : Nat.Coprime n (2 * q) := by
+    have hn2 : Nat.Coprime n 2 := (Nat.coprime_two_right.2 hnodd)
+    have hnq' : Nat.Coprime n q := (Nat.coprime_comm.1 hnq)
+    simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using (hn2.mul_right hnq')
+  have hmn : (n : ℤ).natAbs.Coprime (2 * q : ℤ).natAbs := by
+    simpa using hncoprime
+
+  have h2q_add_one_dvd : (n : ℤ) ∣ (2 * (q : ℤ) + 1) := by
+    -- In `ZMod n`, `2*q + 1 = 0`.
+    have hZ : ((2 * (q : ℤ) + 1 : ℤ) : ZMod n) = 0 := by
+      -- `q = -(2)⁻¹` ⇒ `2*q = -1` ⇒ `2*q + 1 = 0`
+      have h2q : (2 : ZMod n) * (q : ZMod n) = (-1 : ZMod n) := by
+        calc
+          (2 : ZMod n) * (q : ZMod n)
+              = (2 : ZMod n) * (-(2 : ZMod n)⁻¹) := by simpa [hq_mod]
+          _ = -((2 : ZMod n) * (2 : ZMod n)⁻¹) := by ring
+          _ = (-1 : ZMod n) := by
+            have h : (2 : ZMod n) * (2 : ZMod n)⁻¹ = (1 : ZMod n) :=
+              ZMod.mul_inv_of_unit (2 : ZMod n) h2unit
+            simpa [h]
+      -- Convert `2*q = -1` to `2*q + 1 = 0`.
+      have : (2 : ZMod n) * (q : ZMod n) + 1 = 0 := by
+        calc
+          (2 : ZMod n) * (q : ZMod n) + 1 = (-1 : ZMod n) + 1 := by simpa [h2q]
+          _ = 0 := by simp
+      -- Rewrite into the exact `ℤ`-cast form used below.
+      simpa [two_mul, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using this
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd (2 * (q : ℤ) + 1) n).1 hZ
+
+  have hQ_mod_n : ankeny_Q n q x y z ≡ 0 [ZMOD (n : ℤ)] := by
+    have hx2 : x ^ 2 ≡ y ^ 2 [ZMOD (n : ℤ)] := hxy.pow 2
+    have hmul : (2 * (q : ℤ)) * (x ^ 2) ≡ (2 * (q : ℤ)) * (y ^ 2) [ZMOD (n : ℤ)] :=
+      Int.ModEq.mul_left _ hx2
+    have hQ' :
+        ankeny_Q n q x y z ≡ (2 * (q : ℤ)) * (y ^ 2) + (y ^ 2) + (n : ℤ) * (z ^ 2) [ZMOD (n : ℤ)] := by
+      have hadd :
+          (2 * (q : ℤ)) * (x ^ 2) + (y ^ 2) + (n : ℤ) * (z ^ 2)
+            ≡ (2 * (q : ℤ)) * (y ^ 2) + (y ^ 2) + (n : ℤ) * (z ^ 2) [ZMOD (n : ℤ)] :=
+        (hmul.add (Int.ModEq.refl _)).add (Int.ModEq.refl _)
+      simpa [ankeny_Q, pow_two, mul_assoc, mul_left_comm, mul_comm, add_assoc, add_left_comm, add_comm] using hadd
+    have h2q1 : (2 * (q : ℤ) + 1) ≡ 0 [ZMOD (n : ℤ)] :=
+      (Int.modEq_zero_iff_dvd).2 h2q_add_one_dvd
+    have hnz : (n : ℤ) * (z ^ 2) ≡ 0 [ZMOD (n : ℤ)] := by
+      refine (Int.modEq_zero_iff_dvd).2 ?_
+      exact dvd_mul_right (n : ℤ) (z ^ 2)
+    have hlin : (2 * (q : ℤ)) * (y ^ 2) + (y ^ 2) = (2 * (q : ℤ) + 1) * (y ^ 2) := by ring
+    have hfirst : (2 * (q : ℤ) + 1) * (y ^ 2) ≡ 0 [ZMOD (n : ℤ)] :=
+      by
+        simpa using (Int.ModEq.mul_right (y ^ 2) h2q1)
+    have : (2 * (q : ℤ)) * (y ^ 2) + (y ^ 2) + (n : ℤ) * (z ^ 2) ≡ 0 [ZMOD (n : ℤ)] := by
+      simpa [hlin] using (hfirst.add hnz)
+    exact hQ'.trans this
+
+  -- Step 3: combine the mod-`n` and mod-`2q` statements.
+  have hcrt : ankeny_Q n q x y z ≡ 0 [ZMOD (n : ℤ) * (2 * q : ℤ)] :=
+    (Int.modEq_and_modEq_iff_modEq_mul hmn).1 ⟨hQ_mod_n, hQ_mod_2q⟩
+  -- Normalize the modulus `(n : ℤ) * (2*q : ℤ)` to `2*n*q`.
+  have hmul_nat : (n : ℤ) * (2 * q : ℤ) = (2 * n * q : ℤ) := by ring
+  simpa [hmul_nat] using hcrt
 
 /-- Minkowski application: there exists a representation `2qx² + y² + nz² = 2nq`. -/
 lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : Nat.Prime q)
