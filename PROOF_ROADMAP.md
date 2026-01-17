@@ -32,9 +32,11 @@ At the moment this is a scaffold (with placeholders), plus a small rational-arit
 The current implementation of `sum_three_squares_of_not_exception` follows the geometric descent method proposed by Ankeny (1957). The proof structure is formalized and typechecks, with specific technical lemmas awaiting completion.
 
 1.  **Ankeny Lemmas**: Squarefree decomposition and mod-8 congruence logic. Fully formalized in `Covolume/Legendre/AnkenyLemmas.lean`.
-2.  **Lattice Definition**: The `ankeny_lattice` is defined as an `AddSubgroup (Fin 3 → ℝ)` encoding the congruences \(x \equiv y \pmod n\) and \(y \equiv bz \pmod{2q}\) (scaffold).
-3.  **Algebraic Glue**: `ankeny_Q_mod` proves that \(Q(x,y,z) = 2qx^2 + y^2 + nz^2\) vanishes modulo \(2nq\), assuming the two defining congruences and the relation \(b^2 \equiv -n \pmod{2q}\). (This is now proved; remaining work is extracting those congruences from lattice membership cleanly in the Minkowski step.)
-4.  **Minkowski Application**: `exists_ankeny_representation` is the intended Minkowski/volume step producing a non-zero lattice point with \(Q(x,y,z) = 2nq\) (currently a placeholder).
+2.  **Lattice Definition**: The `ankeny_lattice` is defined as an `AddSubgroup (Fin 3 → ℝ)` encoding the congruences $x \equiv y \pmod n$ and $y \equiv bz \pmod{2q}$.
+3.  **Algebraic Glue**: `ankeny_Q_mod` proves that $Q(x,y,z) = 2qx^2 + y^2 + nz^2$ vanishes modulo $2nq$, assuming the two defining congruences and the relation $b^2 \equiv -n \pmod{2q}$.
+4.  **Minkowski Application**:
+    - The full geometric call-site (volume bound + Minkowski) is proved in `Experiments/CheckMinkowski.lean`.
+    - `exists_ankeny_representation` in `Covolume/Legendre/Ankeny.lean` is the port target: extract the congruences + a strict bound $0 < Q(x,y,z) < 4nq$ from ellipsoid membership, then force $Q(x,y,z) = 2nq$ by divisibility.
 5.  **Descent Step**: `reduction_to_sum_three_squares` is the intended valuation-based descent step using primes \(p \equiv 3 \pmod 4\) (currently a placeholder).
 
 ## Cauchy's Lemma (Covolume/Cauchy/Main.lean)

@@ -1,13 +1,13 @@
 # Record of Progress
 
 ## Phase 1: Foundations
-*   **Polygonal Numbers**: Defined `polygonal s n` and established basic identities, including the recurrence \(P(s,n+1) = P(s,n) + 1 + (s-2)n\) and the quadratic closed form in \(\mathbb{Z}\).
-*   **Cauchy Identity**: Proved the core algebraic identity relating sums of polygonal numbers to sums of squares: \(2 \cdot \sum P(s, x_i) = (s-2) \cdot \sum x_i^2 + (4-s) \cdot \sum x_i\).
+*   **Polygonal Numbers**: Defined `polygonal s n` and established basic identities, including the recurrence $P(s,n+1) = P(s,n) + 1 + (s-2)n$ and the quadratic closed form in $\mathbb{Z}$.
+*   **Cauchy Identity**: Proved the core algebraic identity relating sums of polygonal numbers to sums of squares: $2 \cdot \sum P(s, x_i) = (s-2) \cdot \sum x_i^2 + (4-s) \cdot \sum x_i$.
 
 ## Phase 2: Legendre's Three-Square Theorem
 *   **Lattice Construction**: Implemented candidate lattice definitions for Ankeny-style descent. The current implementation uses congruence-defined membership and targets a computable covolume.
 *   **Covolume Computation**: Initial API exploration for covolume calculations is documented in `Experiments/CheckMinkowski.lean`.
-*   **Proof Strategy Pivot**: The project has shifted from a direct Minkowski application to Ankeny's descent method. This approach involves finding a representation of \(2nq\) and reducing it to a representation of \(n\).
+*   **Proof Strategy Pivot**: The project has shifted from a direct Minkowski application to Ankeny's descent method. This approach involves finding a representation of $2nq$ and reducing it to a representation of $n$.
 
 ## Phase 3: Cauchy's Lemma
 *   **Interval Logic**: Scaffold for lemmas identifying odd integers within specified real intervals (proofs pending).

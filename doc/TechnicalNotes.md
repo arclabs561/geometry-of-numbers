@@ -1,9 +1,9 @@
 # Technical Notes and Shelved Approaches
 
 ## 1. Direct Minkowski Application for Sum of Three Squares
-*   **Approach**: Utilize Minkowski's Convex Body Theorem on a sphere of radius \(\sqrt{n}\) within a lattice of covolume \(n\).
-*   **Analysis**: In three dimensions, the volume of a sphere with radius \(R\) is \(\frac{4}{3}\pi R^3\). For a non-zero lattice point to be guaranteed, the volume must exceed \(8 \cdot \text{covolume}\).
-*   **Constraint**: For \(\text{covolume} = n\), the requirement is \(\frac{4}{3}\pi n^{3/2} > 8n\), or \(\sqrt{n} > \frac{6}{\pi} \approx 1.91\), implying \(n > 3.65\). For \(n=3\), the volume is \(\frac{4}{3}\pi (3\sqrt{3}) \approx 21.7\), which is less than the required 24.
+*   **Approach**: Utilize Minkowski's Convex Body Theorem on a sphere of radius $\sqrt{n}$ within a lattice of covolume $n$.
+*   **Analysis**: In three dimensions, the volume of a sphere with radius $R$ is $\frac{4}{3}\pi R^3$. For a non-zero lattice point to be guaranteed, the volume must exceed $8 \cdot \text{covolume}$.
+*   **Constraint**: For $\text{covolume} = n$, the requirement is $\frac{4}{3}\pi n^{3/2} > 8n$, or $\sqrt{n} > \frac{6}{\pi} \approx 1.91$, implying $n > 3.65$. For $n=3$, the volume is $\frac{4}{3}\pi (3\sqrt{3}) \approx 21.7$, which is less than the required $24$.
 *   **Conclusion**: Direct application is insufficient for small \(n\). The project has pivoted to a descent method, representing \(kn\) and descending to \(k=1\).
 
 ## 2. Ternary Quadratic Forms (Archive/TernaryQF.lean)
@@ -13,7 +13,7 @@
 
 ## Optimization: Specialization and the Nathanson Gap
 
-*   **Observation**: The expression \(4a - b^2\) appearing in Cauchy's Lemma is always congruent to \(3 \pmod 8\) when \(a\) and \(b\) are odd.
+*   **Observation**: The expression $4a - b^2$ appearing in Cauchy's Lemma is always congruent to $3 \pmod 8$ when $a$ and $b$ are odd.
 *   **Impact**: Specifying \(n \equiv 3 \pmod 8\) satisfies the requirements for the general theorem while avoiding powers-of-4 logic.
 *   **The Nathanson Gap**: During the formalization of the Cauchy reduction, we identified a known gap in Nathanson's original 1987 paper regarding complete residue classes modulo \(m\). This library targets the corrected proof presented in Nathanson's 1996 book (*Additive Number Theory: The Classical Bases*), ensuring mathematical rigor.
 

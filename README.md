@@ -17,6 +17,22 @@ lake build
 lake exe status_report
 ```
 
+## Math (rendered on GitHub)
+
+Three-square “exception” numbers have the form
+
+$$
+n = 4^a(8k+7).
+$$
+
+Ankeny’s geometric descent is organized around the ternary quadratic form
+
+$$
+Q(x,y,z) = 2qx^2 + y^2 + nz^2,
+$$
+
+and a Minkowski step on a suitable ellipsoid for a lattice of covolume $2nq$.
+
 ## Strategy
 
 The project implements a modular approach to formalizing the geometry of numbers, prioritizing infrastructure over isolated proofs.
