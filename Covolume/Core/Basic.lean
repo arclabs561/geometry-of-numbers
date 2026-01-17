@@ -228,8 +228,10 @@ theorem polygonal_def_alt (s n : ℕ) (hs : 2 ≤ s) :
   -- In `ℕ`, the coefficient `(s-4)` truncates at 0, so the clean closed form lives in `ℤ`.
   simpa using (two_mul_polygonal_int s n hs)
 
-/-- The "Cauchy identity" connecting sums of polygonal numbers to sums of squares.
-    This is the core algebraic insight behind Cauchy's proof.
+/-- The "Cauchy identity" relating sums of polygonal numbers to sums of squares.
+This identity is the core algebraic prerequisite for Cauchy's proof of the
+Polygonal Number Theorem.
+\[ 2 \cdot \sum_{i=1}^4 P(s, x_i) = (s-2) \cdot \sum_{i=1}^4 x_i^2 + (4-s) \cdot \sum_{i=1}^4 x_i \]
 -/
 theorem cauchy_polygonal_identity (s : ℕ) (hs : 3 ≤ s) (t u v w : ℕ) :
     let m : ℤ := (s : ℤ) - 2

@@ -47,6 +47,11 @@ noncomputable def gram_schmidt_step {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) :
 noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℝ :=
   sorry
 
+/-- Check the Lovász condition for two adjacent basis vectors.
+    ‖b*_k‖² ≥ (δ - μ_{k,k-1}²) * ‖b*_{k-1}‖² -/
+def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
+  norm_k ≥ ((δ : ℝ) - μ^2) * norm_km1
+
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
 def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 

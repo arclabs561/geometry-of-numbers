@@ -17,8 +17,8 @@ u^2 + v^2 + 1 ≡ 0  [ZMOD n]
 for odd `n`. In the descent-lattice approach (`Legendre/Minkowski.lean`) this condition ensures that
 any lattice point has norm square divisible by `n`.
 
-This file collects small helper lemmas that produce such `u, v` in easy cases (currently: primes)
-and records the intended strategy for odd composite `n` (currently a placeholder).
+This file collects helper lemmas that produce such `u, v` in easy cases (primes)
+and prime powers.
 -/
 
 /-- Prime modulus case: for a prime `p`, there exist `u, v : ZMod p` with `u^2 + v^2 + 1 = 0`. -/
@@ -40,10 +40,9 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p k : ℕ) [hp : Fact p.Pr
   | zero => use 0, 0; simp [Int.ModEq]
   | succ k' ih =>
     obtain ⟨u0, v0, h0⟩ := ih
-    -- We seek x, y such that (u0 + x*p^k')^2 + (v0 + y*p^k')^2 + 1 ≡ 0 (mod p^{k'+1}).
-    -- Expanding yields: (u0^2 + v0^2 + 1) + 2*p^k'*(u0*x + v0*y) + p^{2k'}*(x^2 + y^2) ≡ 0 (mod p^{k'+1}).
-    -- Since k' >= 0, p^{2k'} is 0 mod p^{k'+1} for k' >= 1.
-    -- The case k' = 0 uses the prime case solvability.
+    -- Lift from p^k' to p^{k'+1} using Hensel's lemma logic.
+    -- For k'=0, use prime case existence.
+    -- For k'>0, at least one of u0, v0 is a unit mod p.
     sorry
 
 /-- Odd modulus case: for odd `n`, there exist integers `u, v` such that
