@@ -1,0 +1,41 @@
+---
+description: Documentation standard for this repo (Lean proofs)
+alwaysApply: true
+---
+
+## Scope
+
+This rule applies to `polygonal-number-theorem/` only. It is not a general “dev” rule.
+
+## Goal
+
+Complicated subjects must be explained **simply**, with **evidence** (lemma names, invariants,
+references). If a reader cannot tell *why a step is correct* and *what it is for* from the prose,
+the documentation is insufficient.
+
+## Write for two audiences
+
+- **Mathematician**: wants the proof plan, hypotheses, where the inequalities come from.
+- **Lean maintainer (future you)**: wants to know which rewriting lemmas are fragile and why.
+
+## Minimum standard (non-negotiable for hard steps)
+
+For any lemma/definition that is part of the main proof path (Legendre/Ankeny/Minkowski/reduction):
+
+- **Define variables**: say what `n q b` (etc.) are and the required hypotheses (`n>0`, `q` prime, …).
+- **State the invariant** you’re maintaining (e.g. “this lattice is contained in `ankeny_lattice`”,
+  “this set is symmetric/convex”, “determinant is nonzero so the linear map is invertible”).
+- **Point to the API** you rely on (mathlib lemma names), not just “by simp”.
+- **Explain the shape choices** (pi-form vs Icc-form, `ENNReal.ofReal` normalization).
+
+## Comment hygiene
+
+- No “obvious/clearly/just” unless followed by a reason or lemma name.
+- Don’t narrate tactics. Narrate **mathematical transformations** and **why the next lemma applies**.
+- Prefer short local lemmas with good doc comments over long `by` blocks with many inline comments.
+
+## Post-hoc cleanup
+
+If you touch a file for proof work, fix nearby comments/docstrings that violate this standard
+in the same edit session (small, local refactors; no repo-wide rewrites in one go).
+

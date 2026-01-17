@@ -1,0 +1,18 @@
+---
+description: Lean 4 guidance for Minkowski + lattice steps
+alwaysApply: false
+---
+
+## When working on Minkowski steps
+
+- First make a toy version in `Experiments/` that proves:
+  - symmetry (`∀ x ∈ s, -x ∈ s`)
+  - convexity (`Convex ℝ s`)
+  - a volume identity/bound (`volume s = ...` or `... ≤ volume s`)
+  - countability of the lattice type (`[Countable ↥L]`), explicitly
+
+## Common pitfalls (seen in this repo)
+
+- `simp` rewriting `Set.pi ... (Icc ...)` into `Set.Icc (fun i => ...) (fun i => ...)` can break
+  downstream lemmas expecting the “pi form”. Use `simp [..., -Set.pi_univ_Icc]` to keep the shape.
+- `ENNReal.ofReal (p^n)` vs `(ENNReal.ofReal p)^n`: normalize using `ENNReal.ofReal_pow`.

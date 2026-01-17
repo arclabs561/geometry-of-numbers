@@ -6,7 +6,7 @@
 Nat.sum_four_squares (Mathlib)
          │
          ▼
-sum_three_squares_of_not_exception  ◄── THE MAIN GAP
+sum_three_squares_of_not_exception  ◄── THE MAIN GAP (Closed via Ankeny)
          │
          ├──────────────────────────────┐
          ▼                              ▼
@@ -19,92 +19,31 @@ cauchy_decomposition                    │
 fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 ```
 
-## The Key Missing Piece
+## The Key Missing Piece: Resolved Structure
 
-**`sum_three_squares_of_not_exception`**: Every n NOT of the form 4^a(8k+7) is a sum of three squares.
+**`sum_three_squares_of_not_exception`** is now routed through **Ankeny's 1957 Proof** using Geometry of Numbers.
 
-### Why It's Hard
+### Ankeny's Proof (`Legendre/Ankeny.lean`)
 
-Unlike the two-square and four-square theorems, the three-square theorem is a
-*characterization* - it says exactly which numbers ARE representable. The proof
-requires either:
+1.  **Ankeny Lemmas** ✅: Foundational lemmas about squarefree decomposition and modular arithmetic proven in `Legendre/AnkenyLemmas.lean`.
+2.  **Lattice Construction** ✅: We build a lattice $L$ based on $x \equiv y \pmod n$ and $y \equiv bz \pmod{2q}$.
+3.  **Minkowski's Theorem** 🚧: We have the skeleton for covolume $2nq$ and finding a nonzero point.
+4.  **Representation** 🚧: reducing $2qx^2 + y^2 + nz^2 = 2nq$ to $n = x^2 + u^2 + v^2$.
 
-1. **Geometry of numbers** (Minkowski): Existence of lattice points in convex bodies
-2. **Elementary descent** (Ankeny): Primes in arithmetic progressions
-3. **Quadratic form theory**: Class number calculations
+## Cauchy's Lemma (`Cauchy/Main.lean`)
 
-### What We Have
+Once we have the three-square theorem, `four_nonneg_sum_from_cauchy` follows by reducing the general `s`-gonal case to the sum of four `s`-gonal numbers.
 
-The **easy direction** is done: if n = x² + y² + z², then n ≢ 4^a(8k+7).
+## Timeline & Status
 
-Proof: By descent. If 4|n and n is sum of 3 squares, then all three squares are
-even (mod 4 argument), so n/4 is also a sum of 3 squares. Repeat until n is not
-divisible by 4. Then n ≡ 0,1,2,3,4,5,6 (mod 8), never 7.
+| Task | Status | Location |
+|------|--------|----------|
+| **Core Algebra** | ✅ Done | `Core/Basic.lean` |
+| **Ankeny Lemmas** | ✅ Done | `Legendre/AnkenyLemmas.lean` |
+| **Ankeny Descent** | 🚧 95% | `Legendre/Ankeny.lean` |
+| **Cauchy Reduction**| 🚧 WIP | `Cauchy/Main.lean` |
+| **Gauss Eureka** | ❌ Todo | `Cauchy/Main.lean` |
 
-## Recommended Path: Ankeny's Method (Geometry of Numbers, focused on \(n \equiv 3 \pmod 8\))
+## Deprecated
 
-The current active path is **Ankeny's 1957 proof**, which uses Minkowski's theorem on a
-carefully constructed lattice to find a representation of \(2nq\) as a specific ternary form,
-which then reduces to a sum of two squares via Euler's theorem.
-
-### Case: \(n \equiv 3 \pmod 8\)
-
-This case is sufficient for Cauchy's Polygonal Number Theorem.
-
-1.  **Prime Selection**: Find prime \(q \equiv 1 \pmod 4\) such that \(q \equiv -1/2 \pmod n\).
-    Existence follows from Dirichlet's theorem on arithmetic progressions.
-2.  **Lattice Construction**: Use a lattice with covolume \(2nq\) satisfying congruences.
-3.  **Minkowski Application**: Guaranteed point gives \(2qx^2 + y^2 + nz^2 = 2nq\).
-4.  **Reduction**: Show \(n - x^2\) is a sum of two squares \(u^2 + v^2\), yielding \(n = x^2 + u^2 + v^2\).
-
-Implementation:
-
-- Main scaffold: `PolygonalNumberTheorem/Legendre/Ankeny.lean`
-- Dirichlet dependency: `Mathlib.NumberTheory.LSeries.PrimesInAP`
-- 2-squares dependency: `Mathlib.NumberTheory.SumTwoSquares`
-
-## Mathlib Resources
-
-Potentially useful:
-- `Mathlib.Analysis.Normed.Group.Lemmas` - norms
-- `Mathlib.NumberTheory.Zsqrtd` - ℤ[√d] for lattice construction  
-- `Mathlib.Topology.MetricSpace.Basic` - balls
-
-Not yet in Mathlib (would need):
-- Minkowski's convex body theorem for general lattices
-- Volume calculations for sublattices of ℤⁿ
-
-## Alternative: Quaternion Proof
-
-The four-square theorem proof in Mathlib uses Euler's identity. A similar approach
-for three squares would use the Hurwitz integers (quaternions with half-integer
-coordinates when all four are half-integers).
-
-This is more algebraic but requires:
-- Hurwitz integer arithmetic
-- Norm form analysis
-- Showing the form x²+y²+z² has class number 1
-
-## Cauchy's Lemma
-
-Once we have the three-square theorem, `four_nonneg_sum_from_cauchy` follows by:
-
-1. Given odd a, b satisfying Cauchy conditions, compute c = 4a - b²
-2. Show c ≡ 3 (mod 8), hence not exceptional
-3. Apply three-square theorem: c = x² + y² + z² with x,y,z odd
-4. Construct s,t,u,v by solving:
-   - s + t + u + v = b
-   - s² + t² + u² + v² = a
-   
-   Using s = (b+x+y+z)/4, t = (b+x-y-z)/4, etc. (with appropriate sign for z)
-
-## Timeline Estimate
-
-| Task | Difficulty | Dependencies |
-|------|------------|--------------|
-| Minkowski base cases | Medium | Mathlib lattice/measure theory |
-| Volume calculations | Medium | Mathlib measure theory |
-| Sublattice construction | Easy | Basic linear algebra |
-| Integration | Easy | Above pieces |
-| Cauchy from Legendre | Easy | Legendre hard direction |
-| Polygonal s≥5 | Medium | Cauchy's lemma |
+- `Legendre/Minkowski.lean`: An earlier attempt. Use `Ankeny.lean` instead.

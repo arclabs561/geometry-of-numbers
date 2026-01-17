@@ -1,0 +1,60 @@
+---
+description: Repo-local working rules for polygonal-number-theorem
+alwaysApply: true
+---
+
+## Default posture
+
+- Prefer **small experiments** in `Experiments/` to discover lemma shapes before touching main proofs.
+- Keep `lake build` green. If an experiment is incomplete, keep it compiling (no long chains of `sorry`).
+- Avoid “transport across definitional equality” traps in Lean. If a theorem depends on a carrier subtype
+  (e.g. `IsAddFundamentalDomain (↥L) ...`), prefer returning an explicit `L` plus a lemma relating it
+  (e.g. `L ⊆ ankeny_lattice ...`) instead of rewriting across `L = L'`.
+
+## Documentation & comments (repo-specific)
+
+This repo is about formalizing hard number theory and geometry-of-numbers arguments. Comments are not
+fluff; they are part of the proof artifact. Aim for “a careful reader can reconstruct the plan and
+the key invariants without reverse-engineering the proof term”.
+
+- Prefer **module docs** (`/-! ... -/`) at the top of files that introduce a proof strategy.
+- Prefer **doc comments** (`/-- ... -/`) on nontrivial definitions/lemmas that are reused or are
+  “load-bearing” (e.g. lattice construction, covolume, Minkowski inequality, reduction steps).
+- Use plain, non-marketing language. Avoid “obvious”, “clearly”, “just”, “simply” unless you back it
+  up with a one-line reason or a lemma name.
+
+### Required structure for complicated facts
+
+For a lemma that hides significant reasoning (typical examples: Minkowski step, determinant/covolume,
+quadratic form manipulations), include:
+
+- **Intuition first (1–4 sentences)**: what the lemma is doing, in human terms.
+- **Formal statement paraphrase (1–2 sentences)**: restate the statement with the key symbols/variables.
+- **Why we need it**: the exact downstream lemma/theorem that consumes it (name the lemma).
+- **Evidence / key ingredients**: list the 2–5 main lemmas used (e.g. `ZSpan.volume_fundamentalDomain`,
+  `MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure`,
+  `MeasureTheory.addHaar_preimage_linearMap`, `LinearMap.det_toLin'`).
+- **Failure modes / pitfalls**: what goes wrong if hypotheses are weakened (e.g. “needs `det ≠ 0`”,
+  “simp lemma `Set.pi_univ_Icc` changes goal shape”, “dependent type equality trap for `↥L`”).
+- **References (when external)**: cite source as author + year (e.g. “Ankeny 1957”) or mathlib file
+  (e.g. `Mathlib/NumberTheory/NumberField/CanonicalEmbedding/ConvexBody.lean`).
+
+### Comments inside proofs
+
+- Prefer **short named sublemmas** over long tactical blocks with dense comments.
+- When commenting a line, comment the **goal transformation** (“reduce to …”, “normalize to `ENNReal.ofReal`”),
+  not the syntax (“simp here”).
+
+## Proof style
+
+- When a `simp` goal doesn’t close, stop and **stabilize the goal**:
+  - expand one definitional layer
+  - introduce a named lemma for the annoying rewrite
+  - only then resume `simp`/`linarith`/`nlinarith`.
+- Prefer `simp [foo]` over `simp_all` unless you know what hypotheses you want rewritten.
+- Prefer `simp [.., -lemmaName]` to disable a simp lemma that changes the “shape” you want (e.g.
+  `Set.pi_univ_Icc` vs `Set.pi` goals).
+
+## Meta
+
+- No “marketing” phrasing in docs or comments. Keep wording dry and specific.

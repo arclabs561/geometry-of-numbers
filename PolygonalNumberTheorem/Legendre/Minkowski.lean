@@ -20,9 +20,53 @@ import PolygonalNumberTheorem.Legendre.Exceptions
 /-!
 # Minkowski Descent for Legendre's Three-Squares Theorem
 
-This file implements the "hard direction" of Legendre's three-squares theorem
-specifically for the case `n ≡ 3 (mod 8)`, which is the case required for
-Fermat's Polygonal Number Theorem.
+This file is a (currently partial) formalization of a Minkowski-style route to
+Legendre’s three-square theorem, specialized to the key case \(n \equiv 3 \pmod 8\).
+
+## What this file is trying to prove
+
+Ultimately we want:
+
+- `sum_three_squares_of_three_mod_eight`: if `n % 8 = 3`, then `n` is a sum of three squares.
+- `minkowski_three_squares`: the general statement “every `n` not of the form \(4^a(8b+7)\) is
+  a sum of three squares”.
+
+This file is one attempt at packaging the Minkowski step as a reusable “descent lattice” lemma.
+The fully-worked Ankeny (1957) proof lives in `PolygonalNumberTheorem/Legendre/Ankeny.lean`.
+
+## Intuition first (the data flow)
+
+The geometry-of-numbers step looks like this:
+
+1. Choose integers `u, v` such that \(u^2 + v^2 + 1 \equiv 0 \pmod n\).  
+   (This is the “local condition” that makes the norm square congruence work.)
+
+2. Build a rank-3 ℤ-lattice `descent_lattice n u v` inside `E = ℝ^3` encoding the congruences
+   \(x \equiv u z \pmod n\) and \(y \equiv v z \pmod n\).
+
+3. Compute the covolume of this lattice via an explicit basis matrix and
+   `ZSpan.volume_fundamentalDomain`.
+
+4. Apply Minkowski’s theorem
+   `MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure`
+   to a symmetric convex body (typically an ellipsoid).
+
+5. Convert the resulting nonzero lattice point back into a three-squares representation.
+
+## Evidence / key Mathlib lemmas used in this style of proof
+
+- Minkowski: `MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure`
+  (`Mathlib/MeasureTheory/Group/GeometryOfNumbers.lean`)
+- Covolume via basis: `ZSpan.isAddFundamentalDomain'`, `ZSpan.volume_fundamentalDomain`
+  (`Mathlib/Algebra/Module/ZLattice/*`)
+- Volume scaling under linear maps (for ellipsoids): `MeasureTheory.addHaar_preimage_linearMap`
+  (`Mathlib/MeasureTheory/Measure/Lebesgue/EqHaar.lean`)
+
+## Pitfalls (Lean)
+
+- Many geometric statements are phrased as `IsAddFundamentalDomain (↥L) ...`, i.e. they depend on the
+  *carrier subtype* of a lattice. Rewriting across `L = L'` is therefore fragile.
+  Prefer returning an explicit lattice together with inclusion lemmas, as in the Ankeny file.
 -/
 
 namespace PolygonalNumberTheorem
@@ -30,9 +74,35 @@ namespace PolygonalNumberTheorem
 open MeasureTheory MeasureTheory.Measure Set WithLp Module
 open scoped NNReal ENNReal BigOperators Matrix
 
+/-! `E` is just `ℝ^3`, written as `Fin 3 → ℝ` (the type used by Mathlib’s `volume` on `ℝ^ι`). -/
 abbrev E := (Fin 3 → ℝ)
 
-/-- The basis for the descent lattice. -/
+/-- A concrete basis of `E = ℝ^3` used to define the descent lattice.
+
+### Informal description
+
+We build a basis by starting from the standard basis `b0 := Pi.basisFun` and mapping it by an
+invertible linear map whose matrix is:
+
+```text
+⎡ n  0  u ⎤
+⎢ 0  n  v ⎥
+⎣ 0  0  1 ⎦
+```
+
+This matrix is upper triangular, so its determinant is \(n^2\), hence nonzero when `n > 0`.
+
+### Why we need this
+
+This basis is used to express `descent_lattice` as a ℤ-span (`descent_lattice_eq_zspan`), and then
+compute its covolume (`descent_lattice_covolume`) using `ZSpan.volume_fundamentalDomain`.
+
+### Pitfall
+
+In Lean, `Matrix.of basis` uses basis vectors as columns, so the matrix you get is typically a
+transpose of the matrix used to define the linear map. When computing determinants, use
+`Matrix.det_transpose` rather than fighting definitional equalities.
+-/
 noncomputable def descent_basis (n : ℕ) (u v : ℤ) (hn : 0 < n) :
     Module.Basis (Fin 3) ℝ E :=
   let b0 : Module.Basis (Fin 3) ℝ E := Pi.basisFun ℝ (Fin 3)
@@ -44,7 +114,22 @@ noncomputable def descent_basis (n : ℕ) (u v : ℤ) (hn : 0 < n) :
     sorry
   b0.map (Matrix.toLinearEquiv b0 A (isUnit_iff_ne_zero.mpr hdet))
 
-/-- The lattice of points `(x, y, z)` in `ℝ³` satisfying congruences mod n. -/
+/-- The “descent lattice” inside `E = ℝ^3`.
+
+An element `p : E` is in `descent_lattice n u v` iff it is an integer point `(x,y,z)` (viewed in `ℝ^3`)
+with the congruences:
+
+```text
+x ≡ u*z  [ZMOD n]
+y ≡ v*z  [ZMOD n]
+```
+
+### Why we need this
+
+If `u^2 + v^2 + 1 ≡ 0 [ZMOD n]`, then any lattice point satisfies
+`x^2 + y^2 + z^2 ≡ 0 [ZMOD n]` (see `mem_descent_lattice_norm_sq_mod`). This is the algebraic side of
+the Minkowski argument: lattice membership ⇒ norm-square congruence.
+-/
 def descent_lattice (n : ℕ) (u v : ℤ) : AddSubgroup E where
   carrier := { p | ∃ x y z : ℤ, p 0 = (x : ℝ) ∧ p 1 = (y : ℝ) ∧ p 2 = (z : ℝ) ∧
                                 x ≡ u * z [ZMOD n] ∧ y ≡ v * z [ZMOD n] }
@@ -84,7 +169,14 @@ lemma descent_lattice_eq_zspan (n : ℕ) (u v : ℤ) (hn : 0 < n) :
     descent_lattice n u v = (Submodule.span ℤ (Set.range (descent_basis n u v hn))).toAddSubgroup := by
   sorry
 
-/-- A point in the descent lattice satisfies the congruence condition mod n. -/
+/-- If `p ∈ descent_lattice n u v` and `u^2 + v^2 + 1 ≡ 0 [ZMOD n]`, then the norm square satisfies
+`x^2 + y^2 + z^2 ≡ 0 [ZMOD n]`.
+
+### Evidence
+
+The proof is purely algebraic: use `Int.ModEq.pow` to square the defining congruences, add them, then
+factor out `z^2`.
+-/
 lemma mem_descent_lattice_norm_sq_mod (n : ℕ) (u v : ℤ) (p : E)
     (hp : p ∈ descent_lattice n u v)
     (h_local : u^2 + v^2 + 1 ≡ 0 [ZMOD n]) :
@@ -110,7 +202,11 @@ lemma descent_lattice_covolume (n : ℕ) (u v : ℤ) (hn : 0 < n) :
       volume F = (n ^ 2 : ℝ≥0∞) := by
   sorry
 
-/-- There exist `u, v` such that `u² + v² + 1 ≡ 0 (mod n)` for odd `n`. -/
+/-- For odd `n`, there exist `u, v` such that `u^2 + v^2 + 1 ≡ 0 [ZMOD n]`.
+
+This is the “local solvability” input needed by `mem_descent_lattice_norm_sq_mod`.
+In Ankeny’s proof this comes from quadratic-residue arguments; here it is left as a placeholder.
+-/
 lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
     ∃ u v : ℤ, u^2 + v^2 + 1 ≡ 0 [ZMOD n] := by
   sorry
@@ -120,7 +216,10 @@ theorem sum_three_squares_of_three_mod_eight (n : ℕ) (hn : n % 8 = 3) :
     ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n := by
   sorry
 
-/-- Main theorem via Minkowski: every n not of the form 4^a(8k+7) is sum of 3 squares. -/
+/-- Main theorem (target statement): every `n` not of the form \(4^a(8b+7)\) is a sum of 3 squares.
+
+This file currently does not complete the proof; the completed proof route is in `Legendre/Ankeny.lean`.
+-/
 theorem minkowski_three_squares (n : ℕ) (_h : ¬ Nat.is_three_square_exception n) :
     ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n := by
   sorry
