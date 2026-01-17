@@ -237,21 +237,125 @@ lemma exists_ankeny_prime (n : ℕ) (hn : n % 8 = 3) :
 lemma exists_ankeny_b (n q : ℕ) (hn : n % 8 = 3) (hq : Nat.Prime q) (hq1 : q % 4 = 1)
     (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) :
     ∃ b : ℤ, b^2 ≡ - (n : ℤ) [ZMOD (4 * q)] := by
-  /-
-  ESCAPE HATCH (current):
-  This is a quadratic-residue existence statement:
-  \[
-    b^2 \equiv -n \pmod{4q}.
-  \]
-  In the classical proof, one shows `(-n / q) = 1` (Jacobi/Legendre symbol),
-  uses `q ≡ 1 (mod 4)` to manage the `4q` modulus, and then lifts to `ℤ` via CRT.
+  classical
+  have hn_odd : Odd n := Covolume.NumberTheory.odd_of_mod8_eq3 hn
+  have hn0 : n ≠ 0 := by
+    intro h0; subst h0
+    simpa using hn
 
-  TODO:
-  - Use `Mathlib.NumberTheory.LegendreSymbol.*` to prove `IsSquare (-(n : ZMod q))`.
-  - Convert `IsSquare` in `ZMod q` to an explicit `b` with `b^2 ≡ -n [ZMOD q]`.
-  - Combine with the mod-4 condition (since `q` is odd) to get mod `4q`.
-  -/
-  sorry
+  have hq_odd : Odd q := by
+    -- `q % 4 = 1` rules out `q = 2`, hence `q` is odd.
+    have hq_ne2 : q ≠ 2 := by
+      intro hq2; subst hq2
+      simp at hq1
+    exact hq.odd_of_ne_two hq_ne2
+
+  have hcop4q : Nat.Coprime 4 q := by
+    -- `q` odd implies `Coprime 4 q`.
+    exact (Nat.coprime_pow_left_iff (n := 2) (by decide : 0 < 2) 2 q).2 (Nat.coprime_two_left.2 hq_odd)
+
+  -- Step 1: compute `J(q | n)` from the congruence `2*q ≡ -1 (mod n)`.
+  have h2q_mod_n : (2 * (q : ℤ)) ≡ (-1 : ℤ) [ZMOD n] :=
+    Covolume.NumberTheory.two_mul_int_modEq_neg_one_of_q_eq_neg_inv_two n q hn_odd hq_mod
+
+  have hJ_2q : J(2 * (q : ℤ) | n) = J(-1 | n) := by
+    -- Jacobi symbol depends only on the numerator mod `n`.
+    refine jacobiSym.mod_left' (a₁ := (2 * (q : ℤ))) (a₂ := (-1 : ℤ)) (b := n) ?_
+    simpa using h2q_mod_n.eq
+
+  have hn4 : n % 4 = 3 := by omega
+
+  have hJ_neg_one : J(-1 | n) = (-1 : ℤ) := by
+    -- `J(-1 | n) = χ₄ n = -1` since `n % 4 = 3`.
+    calc
+      J(-1 | n) = ZMod.χ₄ n := jacobiSym.at_neg_one hn_odd
+      _ = (-1 : ℤ) := ZMod.χ₄_nat_three_mod_four hn4
+
+  have hJ_two : J(2 | n) = (-1 : ℤ) := by
+    -- `J(2 | n) = χ₈ n = -1` since `n % 8 = 3`.
+    calc
+      J(2 | n) = ZMod.χ₈ n := jacobiSym.at_two hn_odd
+      _ = (-1 : ℤ) := by
+        -- Reduce to the explicit value at `n % 8 = 3`.
+        have hred : ZMod.χ₈ n = ZMod.χ₈ (n % 8 : ℕ) := by
+          simpa using (ZMod.χ₈_nat_mod_eight n)
+        -- `χ₈ 3 = -1` by the definition of `χ₈ : MulChar (ZMod 8) ℤ`.
+        have hval : ZMod.χ₈ (3 : ℕ) = (-1 : ℤ) := by decide
+        simpa [hred, hn] using hval
+
+  have hJ_q : J((q : ℤ) | n) = (1 : ℤ) := by
+    -- From `J(2*q|n) = J(2|n)*J(q|n)` and the computed values, solve for `J(q|n)`.
+    have hmul : J((2 : ℤ) * (q : ℤ) | n) = J(2 | n) * J((q : ℤ) | n) := jacobiSym.mul_left 2 q n
+    have : J(2 | n) * J((q : ℤ) | n) = (-1 : ℤ) := by
+      -- rewrite the LHS as `J(2*q|n)` then use the mod-`n` identification.
+      have : J((2 : ℤ) * (q : ℤ) | n) = (-1 : ℤ) := by simpa [mul_assoc] using (hJ_2q.trans hJ_neg_one)
+      simpa [hmul] using this
+    -- `(-1) * J(q|n) = (-1)` implies `J(q|n) = 1`.
+    -- We use the computed value `J(2|n) = -1`.
+    have : (-1 : ℤ) * J((q : ℤ) | n) = (-1 : ℤ) := by simpa [hJ_two] using this
+    -- cancel `(-1)`
+    simpa using (mul_left_cancel₀ (by decide : (-1 : ℤ) ≠ 0) this)
+
+  -- Step 2: Reciprocity transfers `J(q|n)=1` to `J(n|q)=1` since `q % 4 = 1`.
+  have hJ_nq : J((n : ℤ) | q) = (1 : ℤ) := by
+    have := jacobiSym.quadratic_reciprocity_one_mod_four (a := q) (b := n) hq1 hn_odd
+    -- `this : J(q|n) = J(n|q)`
+    simpa using (this ▸ hJ_q)
+
+  -- Step 3: Turn `J(-n | q) = 1` into an actual square root in `ZMod q`.
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hJ_negn : J(-(n : ℤ) | q) = 1 := by
+    -- `J(-n|q) = χ₄ q * J(n|q)`; for `q % 4 = 1`, `χ₄ q = 1`.
+    have hχ4 : ZMod.χ₄ q = (1 : ℤ) := ZMod.χ₄_nat_one_mod_four hq1
+    calc
+      J(-(n : ℤ) | q) = ZMod.χ₄ q * J((n : ℤ) | q) := jacobiSym.neg (a := (n : ℤ)) (hb := hq_odd)
+      _ = 1 := by simp [hχ4, hJ_nq]
+
+  have hsq_q : IsSquare (-(n : ZMod q)) := by
+    -- `ZMod.isSquare_of_jacobiSym_eq_one` returns `IsSquare ((-(n:ℤ)) : ZMod q)`;
+    -- rewrite the integer cast using `Int.cast_neg` / `Int.cast_natCast`.
+    simpa [Int.cast_neg, Int.cast_natCast] using
+      (ZMod.isSquare_of_jacobiSym_eq_one (p := q) (a := (-(n : ℤ))) hJ_negn)
+  rcases hsq_q with ⟨r, hr⟩
+
+  -- Step 4: Lift the square root mod `q` to a square root mod `4*q` via CRT.
+  have hnZ4 : (n : ZMod 4) = (3 : ZMod 4) := by
+    -- `n % 4 = 3` ↔ `n ≡ 3 [MOD 4]`.
+    have : n ≡ 3 [MOD 4] := by
+      -- `Nat.ModEq` is definitional equality of remainders
+      dsimp [Nat.ModEq]
+      simpa [hn4]
+    exact (ZMod.natCast_eq_natCast_iff n 3 4).2 this
+  have hmod4 : ((1 : ZMod 4) ^ 2) = (-(n : ZMod 4)) := by
+    -- `-(3) = 1` in `ZMod 4`.
+    -- Use the explicit `n = 3` fact to reduce to a decidable finite check.
+    have : ((1 : ZMod 4) ^ 2) = (-(3 : ZMod 4)) := by decide
+    simpa [hnZ4] using this
+
+  let e : ZMod (4 * q) ≃+* ZMod 4 × ZMod q := ZMod.chineseRemainder hcop4q
+  let bZ : ZMod (4 * q) := e.symm ((1 : ZMod 4), r)
+
+  have hbZ : bZ ^ 2 = (-(n : ℤ) : ZMod (4 * q)) := by
+    apply e.injective
+    ext
+    · -- mod 4 component
+      -- `e bZ = (1, r)`, so the first component is `1^2 = -n` in `ZMod 4`.
+      have : ((1 : ZMod 4) ^ 2) = (-(n : ZMod 4)) := hmod4
+      simpa [bZ] using this
+    · -- mod q component
+      -- `hr : -(n : ZMod q) = r*r`.
+      have : (r ^ 2) = (-(n : ZMod q)) := by
+        simpa [pow_two, mul_assoc, mul_left_comm, mul_comm] using hr.symm
+      -- cast `-(n : ZMod q)` as `((-(n : ℤ)) : ZMod q)` to match `e`'s component.
+      simpa [bZ, Int.cast_neg, Int.cast_natCast] using this
+
+  -- Convert the equality in `ZMod (4*q)` into an `Int.ModEq` witness.
+  rcases ZMod.intCast_surjective bZ with ⟨b, hb⟩
+  refine ⟨b, ?_⟩
+  have hbZ' : ((b : ZMod (4 * q)) ^ 2) = (-(n : ℤ) : ZMod (4 * q)) := by simpa [hb] using hbZ
+  -- Turn equality in `ZMod` into `Int.ModEq`.
+  exact (ZMod.intCast_eq_intCast_iff (b ^ 2) (-(n : ℤ)) (4 * q)).1 (by
+    simpa [Int.cast_pow, pow_two] using hbZ')
 
 /-- The Ankeny lattice `L = { (x,y,z) : x ≡ y (mod n), y ≡ bz (mod 2q) }`. -/
 def ankeny_lattice (n q : ℕ) (b : ℤ) : AddSubgroup (Fin 3 → ℝ) where
