@@ -6,7 +6,10 @@
 Nat.sum_four_squares (Mathlib)
          │
          ▼
-sum_three_squares_of_not_exception  ◄── THE MAIN GAP (currently a scaffold)
+QuadraticLattice Bridge  ◄── SYSTEMS KERNEL
+         │
+         ▼
+sum_three_squares_of_not_exception
          │
          ├──────────────────────────────┐
          ▼                              ▼
@@ -18,6 +21,10 @@ cauchy_decomposition                    │
          ▼                              │
 fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 ```
+
+## Parallel Track: Computable LLL
+
+Independent of the main proof, we target a **Verified LLL Implementation** in `Covolume/Computable/LLL.lean`. This provides the computational baseline for finding the lattice points that the Three-Square Theorem merely claims to exist.
 
 ## The Key Missing Piece: current structure
 
@@ -31,10 +38,9 @@ At the moment this route **typechecks** but is not yet fully proved (several `so
 2.  **Lattice definition (typechecks)**: `ankeny_lattice` is defined as an `AddSubgroup (Fin 3 → ℝ)` encoding:
     \(x \equiv y \pmod n\) and \(y \equiv bz \pmod{2q}\).
 3.  **Algebraic congruence glue (missing)**: `ankeny_Q_mod` should prove
-    \(Q(x,y,z) = 2qx^2 + y^2 + nz^2 \equiv 0 \pmod{2nq}\) from lattice membership and the `b^2 ≡ -n` hypothesis.
-    This is currently a `sorry`, but it is purely algebraic (no Minkowski yet).
-4.  **Minkowski step (missing)**: `ankeny_lattice_covolume` + `exists_ankeny_representation` are scaffolds.
-5.  **Descent / reduction (missing)**: `reduction_to_sum_three_squares` is a scaffold; see also `Experiments/AnkenyReduction.lean`.
+    \(Q(x,y,z) = 2qx^2 + y^2 + nz^2 \equiv 0 \pmod{2nq}\).
+4.  **Minkowski step (missing)**: `exists_ankeny_representation` relies on volume bounds.
+5.  **Descent / reduction (WIP)**: `reduction_to_sum_three_squares` uses `Nat.eq_sq_add_sq_iff`.
 
 ## Cauchy's Lemma (`Covolume/Cauchy/Main.lean`)
 

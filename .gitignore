@@ -1,3 +1,5 @@
 /.lake
 lake-packages
 .lake
+*~
+.DS_Store

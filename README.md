@@ -52,14 +52,18 @@ As of Jan 2026 (rough accounting):
 
 ```
 Covolume/
-  Core/Basic.lean            -- polygonal(s,n) definition + algebra spine
-  Core/ModularSquares.lean   -- modular “u²+v²+1≡0” root existence (WIP)
-  Legendre/Exceptions.lean   -- exception set: 4^a(8k+7)
-  Legendre/Minkowski.lean    -- Minkowski/descent scaffolding (WIP)
-  Legendre/AnkenyLemmas.lean -- squarefree decomposition + mod-8 lemma glue (proved)
-  Legendre/Ankeny.lean       -- Ankeny proof skeleton (WIP; several `sorry`)
-  Legendre/Main.lean         -- Legendre statement + glue to proof attempt (WIP)
-  Cauchy/Main.lean           -- Cauchy lemma + polygonal theorem scaffolding (WIP)
+  Core/
+    Basic.lean            -- polygonal(s,n) definitions
+    QuadraticLattice.lean -- Systems Kernel: Q-form ↔ Lattice bridge
+    ModularSquares.lean   -- Local solvability (u²+v²+1≡0)
+  Computable/
+    LLL.lean              -- Verified LLL implementation (WIP)
+  Legendre/
+    AnkenyLemmas.lean     -- Squarefree decomposition (proved)
+    Ankeny.lean           -- Ankeny 1957 proof skeleton (active)
+    Main.lean             -- Legendre theorem entry point
+  Cauchy/
+    Main.lean             -- Cauchy Lemma & Fermat reduction
 
 Scripts/
   StatusReport.lean          -- prints the current (manual) status summary

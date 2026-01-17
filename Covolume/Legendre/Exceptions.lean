@@ -1,6 +1,6 @@
 import Mathlib.Data.Nat.Basic
 
-namespace Nat
+namespace Covolume
 
 /-!
 ## Three-squares exception set
@@ -18,5 +18,5 @@ We keep the definition in a small file so it can be shared by multiple proof att
 def is_three_square_exception (n : ℕ) : Prop :=
   ∃ a k : ℕ, n = 4 ^ a * (8 * k + 7)
 
-end Nat
+end Covolume
 

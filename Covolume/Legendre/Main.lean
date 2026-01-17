@@ -5,7 +5,7 @@ import Mathlib.Tactic
 import Covolume.Legendre.Exceptions
 import Covolume.Legendre.Ankeny
 
-namespace Nat
+namespace Covolume
 
 /-- Easy direction: if `n` is a sum of three squares, then it is **not**
 an exception of the form \(4^a(8k+7)\). -/
@@ -18,4 +18,4 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
     ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n := by
   sorry
 
-end Nat
+end Covolume
