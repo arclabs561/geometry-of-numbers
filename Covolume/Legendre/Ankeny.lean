@@ -159,25 +159,79 @@ lemma ankeny_span_volume_fundamentalDomain (n q : ℕ) (b : ℤ) (hn : 0 < n) (h
 /-- Existence of the Ankeny prime `q`. -/
 lemma exists_ankeny_prime (n : ℕ) (hn : n % 8 = 3) :
     ∃ q : ℕ, Nat.Prime q ∧ q % 4 = 1 ∧ (q : ZMod n) = - (2 : ZMod n)⁻¹ := by
-  /-
-  ESCAPE HATCH (current):
-  We want a prime `q ≡ 1 (mod 4)` satisfying a *specific residue class* modulo `n`:
-  \[
-    q \equiv -(2^{-1}) \pmod n.
-  \]
-  In principle this is a Dirichlet/PrimesInAP existence statement (and we already import
-  `Mathlib.NumberTheory.LSeries.PrimesInAP`), but the Lean proof requires careful bridging between:
-  - “prime in arithmetic progression” statements in `ℕ`,
-  - the `ZMod n` target equality, and
-  - side conditions ensuring the residue class is coprime to the modulus.
+  classical
+  have hn_odd : Odd n := Covolume.NumberTheory.odd_of_mod8_eq3 hn
+  have hn0 : n ≠ 0 := by
+    intro h0
+    subst h0
+    simpa using hn
 
-  TODO:
-  - Prefer an API that returns `∃ q, Nat.Prime q ∧ q ≡ a [ZMOD n] ∧ q % 4 = 1`
-    for a chosen `a` with `Nat.Coprime a n`.
-  - Use `hn : n % 8 = 3` to get `Odd n`, hence `IsUnit (2 : ZMod n)`, hence `a` is a unit mod `n`.
-  - If necessary, ask Zulip for the canonical lemma name in `PrimesInAP`.
-  -/
-  sorry
+  -- Combine the two congruence conditions into a single residue class modulo `4*n`.
+  have hcop2 : Nat.Coprime 2 n := Nat.coprime_two_left.2 hn_odd
+  have hcop4 : Nat.Coprime 4 n := by
+    -- `Coprime (2^2) n ↔ Coprime 2 n`
+    have : Nat.Coprime (2 ^ 2) n :=
+      (Nat.coprime_pow_left_iff (n := 2) (by decide : 0 < 2) 2 n).2 hcop2
+    simpa using this
+
+  let a0 : ZMod n := - (2 : ZMod n)⁻¹
+  let e : ZMod (4 * n) ≃+* ZMod 4 × ZMod n := ZMod.chineseRemainder hcop4
+  let a : ZMod (4 * n) := e.symm (1, a0)
+
+  -- `a` is a unit because its CRT components are units.
+  have ha0 : IsUnit a0 := by
+    -- `2` is a unit in `ZMod n` when `n` is odd, hence so is `-(2)⁻¹`.
+    have h2 : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hn_odd
+    rcases h2 with ⟨u2, hu2⟩
+    have hinv : IsUnit ((2 : ZMod n)⁻¹) := by
+      refine ⟨u2⁻¹, ?_⟩
+      -- `↑(u2⁻¹) = (↑u2)⁻¹`
+      have : ((↑(u2⁻¹) : ZMod n)) = ((u2 : (ZMod n)ˣ) : ZMod n)⁻¹ := by simp
+      simpa [hu2] using this
+    simpa [a0] using hinv.neg
+
+  have ha_pair : IsUnit ((1 : ZMod 4), a0) := by
+    rcases ha0 with ⟨u0, hu0⟩
+    refine ⟨
+      { val := ((1 : ZMod 4), (u0 : ZMod n))
+        inv := ((1 : ZMod 4), (↑(u0⁻¹) : ZMod n))
+        val_inv := by ext <;> simp
+        inv_val := by ext <;> simp }, ?_⟩
+    -- show the unit value is exactly `(1, a0)`
+    simpa [hu0]
+
+  have ha : IsUnit a := by
+    -- `e.symm` is a ring hom, so it maps units to units.
+    simpa [a] using (e.symm.toRingHom.isUnit_map ha_pair)
+
+  -- Apply Dirichlet: infinitely many primes in the residue class `a (mod 4*n)`.
+  have hQ0 : (4 * n) ≠ 0 := Nat.mul_ne_zero (by decide) hn0
+  haveI : NeZero (4 * n) := ⟨hQ0⟩
+  obtain ⟨q, _hq_gt, hq_prime, hq_eq⟩ :=
+    Nat.forall_exists_prime_gt_and_eq_mod (q := 4 * n) (a := a) ha 0
+
+  -- Project back to `ZMod 4` and `ZMod n` to read off the two conditions.
+  have hpair : e (q : ZMod (4 * n)) = ((1 : ZMod 4), a0) := by
+    -- apply `e` to `hq_eq : (q : ZMod (4*n)) = a`
+    have := congrArg e hq_eq
+    simpa [a] using this
+
+  have hq_mod4 : (q : ZMod 4) = 1 := by
+    -- first component of the pair equality
+    have := congrArg Prod.fst hpair
+    simpa [e] using this
+  have hq_modn : (q : ZMod n) = a0 := by
+    have := congrArg Prod.snd hpair
+    simpa [e] using this
+
+  have hq_mod4_nat : q % 4 = 1 := by
+    -- compare `val` in `ZMod 4`
+    have : (q : ZMod 4).val = (1 : ZMod 4).val := congrArg ZMod.val hq_mod4
+    -- `val (q : ZMod 4) = q % 4` and `val 1 = 1`
+    simpa [ZMod.val_natCast] using this
+
+  refine ⟨q, hq_prime, hq_mod4_nat, ?_⟩
+  simpa [a0] using hq_modn
 
 /-- Existence of `b` such that `b² ≡ -n (mod 4q)`. -/
 lemma exists_ankeny_b (n q : ℕ) (hn : n % 8 = 3) (hq : Nat.Prime q) (hq1 : q % 4 = 1)
