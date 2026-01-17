@@ -21,6 +21,13 @@ inductive LLLStatus
   | size_reduced
   | swapped
 
+/-- Perform size reduction on vector k with respect to vector j.
+    b_k := b_k - round(μ_{k,j}) * b_j -/
+def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℚ) : 
+    Matrix (Fin n) (Fin n) ℤ :=
+  let q := ⌊μ + 1/2⌋
+  B.updateRow k (B k - q • B j)
+
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
 def lll_step {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 

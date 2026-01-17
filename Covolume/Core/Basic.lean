@@ -3,8 +3,6 @@ import Mathlib.Algebra.Group.Nat.Even
 import Mathlib.Data.Int.Basic
 import Mathlib.Tactic
 
-namespace Covolume
-
 /-!
 # Polygonal Numbers
 
@@ -18,14 +16,11 @@ This file defines the `polygonal` number sequence and establishes identities req
 The definitions are primarily in `ℕ` for consistency with standard library conventions, while significant algebraic identities are proved in `ℤ` to utilize commutative ring properties.
 -/
 
+namespace Covolume
+
 /-- The `s`-gonal number at index `n`.
-
-```text
-P(s,n) = n + (s-2) * (n(n-1)/2)
-```
-
-We keep the definition in `ℕ`; later proofs will usually move to `ℤ` for ring algebra.
--/
+\[ P(s,n) = n + (s-2) \cdot \frac{n(n-1)}{2} \]
+The definition is in `ℕ`; subsequent proofs move to `ℤ` for ring algebra. -/
 def polygonal (s n : ℕ) : ℕ :=
   n + (s - 2) * n * (n - 1) / 2
 
