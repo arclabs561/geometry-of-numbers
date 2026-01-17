@@ -47,11 +47,11 @@ lemma squarefree_part_mod_eight (n s m : ℕ) (heq : n = s^2 * m) (hn : n % 8 = 
       rw [heq]
       exact dvd_mul_of_dvd_left h4s2 m
     have hn4_zero : n % 4 = 0 := Nat.mod_eq_zero_of_dvd h4n
-    have hn4_three : n % 4 = 3 % 4 := by 
+    have hn4_three : n % 4 = 3 % 4 := by
       rw [← Nat.mod_mod_of_dvd n (by decide : 4 ∣ 8), hn]
     rw [hn4_zero] at hn4_three
     norm_num at hn4_three
-  
+
   have hs_sq_mod : s^2 % 8 = 1 := by
     have h_cases : s % 8 = 1 ∨ s % 8 = 3 ∨ s % 8 = 5 ∨ s % 8 = 7 := by
       -- If `s` is odd, then `s % 8` cannot be even, hence must be in {1,3,5,7}.
@@ -63,10 +63,10 @@ lemma squarefree_part_mod_eight (n s m : ℕ) (heq : n = s^2 * m) (hn : n % 8 = 
       | 3 => right; left; rfl
       | 5 => right; right; left; rfl
       | 7 => right; right; right; rfl
-      | 0|2|4|6 => 
+      | 0|2|4|6 =>
         rw [h8] at h2
         contradiction
-      | _ => 
+      | _ =>
         have : s % 8 < 8 := Nat.mod_lt s (by decide)
         omega
     rcases h_cases with h1 | h3 | h5 | h7
@@ -74,7 +74,7 @@ lemma squarefree_part_mod_eight (n s m : ℕ) (heq : n = s^2 * m) (hn : n % 8 = 
     · simp [Nat.pow_mod, h3]
     · simp [Nat.pow_mod, h5]
     · simp [Nat.pow_mod, h7]
-  
+
   have h_mod : n % 8 = (s^2 % 8 * (m % 8)) % 8 := by
     rw [heq, Nat.mul_mod]
   rw [hn, hs_sq_mod, one_mul] at h_mod

@@ -466,9 +466,9 @@ lemma ankeny_span_lattice_subset_ankeny_lattice (n q : ℕ) (b : ℤ) (hn : 0 < 
 /-- A convenient full-rank ℤ-lattice for Ankeny has covolume `2nq`. -/
 lemma ankeny_lattice_covolume (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
     ∃ (L : AddSubgroup (Fin 3 → ℝ)) (F : Set (Fin 3 → ℝ)),
-      IsAddFundamentalDomain L F volume ∧ 
-      volume F = (2 * n * q : ℝ≥0∞) ∧ 
-      (L : Set (Fin 3 → ℝ)).Countable ∧ 
+      IsAddFundamentalDomain L F volume ∧
+      volume F = (2 * n * q : ℝ≥0∞) ∧
+      (L : Set (Fin 3 → ℝ)).Countable ∧
       (L : Set (Fin 3 → ℝ)) ⊆ ankeny_lattice n q b := by
   classical
   let L : AddSubgroup E3 := ankeny_span_lattice n q b hn hq
@@ -618,14 +618,14 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : 
     Hypothesis `Squarefree n` makes the `p | n` case easier (contradiction via `z^2 ≡ -1`). -/
 lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
     (h_ankeny : 2 * q * x^2 + y^2 + n * z^2 = 2 * n * q)
-    (hq_prime : Nat.Prime q) (hq1 : q % 4 = 1) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) 
+    (hq_prime : Nat.Prime q) (hq1 : q % 4 = 1) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
     (hn : n % 8 = 3) (hn_sq : Squarefree n) :
     ∃ u v : ℤ, n = x^2 + u^2 + v^2 := by
   have h_eq : y^2 + n * z^2 = 2 * q * (n - x^2) := by
     calc y^2 + n * z^2 = (2 * q * x^2 + y^2 + n * z^2) - 2 * q * x^2 := by ring
       _ = 2 * n * q - 2 * q * x^2 := by rw [h_ankeny]
       _ = 2 * q * (n - x^2) := by ring
-  
+
   -- Show n - x^2 >= 0
   have h_diff_nonneg : 0 ≤ n - x^2 := by
     have h_rhs : 0 ≤ y^2 + n * z^2 := by
@@ -639,7 +639,7 @@ lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
 
   let K := (n - x^2).natAbs
   have hK_eq : (K : ℤ) = n - x^2 := Int.natAbs_of_nonneg h_diff_nonneg
-  
+
   -- Use Nat.eq_sq_add_sq_iff
   suffices ∃ u v : ℕ, K = u ^ 2 + v ^ 2 by
     obtain ⟨u, v, huv⟩ := this

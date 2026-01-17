@@ -26,13 +26,13 @@ inductive LLLStatus
 
 /-- Perform size reduction on vector k with respect to vector j.
     b_k := b_k - round(μ_{k,j}) * b_j -/
-noncomputable def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℝ) : 
+noncomputable def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℝ) :
     Matrix (Fin n) (Fin n) ℤ :=
   let q : ℤ := ⌊μ + 1/2⌋
   B.updateRow k (B k - q • B j)
 
 /-- Perform a swap of two adjacent basis vectors. -/
-def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : 
+def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
     Matrix (Fin n) (Fin n) ℤ :=
   let row_k := B k
   let row_j := B j
@@ -51,8 +51,8 @@ noncomputable def gso_norm_sq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i : Fi
   let Bstar := gramSchmidt ℝ (fun k => (toLp 2 (B k) : EuclideanSpace ℝ (Fin n)))
   ‖Bstar i‖^2
 
-/-- Compute the potential function D = Π d_i, where d_i is the determinant of the 
-    sublattice spanned by the first i vectors. 
+/-- Compute the potential function D = Π d_i, where d_i is the determinant of the
+    sublattice spanned by the first i vectors.
     Each swap step in LLL decreases this value by a factor of at least δ. -/
 noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℝ :=
   let B_real : Matrix (Fin n) (Fin n) ℝ := B.map Int.cast
@@ -66,7 +66,7 @@ def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
 
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
-def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ) (limit : ℕ) : 
+def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ) (limit : ℕ) :
     Matrix (Fin n) (Fin n) ℤ :=
   match limit with
   | 0 => B -- Timeout
@@ -80,7 +80,7 @@ def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : �
     else B
 
 /-- Main entry point for the LLL algorithm. -/
-def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
+def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
     Matrix (Fin n) (Fin n) ℤ :=
   -- Start with an arbitrary fuel limit for computability
   lll_reduce_loop B δ 1 1000000

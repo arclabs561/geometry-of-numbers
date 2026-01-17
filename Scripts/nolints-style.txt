@@ -1,0 +1,2 @@
+# This file is read by `lake exe lint-style`.
+# Keep it empty unless we intentionally waive specific style errors.

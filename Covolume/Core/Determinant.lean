@@ -18,9 +18,9 @@ namespace Covolume
 
 open Matrix
 
-/-- The covolume of a ℤ-lattice in ℝⁿ is equal to the absolute value of the 
+/-- The covolume of a ℤ-lattice in ℝⁿ is equal to the absolute value of the
     determinant of any basis matrix. -/
-lemma covolume_eq_det {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
+lemma covolume_eq_det {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
     [IsZLattice ℝ L] (b : Module.Basis (Fin n) ℤ L) :
     ZLattice.covolume L = |(Matrix.of (Subtype.val ∘ ⇑b)).det| := by
   -- This is available in Mathlib as `ZLattice.covolume_eq_det`.

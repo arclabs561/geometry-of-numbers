@@ -29,10 +29,10 @@ open Set Pointwise
 open scoped BigOperators
 
 /-- The k-th successive minimum of a lattice with respect to a symmetric convex body. -/
-noncomputable def successive_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
+noncomputable def successive_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
     (K : Set (Fin n → ℝ)) (k : ℕ) : ℝ :=
   if _hk : 1 ≤ k ∧ k ≤ n then
-    sInf { r | 0 < r ∧ ∃ (s : Set (Fin n → ℝ)), (∀ x ∈ s, x ∈ L) ∧ s.Countable ∧ 
+    sInf { r | 0 < r ∧ ∃ (s : Set (Fin n → ℝ)), (∀ x ∈ s, x ∈ L) ∧ s.Countable ∧
       LinearIndependent ℝ (fun (x : s) => (x : Fin n → ℝ)) ∧ s.ncard = k ∧ ∀ x ∈ s, x ∈ r • K }
   else 0
 
@@ -53,7 +53,7 @@ lemma successive_minima_eq_sInf_of_range {n : ℕ}
 /-- Minkowski's First Theorem phrased in terms of the first successive minimum λ₁.
     λ₁^n * volume(K) ≤ 2^n * covolume(L). -/
 lemma minkowski_first_theorem_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
-    (K : Set (Fin n → ℝ)) [IsZLattice ℝ L] (hK_conv : Convex ℝ K) (hK_symm : ∀ x ∈ K, -x ∈ K) 
+    (K : Set (Fin n → ℝ)) [IsZLattice ℝ L] (hK_conv : Convex ℝ K) (hK_symm : ∀ x ∈ K, -x ∈ K)
     (hK_vol : 0 < MeasureTheory.volume K) :
     (successive_minima L K 1)^n * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
   sorry

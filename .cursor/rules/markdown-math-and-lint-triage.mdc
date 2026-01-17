@@ -13,6 +13,12 @@ alwaysApply: true
 
 ## Lint triage policy (Lean / Mathlib)
 
+### Tooling we actually run
+
+- **Style**: `lake exe lint-style`
+- **Build**: `lake build`
+- (Optional, interactive) **Lean lints**: `#lint` / `#lint_mathlib` in a scratch file when diagnosing suspicious patterns.
+
 ### High-signal (usually fix when you touch the code nearby)
 
 - `linter.unusedSimpArgs`: remove unused simp arguments (it’s often just noise + proof drift).
@@ -33,4 +39,5 @@ alwaysApply: true
 - If a linter is consistently noisy and not actionable in a file, use a **local** `set_option` with a short comment:
   - why it’s noisy here
   - what would make it actionable
+  - example: `set_option linter.unnecessarySimpa false`
 

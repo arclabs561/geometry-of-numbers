@@ -15,6 +15,7 @@ curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
 ```
 lake build
 lake exe status_report
+lake exe lint-style
 ```
 
 ## Math (rendered on GitHub)
