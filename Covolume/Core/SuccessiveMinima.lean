@@ -4,6 +4,7 @@ import Mathlib.Algebra.Module.ZLattice.Covolume
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Data.Set.Card
 import Mathlib.Algebra.Order.Field.Pointwise
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 /-!
 # Successive Minima
@@ -24,6 +25,7 @@ that gap as part of the Covolume library's infrastructure play.
 namespace Covolume
 
 open Set Pointwise
+open scoped BigOperators
 
 /-- The k-th successive minimum of a lattice with respect to a symmetric convex body. -/
 noncomputable def successive_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
@@ -46,7 +48,7 @@ lemma minkowski_first_theorem_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ
 lemma minkowski_second_theorem {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
     (K : Set (Fin n → ℝ)) [IsZLattice ℝ L] (hK_conv : Convex ℝ K) (hK_symm : ∀ x ∈ K, -x ∈ K)
     (hK_vol : 0 < MeasureTheory.volume K) :
-    (∏ i in Finset.Icc 1 n, successive_minima L K i) * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
+    (∏ i ∈ Finset.Icc 1 n, successive_minima L K i) * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
   sorry
 
 /-- The successive minima are non-decreasing: λ₁ ≤ λ₂ ≤ ... ≤ λₙ. -/

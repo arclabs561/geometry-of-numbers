@@ -26,14 +26,14 @@ inductive LLLStatus
 
 /-- Perform size reduction on vector k with respect to vector j.
     b_k := b_k - round(μ_{k,j}) * b_j -/
-noncomputable def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℝ) : 
-    Matrix (Fin n) (Fin n) ℤ :=
+def size_reduce_rat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℚ) (k j : Fin n) (μ : ℚ) : 
+    Matrix (Fin n) (Fin n) ℚ :=
   let q : ℤ := ⌊μ + 1/2⌋
-  B.updateRow k (B k - q • B j)
+  B.updateRow k (B k - (q : ℚ) • B j)
 
 /-- Perform a swap of two adjacent basis vectors. -/
-def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : 
-    Matrix (Fin n) (Fin n) ℤ :=
+def swap_vectors_rat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℚ) (k j : Fin n) : 
+    Matrix (Fin n) (Fin n) ℚ :=
   let row_k := B k
   let row_j := B j
   B.updateRow k row_j |>.updateRow j row_k
@@ -43,44 +43,27 @@ def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
 noncomputable def gram_schmidt_projections {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) : 
     (Fin n → Fin n → ℝ) :=
   fun i j => 
-    let Bstar := gramSchmidt ℝ (fun k => toLp 2 (B k))
-    inner ℝ (toLp 2 (B i)) (Bstar j) / ‖Bstar j‖^2
+    let Bstar := gramSchmidt ℝ (fun k => (toLp 2 (B k) : EuclideanSpace ℝ (Fin n)))
+    inner ℝ (toLp 2 (B i) : EuclideanSpace ℝ (Fin n)) (Bstar j) / ‖Bstar j‖^2
 
 /-- Compute the squared norm of the i-th Gram-Schmidt vector. -/
 noncomputable def gso_norm_sq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) : ℝ :=
-  let Bstar := gramSchmidt ℝ (fun k => toLp 2 (B k))
+  let Bstar := gramSchmidt ℝ (fun k => (toLp 2 (B k) : EuclideanSpace ℝ (Fin n)))
   ‖Bstar i‖^2
 
-/-- Compute the potential function D = Π d_i, where d_i is the determinant of the 
-    sublattice spanned by the first i vectors. 
-    This function is used to prove the termination of the LLL algorithm. -/
-noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℝ :=
+/-- The potential function used to prove termination. -/
+def potential_function_rat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℚ) : ℚ :=
+  -- D = Π d_i, where d_i is the determinant of the sublattice spanned by the first i vectors
   sorry
 
-/-- Check the Lovász condition for two adjacent basis vectors.
-    ‖b*_k‖² ≥ (δ - μ_{k,k-1}²) * ‖b*_{k-1}‖² -/
-def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
-  norm_k ≥ ((δ : ℝ) - μ^2) * norm_km1
+/-- Check the Lovász condition using rational arithmetic. -/
+def lovasz_condition_rat (norm_sq_k norm_sq_km1 μ : ℚ) (δ : ℚ) : Prop :=
+  norm_sq_k ≥ (δ - μ^2) * norm_sq_km1
 
-/-- Skeleton for the LLL algorithm.
-    This will eventually be a computable function that returns a reduced basis. -/
-def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ) : 
-    Matrix (Fin n) (Fin n) ℤ :=
-  if hk : k < n then
-    if h0 : k = 0 then
-      lll_reduce_loop B δ 1
-    else
-      -- 1. Size reduce B[k] with respect to all B[j] for j < k
-      -- 2. Check Lovász condition
-      -- 3. If ok, k := k + 1
-      -- 4. If swap, k := max(1, k-1)
-      sorry
-  else B
-termination_by sorry
-
-/-- Main entry point for the LLL algorithm. -/
-def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
-    Matrix (Fin n) (Fin n) ℤ :=
-  lll_reduce_loop B δ 1
+/-- Main entry point for the LLL algorithm (Computable over ℚ). -/
+def lll_reduce_rat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℚ) (δ : ℚ) : 
+    Matrix (Fin n) (Fin n) ℚ :=
+  -- This will use well-founded recursion.
+  sorry
 
 end Covolume.Computable

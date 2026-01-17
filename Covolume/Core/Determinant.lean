@@ -1,4 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.LinearAlgebra.Basis
 import Mathlib.Algebra.Module.ZLattice.Basic
 import Mathlib.Algebra.Module.ZLattice.Covolume
 
@@ -23,7 +24,6 @@ lemma covolume_eq_det {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTop
     [IsZLattice ℝ L] (b : Basis (Fin n) ℤ L) :
     ZLattice.covolume L = |(Matrix.of (fun i j => (b j : Fin n → ℝ) i)).det| := by
   -- This is a fundamental result in the Geometry of Numbers.
-  -- Mathlib has parts of this in ZLattice.Covolume.
   sorry
 
 end Covolume

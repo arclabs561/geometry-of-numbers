@@ -13,7 +13,7 @@ sum_three_squares_of_not_exception
          │
          ├──────────────────────────────┐
          ▼                              ▼
-four_nonneg_sum_from_cauchy      gauss_eureka
+four_nonneg_sum_from_cauchy      gauss_triangular
          │                              │
          ▼                              │
 cauchy_decomposition                    │
@@ -24,7 +24,7 @@ fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 
 ## Parallel Track: Computable LLL
 
-Independent of the primary proof, the library targets a verified LLL implementation in `Covolume/Computable/LLL.lean`. This provides a computational method for finding the lattice points whose existence is guaranteed by the Three-Square Theorem.
+Independent of the primary proof, the library targets a verified LLL implementation in `Covolume/Computable/LLL.lean`. This track uses **Rational Arithmetic** to ensure the algorithm is computable and termination can be proven using the **Potential Function**. It provides a computational method for finding the lattice points whose existence is guaranteed by the Three-Square Theorem.
 
 ## Ankeny's Proof (Covolume/Legendre/Ankeny.lean)
 
@@ -48,9 +48,10 @@ The final stage of the project formalizes Cauchy's reduction of the general Ferm
 | **Ankeny Lemmas** | Proved | `Covolume/Legendre/AnkenyLemmas.lean` |
 | **Ankeny Proof** | Active | `Covolume/Legendre/Ankeny.lean` |
 | **Cauchy Reduction** | Scaffold | `Covolume/Cauchy/Main.lean` |
-| **Gauss Eureka** | Scaffold | `Covolume/Cauchy/Main.lean` |
+| **Gauss Triangular** | Scaffold | `Covolume/Cauchy/Main.lean` |
 
 ## Auxiliary Evidence
 
 - **Congruence Bridges**: `Experiments/CheckZMod.lean` provides validated patterns for mapping `ZMod` operations to `Int.ModEq`.
 - **Numeric Validation**: `Experiments/ankeny_check.py` performs exhaustive searches for small cases to verify the intended algebraic invariants of the Ankeny setup.
+- **LLL Probing**: `Experiments/LLLRational.lean` verifies rational LLL steps on simple bases.
