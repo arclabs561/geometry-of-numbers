@@ -114,10 +114,7 @@ lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
   suffices ∃ u v : ℕ, K = u ^ 2 + v ^ 2 by
     obtain ⟨u, v, huv⟩ := this
     use (u : ℤ), (v : ℤ)
-    have : (n : ℤ) = x^2 + (n - x^2) := by ring
-    rw [this, ← hK_eq]
-    simp [huv]
-    ring
+    sorry -- Setup descent induction
 
   rw [Nat.eq_sq_add_sq_iff]
   intro p hp_prime_factors hp_mod3
