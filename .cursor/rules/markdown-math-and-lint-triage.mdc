@@ -1,0 +1,36 @@
+---
+description: Markdown math + lint triage (Covolume)
+alwaysApply: true
+---
+
+## Markdown math (GitHub-rendered)
+
+- Use GitHub’s KaTeX support via:
+  - inline: `$ ... $`
+  - block: `$$ ... $$`
+- Prefer **minimal** formulas that encode the invariant we keep referencing (e.g. `n = 4^a(8k+7)`).
+- Keep prose + math aligned: define symbols once, then use them consistently across docs.
+
+## Lint triage policy (Lean / Mathlib)
+
+### High-signal (usually fix when you touch the code nearby)
+
+- `linter.unusedSimpArgs`: remove unused simp arguments (it’s often just noise + proof drift).
+- `linter.unusedArguments` / unused locals: delete or underscore if genuinely unused.
+- Any warning that indicates a **wrong lemma name / changed API** (treat as correctness risk).
+
+### Medium-signal (fix if it improves readability)
+
+- `linter.unnecessarySimpa`: change `simpa` → `simp` **only** if the proof stays readable and no extra casts/unfolding appear.
+
+### Low-signal (explicitly allowed in this repo)
+
+- `declaration uses 'sorry'` inside `Experiments/` or marked scaffolds, provided the file still builds.
+
+## When to suppress a linter (rare)
+
+- Prefer to fix the proof instead of disabling a linter.
+- If a linter is consistently noisy and not actionable in a file, use a **local** `set_option` with a short comment:
+  - why it’s noisy here
+  - what would make it actionable
+
