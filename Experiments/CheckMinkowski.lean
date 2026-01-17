@@ -546,6 +546,228 @@ lemma ankenyEllipsoidAsPreimage_volume (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
   -- assemble
   simpa [hpre, hball, mul_assoc, mul_left_comm, mul_comm]
 
+lemma ankenyEllipsoidAsPreimage_volume_gt16 (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
+    (16 * n * q : ℝ≥0∞) < volume (ankenyEllipsoidAsPreimage n q) := by
+  -- Start from the explicit volume formula.
+  have hvol := ankenyEllipsoidAsPreimage_volume n q hn hq
+  rw [hvol]
+
+  -- Convert the ENNReal inequality to a real inequality by consolidating `ofReal`.
+  have hR_pos : 0 < ankenyBallRadius n q := by
+    have : 0 < Real.sqrt (n * q) := Real.sqrt_pos.2 (by nlinarith)
+    dsimp [ankenyBallRadius]
+    nlinarith
+  have hR_nonneg : 0 ≤ ankenyBallRadius n q := le_of_lt hR_pos
+
+  have hpi_pos : 0 < (Real.pi * 4 / 3) := by
+    nlinarith [Real.pi_pos]
+  have hpi_gt : (4 : ℝ) < Real.pi * 4 / 3 := by
+    have hpi3 : (3 : ℝ) < Real.pi := Real.pi_gt_three
+    nlinarith
+
+  -- `det (ankenyDiagMap n q)` is positive, hence `|det⁻¹| = det⁻¹` and is nonnegative.
+  have hdet_eq :
+      LinearMap.det (ankenyDiagMap n q) = Real.sqrt (2 * q) * Real.sqrt n := by
+    -- Expand determinant of the diagonal matrix.
+    -- (The middle entry is `1`, so we drop it.)
+    have :
+        LinearMap.det (ankenyDiagMap n q) = Real.sqrt (2 * q) * (1 : ℝ) * Real.sqrt n := by
+      simp [ankenyDiagMap, LinearMap.det_toLin', Matrix.det_diagonal, Fin.prod_univ_three]
+    simpa [mul_assoc] using this
+
+  have hdet_pos : 0 < LinearMap.det (ankenyDiagMap n q) := by
+    have hsqrt2q : 0 < Real.sqrt (2 * q) := Real.sqrt_pos.2 (by nlinarith)
+    have hsqrtn : 0 < Real.sqrt n := Real.sqrt_pos.2 hn
+    simpa [hdet_eq] using mul_pos hsqrt2q hsqrtn
+
+  have habs_det_inv :
+      |(LinearMap.det (ankenyDiagMap n q))⁻¹| = (LinearMap.det (ankenyDiagMap n q))⁻¹ := by
+    exact abs_of_pos (inv_pos.2 hdet_pos)
+
+  -- Consolidate ENNReal products/powers.
+  have hconsol :
+      ENNReal.ofReal |(LinearMap.det (ankenyDiagMap n q))⁻¹| *
+          (ENNReal.ofReal (ankenyBallRadius n q)) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3)
+        =
+        ENNReal.ofReal (|(LinearMap.det (ankenyDiagMap n q))⁻¹| *
+          (ankenyBallRadius n q) ^ 3 * (Real.pi * 4 / 3)) := by
+    have habs : 0 ≤ |(LinearMap.det (ankenyDiagMap n q))⁻¹| := abs_nonneg _
+    -- `ofReal_pow` needs nonnegativity of the base.
+    have hpow :
+        (ENNReal.ofReal (ankenyBallRadius n q)) ^ 3 =
+          ENNReal.ofReal ((ankenyBallRadius n q) ^ 3) := by
+      simpa using (ENNReal.ofReal_pow hR_nonneg 3).symm
+    calc
+      ENNReal.ofReal |(LinearMap.det (ankenyDiagMap n q))⁻¹| *
+            (ENNReal.ofReal (ankenyBallRadius n q)) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3)
+          = ENNReal.ofReal |(LinearMap.det (ankenyDiagMap n q))⁻¹| *
+              ENNReal.ofReal ((ankenyBallRadius n q) ^ 3) * ENNReal.ofReal (Real.pi * 4 / 3) := by
+              simpa [hpow, mul_assoc]
+      _ = ENNReal.ofReal (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * ((ankenyBallRadius n q) ^ 3)) *
+            ENNReal.ofReal (Real.pi * 4 / 3) := by
+              symm
+              simpa [mul_assoc] using (ENNReal.ofReal_mul habs (q := (ankenyBallRadius n q) ^ 3))
+      _ = ENNReal.ofReal (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * ((ankenyBallRadius n q) ^ 3) * (Real.pi * 4 / 3)) := by
+              have h12 : 0 ≤ |(LinearMap.det (ankenyDiagMap n q))⁻¹| * ((ankenyBallRadius n q) ^ 3) := by
+                nlinarith [abs_nonneg ((LinearMap.det (ankenyDiagMap n q))⁻¹), pow_nonneg hR_nonneg 3]
+              symm
+              simpa [mul_assoc] using (ENNReal.ofReal_mul h12 (q := (Real.pi * 4 / 3)))
+      _ = _ := by ring_nf
+
+  rw [hconsol]
+  have hpos_rhs :
+      0 < (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3 * (Real.pi * 4 / 3)) := by
+    nlinarith [abs_nonneg ((LinearMap.det (ankenyDiagMap n q))⁻¹), pow_pos hR_pos 3, Real.pi_pos]
+
+  -- Prove the scalar inequality in `ℝ`.
+  have hscalar :
+      (16 * n * q : ℝ) <
+        (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3 * (Real.pi * 4 / 3)) := by
+    have hA_pos :
+        0 < (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3) := by
+      nlinarith [abs_of_pos (inv_pos.2 hdet_pos), pow_pos hR_pos 3]
+    -- Replace `(π * 4 / 3)` by the smaller constant `4`.
+    have hlt1 :
+        (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3) * 4
+          <
+        (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3) * (Real.pi * 4 / 3) := by
+      exact mul_lt_mul_of_pos_left hpi_gt hA_pos
+    -- It remains to show `16*n*q < A*4`.
+    have hlt0 :
+        (16 * n * q : ℝ) <
+        (|(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3) * 4 := by
+      -- Compute the left scalar:
+      -- `|(det)⁻¹| * R^3 = 4*√2*n*q` for `R = 2*√(n*q)`.
+      -- Then multiply by `4` and use `1 < √2`.
+      have hsqrtq_ne0 : Real.sqrt q ≠ 0 := by
+        exact Real.sqrt_ne_zero'.2 (ne_of_gt hq)
+      have hsqrt2_ne0 : Real.sqrt (2 : ℝ) ≠ 0 := by
+        exact Real.sqrt_ne_zero'.2 (by norm_num)
+      have hsqrt2_pos : 0 < Real.sqrt (2 : ℝ) := Real.sqrt_pos.2 (by norm_num)
+      have hsqrt2_gt1 : (1 : ℝ) < Real.sqrt (2 : ℝ) := by
+        simpa using Real.one_lt_sqrt_two
+
+      have hR3 : (ankenyBallRadius n q) ^ 3 = 8 * (n * q) * Real.sqrt (n * q) := by
+        -- Expand `(2*√(n*q))^3`.
+        dsimp [ankenyBallRadius]
+        -- `(2 * √(n*q))^3 = 8 * (√(n*q))^3`.
+        have : (2 * Real.sqrt (n * q)) ^ 3 = 8 * (Real.sqrt (n * q)) ^ 3 := by ring
+        -- And `(√a)^3 = a * √a` for `a ≥ 0`.
+        have hsq : (Real.sqrt (n * q)) ^ 2 = n * q := by
+          simpa using (Real.sq_sqrt (by nlinarith : 0 ≤ n * q))
+        -- Put it together.
+        calc
+          (2 * Real.sqrt (n * q)) ^ 3
+              = 8 * (Real.sqrt (n * q)) ^ 3 := this
+          _ = 8 * ((Real.sqrt (n * q)) ^ 2 * Real.sqrt (n * q)) := by
+                simp [pow_succ, pow_two, mul_assoc]
+          _ = 8 * ((n * q) * Real.sqrt (n * q)) := by simpa [hsq, mul_assoc]
+          _ = 8 * (n * q) * Real.sqrt (n * q) := by ring_nf
+
+      have hsqrt_nq : Real.sqrt (n * q) = Real.sqrt n * Real.sqrt q := by
+        simpa using (Real.sqrt_mul (show 0 ≤ n from le_of_lt hn) q)
+      have hsqrt_2q : Real.sqrt (2 * q) = Real.sqrt (2 : ℝ) * Real.sqrt q := by
+        simpa using (Real.sqrt_mul (show 0 ≤ (2 : ℝ) by norm_num) q)
+
+      have hA :
+          |(LinearMap.det (ankenyDiagMap n q))⁻¹| * (ankenyBallRadius n q) ^ 3
+            = 4 * Real.sqrt (2 : ℝ) * n * q := by
+        -- Unfold and simplify using the determinant computation.
+        have hdet_inv : |(LinearMap.det (ankenyDiagMap n q))⁻¹| = (Real.sqrt (2 * q) * Real.sqrt n)⁻¹ := by
+          -- `|det⁻¹| = det⁻¹` (since `det>0`) and `det = √(2q)*√n`.
+          simp [habs_det_inv, hdet_eq, inv_mul_eq_iff_eq_mul₀, hdet_pos.ne']
+        -- Use the explicit `R^3` and the `sqrt_mul` decompositions.
+        -- This is a bit algebra-heavy, but stays in `ℝ`.
+        -- Start by rewriting the left-hand side.
+        rw [hdet_inv, hR3, hsqrt_nq, hsqrt_2q]
+        -- Cancel `√n` and `√q` and rewrite `8 / √2` as `4*√2`.
+        -- We do it by multiplying both sides by `√2` and using `√2^2 = 2`.
+        have hn_ne0 : Real.sqrt n ≠ 0 := Real.sqrt_ne_zero'.2 (ne_of_gt hn)
+        -- rearrange into a friendly form
+        ring_nf
+        -- At this point, `simp` can cancel the `√n` factors (as they are nonzero in denominators).
+        field_simp [hsqrtq_ne0, hsqrt2_ne0, hn_ne0]
+        ring_nf
+
+      -- Now finish: `16*n*q < (4*√2*n*q)*4 = 16*√2*n*q`.
+      have hnq_pos : 0 < n * q := by nlinarith
+      have : (16 * n * q : ℝ) < (16 * Real.sqrt (2 : ℝ) * n * q : ℝ) := by
+        nlinarith [hsqrt2_gt1, hnq_pos]
+      -- Rewrite RHS using `hA`.
+      simpa [hA, mul_assoc, mul_left_comm, mul_comm] using this
+
+    exact lt_trans hlt0 hlt1
+
+  -- Finish by transporting the real inequality back through `ENNReal.ofReal`.
+  simpa using (ENNReal.ofReal_lt_ofReal_iff hpos_rhs).2 hscalar
+
+/-!
+### Minkowski call-site (Ankeny, in `Experiments/`)
+
+This produces the *raw geometric output* we need for `exists_ankeny_representation`:
+a nonzero lattice point inside the Ankeny ellipsoid.
+-/
+
+lemma exists_ne_zero_mem_ankenySpan_in_ellipsoid
+    (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
+    ∃ p : (Covolume.ankeny_span_lattice n q b hn hq),
+      p ≠ 0 ∧ (p : E3) ∈ ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ) := by
+  classical
+  -- Fundamental domain from the span basis.
+  let L : AddSubgroup E3 := Covolume.ankeny_span_lattice n q b hn hq
+  let F : Set E3 := Covolume.ankeny_span_fundamentalDomain n q b hn hq
+
+  have hfund : IsAddFundamentalDomain L F volume := by
+    simpa [L, F] using Covolume.ankeny_span_isAddFundamentalDomain n q b hn hq
+
+  -- Symmetry: preimage of `ball 0 R` is closed under negation.
+  have hsymm : ∀ x ∈ ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ), -x ∈ ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ) := by
+    intro x hx
+    -- `f (-x) = -f x` and `dist 0 (-y) = dist 0 y`.
+    dsimp [ankenyEllipsoidAsPreimage] at hx ⊢
+    have : ankenyDiagMap (n : ℝ) (q : ℝ) (-x) ∈
+        Metric.ball (0 : E3) (ankenyBallRadius (n : ℝ) (q : ℝ)) := by
+      simpa [map_neg, Metric.mem_ball, dist_eq_norm, norm_neg] using hx
+    exact this
+
+  -- Convexity: preimage of a convex ball under a linear map.
+  have hconv : Convex ℝ (ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ)) := by
+    simpa [ankenyEllipsoidAsPreimage] using
+      (Convex.affine_preimage (f := (ankenyDiagMap (n : ℝ) (q : ℝ)).toAffineMap)
+        (s := Metric.ball (0 : E3) (ankenyBallRadius (n : ℝ) (q : ℝ)))
+        (convex_ball (0 : E3) (ankenyBallRadius (n : ℝ) (q : ℝ))))
+
+  -- Volume inequality: `volume F * 2^3 < volume s`.
+  have hvolF : volume F = (2 * n * q : ℝ≥0∞) := by
+    simpa [F] using Covolume.ankeny_span_volume_fundamentalDomain n q b hn hq
+
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq
+
+  have hineq : volume F * 2 ^ (Module.finrank ℝ E3) < volume (ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ)) := by
+    have hrank : Module.finrank ℝ E3 = 3 := by simp [E3]
+    -- `volume F * 2^3 = 16*n*q`.
+    have hleft :
+        volume F * 2 ^ (Module.finrank ℝ E3) = (16 * n * q : ℝ≥0∞) := by
+      -- `2^3 = 8`
+      simp [hvolF, hrank, mul_assoc, mul_left_comm, mul_comm]
+    -- Use the explicit lower bound on the ellipsoid volume.
+    have hgt : (16 * (n : ℝ) * (q : ℝ) : ℝ≥0∞) < volume (ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ)) :=
+      ankenyEllipsoidAsPreimage_volume_gt16 (n := (n : ℝ)) (q := (q : ℝ)) hnR hqR
+    -- Convert `(16*n*q : ℝ≥0∞)` to the same real-coercion form and finish.
+    -- (Both are `ENNReal.ofReal` under coercion, since the expressions are nonnegative.)
+    -- This is intentionally “simp-only” to keep the inequality boundary explicit.
+    simpa [hleft, mul_assoc, mul_left_comm, mul_comm, Nat.cast_mul] using hgt
+
+  -- Apply Minkowski.
+  rcases
+      MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
+        (μ := volume) (L := L) (F := F) (s := ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ))
+        hfund hsymm hconv hineq
+    with ⟨p, hp0, hp_mem⟩
+  refine ⟨p, ?_, hp_mem⟩
+  exact hp0
+
 -- Symmetry is automatic because the defining expression is a sum of squares.
 lemma ankenyEllipsoid_symm (n q R : ℝ) : ∀ x ∈ ankenyEllipsoid n q R, -x ∈ ankenyEllipsoid n q R := by
   intro x hx
