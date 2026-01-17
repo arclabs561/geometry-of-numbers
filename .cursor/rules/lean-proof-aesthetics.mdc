@@ -1,0 +1,49 @@
+---
+description: Lean proof aesthetics (prefer canonical + short proofs)
+alwaysApply: true
+---
+
+## Goal
+
+Prefer **short**, **canonical**, **stable** proofs over “first admissible path”.
+In practice, “beautiful” here means: fewer moving parts, fewer brittle rewrites, and closer alignment
+to Mathlib’s existing lemma boundaries.
+
+## Default proof strategy (ordered)
+
+- **Use the lemma that already exists** (even if it lives in a different file/namespace).
+  - Before writing a new proof, search for it by name or by statement shape.
+  - Prefer `by simpa using <existing_lemma>` over re-proving.
+
+- **Normalize the goal, then apply a lemma**.
+  - Introduce 1–3 small helper lemmas to stabilize casts / goal “shape”.
+  - Only then use automation (`simp`, `nlinarith`, `ring`).
+
+- **Avoid long tactical scripts**.
+  - If a proof block exceeds ~15 lines, factor out a named local lemma.
+  - If you need a large simp set, that is a smell: refactor or find a dedicated lemma.
+
+## Stability rules (Lean-specific)
+
+- **Minimize `simp` surface area**:
+  - Prefer `simp [only_the_lemmas_you_need]`.
+  - Prefer `simp?` / linter suggestions (`simp` vs `simpa`) *only if it does not make the proof longer or less readable*.
+
+- **Avoid definitional-equality acrobatics**:
+  - If the pain point is “casts / coercions / definitional unfolding”, add a tiny lemma that makes the coercion explicit.
+  - If the pain point is “subtype carrier mismatch”, restate once and keep the rest of the proof in that restatement.
+
+- **Prefer algebraic invariants over case-bashing**:
+  - Use finite `decide`/`simp` checks only for genuinely finite facts (e.g. `ZMod 8` obstructions),
+    and document why the finite check is the right abstraction boundary.
+
+## When to add a new lemma
+
+Only add a new helper lemma if:
+
+- it is reused ≥ 2 times, or
+- it deletes a brittle `simp`/cast tangle, or
+- it replaces a long proof with a short `simpa`/`exact`.
+
+Otherwise keep it local (`private lemma`) inside the file.
+
