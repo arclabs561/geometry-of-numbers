@@ -15,7 +15,7 @@ lean_lib «Covolume» {
 
 lean_lib «Experiments» {
   srcDir := "Experiments"
-  roots := #[`AnkenyCheck, `LLLBasic, `CauchyIntervals, `AnkenyReduction, `CheckMinkowski, `CheckNatPow, `CheckZMod, `DescentValuation]
+  roots := #[`AnkenyCheck, `LLLBasic, `CauchyIntervals, `AnkenyReduction, `CheckMinkowski, `CheckNatPow, `CheckZMod, `DescentValuation, `SuccessiveMinimaBasic]
 }
 
 lean_lib «Archive» {

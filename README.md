@@ -23,7 +23,13 @@ The project implements a modular approach to formalizing the geometry of numbers
 ### 1. The Systems Kernel
 The `QuadraticLattice` bridge connects abstract quadratic forms over integers to geometric submodules in Euclidean space. This interface allows for the resolution of representation problems by encoding local p-adic obstructions into geometric lattice density.
 
-### 2. The Computable Core
+### 2. Successive Minima and Spectral Theory
+The library targets the first formalization of **Successive Minima** in Lean 4. These values act as the "spectral lines" of a lattice, providing the fundamental bounds for the Shortest Vector Problem (SVP).
+
+### 3. Bhargava Primitives
+We include foundational structures for **Bhargava's higher composition laws**, specifically focusing on integer cubes. This establishes a path toward formalizing modern breakthroughs in number field counting.
+
+### 4. The Computable Core
 The project targets a verified implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm. By bridging abstract measure theory with computable matrix algorithms, the library provides a foundation for verified lattice-based cryptography and optimization.
 
 ### 3. Parallel Constructive Track

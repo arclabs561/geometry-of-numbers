@@ -1,0 +1,28 @@
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Algebra.Module.ZLattice.Basic
+import Mathlib.Algebra.Module.ZLattice.Covolume
+import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+import Mathlib.Data.Set.Card
+import Mathlib.Algebra.Order.Field.Pointwise
+
+namespace Covolume
+
+open Set Pointwise
+
+/-- The k-th successive minimum of a lattice with respect to a symmetric convex body. -/
+noncomputable def successive_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
+    (K : Set (Fin n → ℝ)) (k : ℕ) : ℝ :=
+  if hk : 1 ≤ k ∧ k ≤ n then
+    sInf { r | 0 < r ∧ ∃ (s : Set (Fin n → ℝ)), (∀ x ∈ s, x ∈ L) ∧ s.Countable ∧ 
+      LinearIndependent ℝ (fun (x : s) => (x : Fin n → ℝ)) ∧ s.ncard = k ∧ ∀ x ∈ s, x ∈ r • K }
+  else 0
+
+/-- Minkowski's First Theorem phrased in terms of the first successive minimum λ₁.
+    λ₁^n * volume(K) ≤ 2^n * covolume(L). -/
+lemma minkowski_first_theorem_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
+    (K : Set (Fin n → ℝ)) [IsZLattice ℝ L] (hK_conv : Convex ℝ K) (hK_symm : ∀ x ∈ K, -x ∈ K) 
+    (hK_vol : 0 < MeasureTheory.volume K) :
+    (successive_minima L K 1)^n * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
+  sorry
+
+end Covolume

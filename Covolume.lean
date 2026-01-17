@@ -1,6 +1,8 @@
 import Covolume.Core.Basic
 import Covolume.Core.ModularSquares
 import Covolume.Core.QuadraticLattice
+import Covolume.Core.SuccessiveMinima
+import Covolume.Core.Composition
 import Covolume.Computable.LLL
 import Covolume.Legendre.Main
 import Covolume.Legendre.Ankeny
