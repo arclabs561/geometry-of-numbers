@@ -49,7 +49,15 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p k : ℕ) [hp : Fact p.Pr
 `u^2 + v^2 + 1 ≡ 0 [ZMOD n]`. -/
 lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
     ∃ u v : ℤ, u^2 + v^2 + 1 ≡ 0 [ZMOD n] := by
-  -- Follows from prime power case via Chinese Remainder Theorem.
+  -- For n = 1, (0,0) works.
+  rcases n with _ | n
+  · simp [Odd] at hn
+  rcases n with _ | n'
+  · use 0, 0; simp [Int.ModEq]
+  
+  -- Use prime factorization and CRT
+  -- n + 2 is >= 2 and odd.
+  let n_pos := n' + 2
   sorry
 
 end Covolume

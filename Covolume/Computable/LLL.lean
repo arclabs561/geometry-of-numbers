@@ -28,8 +28,19 @@ def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : �
   let q := ⌊μ + 1/2⌋
   B.updateRow k (B k - q • B j)
 
+/-- Perform a swap of two adjacent basis vectors. -/
+def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : 
+    Matrix (Fin n) (Fin n) ℤ :=
+  let row_k := B k
+  let row_j := B j
+  B.updateRow k row_j |>.updateRow j row_k
+
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
+def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
+    Matrix (Fin n) (Fin n) ℤ :=
+  -- This will use well-founded recursion based on the potential function.
+  sorry
 def lll_step {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
     Matrix (Fin n) (Fin n) ℤ :=
   sorry

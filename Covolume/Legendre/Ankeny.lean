@@ -75,11 +75,6 @@ def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ := 2 * q * x^2 + y^2 + n * z^2
 
 /-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`. -/
 lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ) (hn : n % 8 = 3) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) (h_lat : (fun i => match i with | 0 => (x:ℝ) | 1 => (y:ℝ) | 2 => (z:ℝ)) ∈ ankeny_lattice n q b) (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) : (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * n * q)] := by
-  obtain ⟨x', y', z', hx_re, hy_re, hz_re, hxy, hybz⟩ := h_lat
-  have hx : x = x' := by have : (x : ℝ) = (x' : ℝ) := hx_re; exact_mod_cast this
-  have hy : y = y' := by have : (y : ℝ) = (y' : ℝ) := hy_re; exact_mod_cast this
-  have hz : z = z' := by have : (z : ℝ) = (z' : ℝ) := hz_re; exact_mod_cast this
-  subst hx hy hz
   sorry
 
 /-- Minkowski application: there exists a representation `2qx² + y² + nz² = 2nq`. -/
