@@ -491,6 +491,61 @@ def ankenyQReal (n q : ℝ) (x : E3) : ℝ :=
 def ankenyEllipsoid (n q R : ℝ) : Set E3 :=
   {x | ankenyQReal n q x < R ^ 2}
 
+/-!
+### Ellipsoid-as-preimage-of-ball
+
+This is the main geometric normalization trick we want for Ankeny:
+turn an ellipsoid defined by a weighted sum of squares into a preimage of a Euclidean ball under a
+diagonal linear map. This gives:
+
+- symmetry (`x ∈ s → -x ∈ s`)
+- convexity (preimage of a convex set under a linear map)
+- volume computation via `addHaar_preimage_linearMap` + `EuclideanSpace.volume_ball_fin_three`
+-/
+
+def ankenyDiagMap (n q : ℝ) : E3 →ₗ[ℝ] E3 :=
+  Matrix.toLin' (Matrix.diagonal ![Real.sqrt (2 * q), (1 : ℝ), Real.sqrt n])
+
+def ankenyBallRadius (n q : ℝ) : ℝ :=
+  2 * Real.sqrt (n * q)
+
+def ankenyEllipsoidAsPreimage (n q : ℝ) : Set E3 :=
+  ankenyDiagMap n q ⁻¹' Metric.ball (0 : E3) (ankenyBallRadius n q)
+
+lemma ankenyEllipsoidAsPreimage_volume (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
+    volume (ankenyEllipsoidAsPreimage n q) =
+      ENNReal.ofReal |(LinearMap.det (ankenyDiagMap n q))⁻¹| *
+        (ENNReal.ofReal (ankenyBallRadius n q)) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3) := by
+  -- preimage scaling + explicit ball volume in dimension 3
+  have hdet : LinearMap.det (ankenyDiagMap n q) ≠ 0 := by
+    -- determinant is the product of diagonal entries
+    have hsqrt2q : Real.sqrt (2 * q) ≠ 0 := by
+      exact Real.sqrt_ne_zero'.2 (ne_of_gt (by nlinarith))
+    have hsqrtn : Real.sqrt n ≠ 0 := by
+      exact Real.sqrt_ne_zero'.2 (ne_of_gt hn)
+    -- `det = sqrt(2q) * 1 * sqrt(n)`
+    have : LinearMap.det (ankenyDiagMap n q) = Real.sqrt (2 * q) * (1 : ℝ) * Real.sqrt n := by
+      simp [ankenyDiagMap, LinearMap.det_toLin', Matrix.det_diagonal, Fin.prod_univ_three]
+    -- hence nonzero
+    simpa [this] using mul_ne_zero (mul_ne_zero hsqrt2q one_ne_zero) hsqrtn
+
+  have hpre :
+      volume (ankenyEllipsoidAsPreimage n q) =
+        ENNReal.ofReal |(LinearMap.det (ankenyDiagMap n q))⁻¹| * volume (Metric.ball (0 : E3) (ankenyBallRadius n q)) := by
+    simpa [ankenyEllipsoidAsPreimage] using
+      (addHaar_preimage_linearMap (μ := (volume : Measure E3)) (f := ankenyDiagMap n q) hdet
+        (Metric.ball (0 : E3) (ankenyBallRadius n q)))
+
+  have hball :
+      volume (Metric.ball (0 : E3) (ankenyBallRadius n q)) =
+        (ENNReal.ofReal (ankenyBallRadius n q)) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3) := by
+    -- `E3` is definitionaly `EuclideanSpace ℝ (Fin 3)`
+    simpa [E3, EuclideanSpace] using
+      (EuclideanSpace.volume_ball_fin_three (x := (0 : EuclideanSpace ℝ (Fin 3))) (r := ankenyBallRadius n q))
+
+  -- assemble
+  simpa [hpre, hball, mul_assoc, mul_left_comm, mul_comm]
+
 -- Symmetry is automatic because the defining expression is a sum of squares.
 lemma ankenyEllipsoid_symm (n q R : ℝ) : ∀ x ∈ ankenyEllipsoid n q R, -x ∈ ankenyEllipsoid n q R := by
   intro x hx
