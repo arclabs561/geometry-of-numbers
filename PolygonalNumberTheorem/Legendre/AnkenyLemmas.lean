@@ -54,14 +54,17 @@ lemma squarefree_part_mod_eight (n s m : ℕ) (heq : n = s^2 * m) (hn : n % 8 = 
   
   have hs_sq_mod : s^2 % 8 = 1 := by
     have h_cases : s % 8 = 1 ∨ s % 8 = 3 ∨ s % 8 = 5 ∨ s % 8 = 7 := by
-      have h2 : s % 2 = (s % 8) % 2 := (Nat.mod_mod_of_dvd s (by decide : 2 ∣ 8)).symm
+      -- If `s` is odd, then `s % 8` cannot be even, hence must be in {1,3,5,7}.
+      -- The key identity is `(s % 8) % 2 = s % 2` (since `2 ∣ 8`).
+      have h2 : (s % 8) % 2 = s % 2 := Nat.mod_mod_of_dvd s (by decide : 2 ∣ 8)
+      rw [hs_odd] at h2
       match h8 : s % 8 with
       | 1 => left; rfl
       | 3 => right; left; rfl
       | 5 => right; right; left; rfl
       | 7 => right; right; right; rfl
       | 0|2|4|6 => 
-        rw [hs_odd, h8] at h2
+        rw [h8] at h2
         contradiction
       | _ => 
         have : s % 8 < 8 := Nat.mod_lt s (by decide)
