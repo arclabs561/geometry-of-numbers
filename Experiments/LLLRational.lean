@@ -1,5 +1,5 @@
 import Mathlib.Data.Matrix.Basic
-import Mathlib.Data.Rat.Basic
+import Mathlib.Data.Rat.Floor
 import Mathlib.Tactic
 
 /-!

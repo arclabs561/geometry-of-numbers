@@ -19,11 +19,11 @@ def lattice_z2 : Submodule ℤ (Fin 2 → ℝ) :=
 def unit_disk : Set (Fin 2 → ℝ) := { v | ‖v‖ ≤ 1 }
 
 /-- The first successive minimum of ℤ² wrt unit disk should be 1. -/
-lemma lambda1_z2 : successive_minima lattice_z2 unit_disk 1 ≥ 0 := by
-  -- This is just to check the type and definition
-  dsimp [successive_minima]
-  split
-  · sorry
-  · contradiction
+lemma lambda1_z2 [DiscreteTopology ↥lattice_z2] : successive_minima lattice_z2 unit_disk 1 ≥ 0 := by
+  -- Placeholder: once we have a convenient `DiscreteTopology`/`IsZLattice` instance
+  -- for `lattice_z2`, we can turn this into an actual computation check.
+  --
+  -- For now this file exists to keep the intended statement close to the definition.
+  sorry
 
 end Covolume.Experiments

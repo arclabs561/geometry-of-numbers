@@ -16,18 +16,21 @@ open Matrix
 /-- A simple 2D basis to test Gram-Schmidt. -/
 def basis2d : Matrix (Fin 2) (Fin 2) ℝ := !![1, 1; 0, 1]
 
-/-- The Gram-Schmidt orthogonalization of basis2d. -/
-noncomputable def ortho2d := 
-  gramSchmidt ℝ (fun i => basis2d i)
+-- `gramSchmidt` lives in `InnerProductSpace`; when we actually want to compute
+-- with it here, we should move to `EuclideanSpace ℝ (Fin 2)` (or use `toLp 2`)
+-- so the inner-product-space instances line up.
+--
+-- For now, keep this as a tiny “import + name lookup” probe.
+open InnerProductSpace
 
-#check ortho2d
+#check InnerProductSpace.gramSchmidt
 
-/-- In 2D, if we have [1, 1] and [0, 1], the GS basis should be [1, 1] and [-1/2, 1/2]?
-    Wait, GS depends on the inner product. 
-    Standard GS:
-    u1 = v1 = [1, 1]
-    u2 = v2 - proj_u1(v2) = [0, 1] - ([0,1]·[1,1] / [1,1]·[1,1]) * [1,1]
-       = [0, 1] - (1/2)*[1,1] = [-1/2, 1/2]
+/- In 2D, if we have [1, 1] and [0, 1], the GS basis should be [1, 1] and [-1/2, 1/2]?
+   Wait, GS depends on the inner product.
+   Standard GS:
+   u1 = v1 = [1, 1]
+   u2 = v2 - proj_u1(v2) = [0, 1] - ([0,1]·[1,1] / [1,1]·[1,1]) * [1,1]
+      = [0, 1] - (1/2)*[1,1] = [-1/2, 1/2]
 -/
 
 end Covolume.Experiments

@@ -10,11 +10,11 @@
 *   **Proof Strategy Pivot**: The project has shifted from a direct Minkowski application to Ankeny's descent method. This approach involves finding a representation of \(2nq\) and reducing it to a representation of \(n\).
 
 ## Phase 3: Cauchy's Lemma
-*   **Interval Logic**: Formalized lemmas for identifying odd integers within specified real intervals.
+*   **Interval Logic**: Scaffold for lemmas identifying odd integers within specified real intervals (proofs pending).
 *   **Gauss's Eureka Theorem**: The triangular number theorem ($s=3$) is currently a formalized scaffold awaiting proof completion.
 
 ## Project Status (January 2026)
-*   The main theorem `fermat_polygonal` is defined and utilizes verified dispatch logic for small $s$.
+*   The main theorem `fermat_polygonal` is defined, but still contains placeholders in the reduction chain.
 *   Active development is prioritized as follows:
     - `Covolume/Legendre/AnkenyLemmas.lean`: Proved foundational components.
     - `Covolume/Legendre/Ankeny.lean`: Primary descent proof structure.

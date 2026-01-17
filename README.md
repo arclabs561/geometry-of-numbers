@@ -2,7 +2,8 @@
 
 A Constructive Geometry of Numbers Library for Lean 4.
 
-This library formalizes the Ankeny-Minkowski pipeline to prove Legendre's Three-Square Theorem and the Fermat/Cauchy Polygonal Number Theorem. It establishes a framework for lattice systems and geometric number theory within the Lean 4 ecosystem.
+This library targets the Ankeny–Minkowski pipeline for Legendre's Three-Square Theorem and the Fermat/Cauchy Polygonal Number Theorem.
+At present it is a mix of proved lemmas and “scaffold” modules that typecheck but still contain `sorry`.
 
 Dual-licensed under MIT or Apache-2.0.
 
@@ -30,7 +31,8 @@ The library targets the first formalization of **Successive Minima** in Lean 4. 
 We include foundational structures for **Bhargava's higher composition laws**, specifically focusing on integer cubes. This establishes a path toward formalizing modern breakthroughs in number field counting and class group structures.
 
 ### 4. The Computable Core
-The project targets a verified implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm. By bridging abstract measure theory with computable matrix algorithms, the library provides a foundation for verified lattice-based cryptography and optimization.
+The project targets a verified implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm.
+The current `Covolume/Computable/LLL.lean` code is a scaffold (with placeholders), and `Experiments/LLLRational.lean` provides a small rational-arithmetic probe.
 
 ### 5. Parallel Constructive Track
 To address the non-constructive nature of abstract Minkowski theory, the library maintains a parallel track for computable small-case verification.
