@@ -31,10 +31,24 @@ open scoped BigOperators
 /-- The k-th successive minimum of a lattice with respect to a symmetric convex body. -/
 noncomputable def successive_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
     (K : Set (Fin n → ℝ)) (k : ℕ) : ℝ :=
-  if hk : 1 ≤ k ∧ k ≤ n then
+  if _hk : 1 ≤ k ∧ k ≤ n then
     sInf { r | 0 < r ∧ ∃ (s : Set (Fin n → ℝ)), (∀ x ∈ s, x ∈ L) ∧ s.Countable ∧ 
       LinearIndependent ℝ (fun (x : s) => (x : Fin n → ℝ)) ∧ s.ncard = k ∧ ∀ x ∈ s, x ∈ r • K }
   else 0
+
+@[simp] lemma successive_minima_eq_zero_of_not_range {n : ℕ}
+    (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] (K : Set (Fin n → ℝ)) (k : ℕ)
+    (hk : ¬ (1 ≤ k ∧ k ≤ n)) :
+    successive_minima L K k = 0 := by
+  simp [successive_minima, hk]
+
+lemma successive_minima_eq_sInf_of_range {n : ℕ}
+    (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] (K : Set (Fin n → ℝ)) (k : ℕ)
+    (hk : 1 ≤ k ∧ k ≤ n) :
+    successive_minima L K k =
+      sInf { r | 0 < r ∧ ∃ (s : Set (Fin n → ℝ)), (∀ x ∈ s, x ∈ L) ∧ s.Countable ∧
+        LinearIndependent ℝ (fun (x : s) => (x : Fin n → ℝ)) ∧ s.ncard = k ∧ ∀ x ∈ s, x ∈ r • K } := by
+  simp [successive_minima, hk]
 
 /-- Minkowski's First Theorem phrased in terms of the first successive minimum λ₁.
     λ₁^n * volume(K) ≤ 2^n * covolume(L). -/
