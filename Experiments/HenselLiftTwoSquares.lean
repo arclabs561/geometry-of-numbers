@@ -66,8 +66,67 @@ lemma hensel_lift_two_squares_one_step
 
   refine ⟨u', ?_, ?_⟩
   · -- Show the lifted congruence modulo `p^(k+1)`.
-    -- TODO: finish in this scratch file before porting into the library.
-    sorry
+    -- Expand and factor out `pk`.
+    have h_expand :
+        u' ^ 2 + v ^ 2 + 1 = pk * (m + 2 * u * x + x ^ 2 * pk) := by
+      -- `u' = u + x*pk`
+      have : u' ^ 2 + v ^ 2 + 1
+            = (u ^ 2 + v ^ 2 + 1) + 2 * u * x * pk + x ^ 2 * pk ^ 2 := by
+        simp [u', pow_two]
+        ring
+      calc
+        u' ^ 2 + v ^ 2 + 1
+            = (u ^ 2 + v ^ 2 + 1) + 2 * u * x * pk + x ^ 2 * pk ^ 2 := this
+        _ = (pk * m) + 2 * u * x * pk + x ^ 2 * pk ^ 2 := by simpa [hm]
+        _ = pk * (m + 2 * u * x + x ^ 2 * pk) := by ring_nf
+
+    -- We need `p ∣ (m + 2*u*x + x^2*pk)`. The `x^2*pk` term is divisible by `p` as soon as `k ≥ 1`.
+    have hp_dvd_pk : (p : ℤ) ∣ pk := by
+      -- `k ≥ 1` implies `pk = p^(k0+1)`.
+      have hk0 : k ≠ 0 := Nat.ne_of_gt hk
+      rcases Nat.exists_eq_succ_of_ne_zero hk0 with ⟨k0, rfl⟩
+      -- now `pk = (p : ℤ)^(k0+1)`
+      simpa [pk] using (dvd_pow_self (p : ℤ) (k0 + 1))
+    have hp_dvd_tail : (p : ℤ) ∣ (x ^ 2 * pk) :=
+      dvd_mul_of_dvd_right hp_dvd_pk (x ^ 2)
+
+    -- Show `p ∣ (m + 2*u*x)` by construction of `x`.
+    have hp_dvd_lin : (p : ℤ) ∣ (m + 2 * u * x) := by
+      have hx' : (x : ZMod p) = xZ := by simpa using hx
+      have hZ0 : ((m + 2 * u * x : ℤ) : ZMod p) = 0 := by
+        -- In `ZMod p`, `m + (2*u)*x = 0` when `x = -m * (2*u)⁻¹`.
+        calc
+          ((m + 2 * u * x : ℤ) : ZMod p)
+              = (mZ + a * (x : ZMod p)) := by
+                    -- `simp` handles casting and rewriting `a = 2*uZ`.
+                    simp [mZ, uZ, a, two_mul, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm]
+          _ = (mZ + a * xZ) := by simp [hx']
+          _ = (mZ + a * (-mZ * a⁻¹)) := by simp [xZ]
+          _ = (mZ - a * mZ * a⁻¹) := by ring
+          _ = (mZ - mZ) := by
+                -- cancel `a * a⁻¹ = 1`
+                simp [mul_assoc, mul_left_comm, mul_comm, mul_inv_cancel₀ ha_ne0]
+          _ = 0 := by simp
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd (m + 2 * u * x : ℤ) p).1 hZ0
+
+    have hp_dvd_big : (p : ℤ) ∣ (m + 2 * u * x + x ^ 2 * pk) :=
+      dvd_add hp_dvd_lin hp_dvd_tail
+
+    -- Convert divisibility of the bracket into divisibility by `p^(k+1)` of the whole expression.
+    have hp_pow_dvd :
+        ((p : ℤ) ^ (k + 1)) ∣ (u' ^ 2 + v ^ 2 + 1) := by
+      -- `u'^2+v^2+1 = pk * (...)` and `p ∣ (...)`, while `pk = p^k`.
+      rcases hp_dvd_big with ⟨r, hr⟩
+      -- rewrite the RHS using `hr`
+      have : u' ^ 2 + v ^ 2 + 1 = pk * ((p : ℤ) * r) := by
+        simpa [hr, mul_assoc, mul_left_comm, mul_comm] using h_expand
+      -- `pk * (p*r) = (p^k) * p * r = p^(k+1) * r`
+      refine ⟨r, ?_⟩
+      -- Use `pow_succ` and the definitional equality of `pk`.
+      -- `pk` is definitionally `(p : ℤ) ^ k`.
+      simpa [pk, pow_succ, mul_assoc, mul_left_comm, mul_comm] using this
+
+    exact (Int.modEq_zero_iff_dvd).2 hp_pow_dvd
   · -- `u' ≡ u [ZMOD p^k]` is immediate from the definition `u' = u + x*pk`.
     -- (Since `pk` divides the difference.)
     have : u' - u = x * pk := by simp [u']
