@@ -16,12 +16,12 @@ and its covolume (the measure of its fundamental domain).
 
 namespace Covolume
 
-open Matrix Module
+open Matrix
 
 /-- The covolume of a ℤ-lattice in ℝⁿ is equal to the absolute value of the 
     determinant of any basis matrix. -/
 lemma covolume_eq_det {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
-    [IsZLattice ℝ L] (b : Basis (Fin n) ℤ L) :
+    [IsZLattice ℝ L] (b : Module.Basis (Fin n) ℤ L) :
     ZLattice.covolume L = |(Matrix.of (fun i j => (b j : Fin n → ℝ) i)).det| := by
   -- This is a fundamental result in the Geometry of Numbers.
   sorry

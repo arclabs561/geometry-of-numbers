@@ -62,7 +62,6 @@ lemma successive_minima_mono {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [Disc
     States that the integral over the space of lattices of the sum of a function f over lattice points
     equals the integral of f over the whole space times the volume of the fundamental domain. -/
 lemma siegel_mean_value_theorem {n : ℕ} (f : (Fin n → ℝ) → ℝ) (hf : MeasureTheory.Integrable f MeasureTheory.volume) :
-    -- This requires a definition of the measure on the space of lattices
     True :=
   sorry
 

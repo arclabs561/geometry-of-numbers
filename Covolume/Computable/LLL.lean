@@ -40,11 +40,11 @@ def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
 
 /-- Gram-Schmidt orthogonalization coefficients μ_{i,j}.
     μ_{i,j} = (b_i, b*_j) / (b*_j, b*_j) -/
-noncomputable def gram_schmidt_projections {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) : 
-    (Fin n → Fin n → ℝ) :=
-  fun i j => 
-    let Bstar := gramSchmidt ℝ (fun k => (toLp 2 (B k) : EuclideanSpace ℝ (Fin n)))
-    inner ℝ (toLp 2 (B i) : EuclideanSpace ℝ (Fin n)) (Bstar j) / ‖Bstar j‖^2
+noncomputable def gram_schmidt_projections {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) : ℝ :=
+  let Bstar := gramSchmidt ℝ (fun k => (toLp 2 (B k) : EuclideanSpace ℝ (Fin n)))
+  let Bi : EuclideanSpace ℝ (Fin n) := toLp 2 (B i)
+  let Bstarj : EuclideanSpace ℝ (Fin n) := Bstar j
+  @inner ℝ _ _ Bi Bstarj / ‖Bstarj‖^2
 
 /-- Compute the squared norm of the i-th Gram-Schmidt vector. -/
 noncomputable def gso_norm_sq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) : ℝ :=
@@ -55,7 +55,9 @@ noncomputable def gso_norm_sq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i : Fi
     sublattice spanned by the first i vectors. 
     Each swap step in LLL decreases this value by a factor of at least δ. -/
 noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℝ :=
-  sorry
+  let B_real : Matrix (Fin n) (Fin n) ℝ := B.map Int.cast
+  (Finset.univ).prod fun i =>
+    (gso_norm_sq B_real i) ^ (n - 1 - (i : ℕ))
 
 /-- Check the Lovász condition for two adjacent basis vectors.
     ‖b*_k‖² ≥ (δ - μ_{k,k-1}²) * ‖b*_{k-1}‖² -/
@@ -64,9 +66,23 @@ def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
 
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
+def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ) (limit : ℕ) : 
+    Matrix (Fin n) (Fin n) ℤ :=
+  match limit with
+  | 0 => B -- Timeout
+  | limit' + 1 =>
+    if hk : k < n then
+      if h0 : k = 0 then
+        lll_reduce_loop B δ 1 limit'
+      else
+        -- Logic for swap/reduction goes here
+        sorry
+    else B
+
+/-- Main entry point for the LLL algorithm. -/
 def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
     Matrix (Fin n) (Fin n) ℤ :=
-  -- This will use well-founded recursion based on the potential function.
-  sorry
+  -- Start with an arbitrary fuel limit for computability
+  lll_reduce_loop B δ 1 1000000
 
 end Covolume.Computable
