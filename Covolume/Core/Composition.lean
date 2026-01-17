@@ -39,16 +39,18 @@ def det2x2 (M : Matrix (Fin 2) (Fin 2) ℤ) : ℤ :=
 def slice_quadratic_form (A : IntegerCube) (dim : Fin 3) : QuadraticForm ℤ (Fin 2 → ℤ) :=
   let M0 := face A dim 0
   let M1 := face A dim 1
+  -- Q(x, y) = ax^2 + bxy + cy^2
+  -- where a = -det(M0), c = -det(M1), b = -(det(M0-M1) - det(M0) - det(M1))
   let a := -det2x2 M0
   let c := -det2x2 M1
-  let b := -(det2x2 (M0 + M1) - det2x2 M0 - det2x2 M1)
+  let b := -(det2x2 (M0 - M1) - det2x2 M0 - det2x2 M1)
   { toFun := fun v => a * (v 0)^2 + b * (v 0) * (v 1) + c * (v 1)^2
     toFun_smul := by
       intro s v
       simp
       ring
     exists_companion' := by
-      -- Any quadratic form over ℤ has a companion bilinear form
+      -- Binary quadratic forms over ℤ always have a companion bilinear form
       sorry }
 
 end Covolume.Composition

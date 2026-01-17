@@ -53,12 +53,13 @@ def ankeny_lattice (n q : ℕ) (b : ℤ) : AddSubgroup (Fin 3 → ℝ) where
     refine ⟨0, 0, 0, ?_, ?_, ?_, ?_, ?_⟩ <;> simp [Int.ModEq.refl]
   neg_mem' := by
     intro a ⟨x, y, z, hx, hy, hz, hxy, hybz⟩
-    refine ⟨-x, -y, -z, ?_, ?_, ?_, hxy.neg, ?_⟩
-    · simp [hx]
-    · simp [hy]
-    · simp [hz]
-    · calc (-y : ℤ) ≡ -(b * z) [ZMOD (2 * q)] := hybz.neg
-        _ = b * (-z) := by ring
+    use -x, -y, -z
+    constructor; simp [hx]
+    constructor; simp [hy]
+    constructor; simp [hz]
+    constructor; exact hxy.neg
+    calc (-y : ℤ) ≡ -(b * z) [ZMOD (2 * q)] := hybz.neg
+      _ = b * (-z) := by ring
 
 /-- A convenient full-rank ℤ-lattice for Ankeny has covolume `2nq`. -/
 lemma ankeny_lattice_covolume (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
@@ -72,11 +73,7 @@ lemma ankeny_lattice_covolume (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
 /-- The quadratic form `Q = 2qx² + y² + nz²`. -/
 def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ := 2 * q * x^2 + y^2 + n * z^2
 
-/-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`.
-    Proof strategy:
-    1. x ≡ y (mod n) and 2q ≡ -1 (mod n) implies 2qx^2 + y^2 ≡ -x^2 + x^2 ≡ 0 (mod n).
-    2. y ≡ bz (mod 2q) and b^2 ≡ -n (mod 2q) implies y^2 + nz^2 ≡ (bz)^2 + nz^2 ≡ (b^2+n)z^2 ≡ 0 (mod 2q).
-    3. Combine via CRT using gcd(n, 2q) = 1. -/
+/-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`. -/
 lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ) (hn : n % 8 = 3) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) (h_lat : (fun i => match i with | 0 => (x:ℝ) | 1 => (y:ℝ) | 2 => (z:ℝ)) ∈ ankeny_lattice n q b) (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) : (ankeny_Q n q x y z) ≡ 0 [ZMOD (2 * n * q)] := by
   sorry
 
@@ -117,7 +114,7 @@ lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
   suffices ∃ u v : ℕ, K = u ^ 2 + v ^ 2 by
     obtain ⟨u, v, huv⟩ := this
     use (u : ℤ), (v : ℤ)
-    sorry -- Valuation induction step
+    sorry -- Setup descent induction
 
   rw [Nat.eq_sq_add_sq_iff]
   intro p hp_prime_factors hp_mod3
