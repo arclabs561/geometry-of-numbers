@@ -72,8 +72,7 @@ lemma ankeny_lattice_covolume (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
   let v1 : Fin 3 → ℝ := ![n, 0, 0]
   let v2 : Fin 3 → ℝ := ![2 * q, 2 * q, 0]
   let v3 : Fin 3 → ℝ := ![b, b, 1]
-  let B : Basis (Fin 3) ℝ (Fin 3 → ℝ) := Basis.ofMatrix !![(n:ℝ), (2*q:ℝ), (b:ℝ); 0, (2*q:ℝ), (b:ℝ); 0, 0, 1]
-  -- Error in Basis.ofMatrix usage? Let's check.
+  -- Use Basis.mk or similar once invertibility is proved.
   sorry
 
 /-- The quadratic form `Q = 2qx² + y² + nz²`. -/

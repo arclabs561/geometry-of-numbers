@@ -1,5 +1,5 @@
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
-import Mathlib.LinearAlgebra.Basis
+import Mathlib.LinearAlgebra.Basis.Defs
 import Mathlib.Algebra.Module.ZLattice.Basic
 import Mathlib.Algebra.Module.ZLattice.Covolume
 
@@ -16,7 +16,7 @@ and its covolume (the measure of its fundamental domain).
 
 namespace Covolume
 
-open Matrix
+open Matrix Module
 
 /-- The covolume of a ℤ-lattice in ℝⁿ is equal to the absolute value of the 
     determinant of any basis matrix. -/

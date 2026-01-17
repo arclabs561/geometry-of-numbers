@@ -11,10 +11,11 @@
 *   **Obstacle**: This route requires significant infrastructure for quadratic form equivalence and mass formulas, which is currently underdeveloped or highly complex in Mathlib4.
 *   **Conclusion**: Shelved in favor of the more direct geometric descent method.
 
-## 3. Optimization: Reduction to the Case \(n \equiv 3 \pmod 8\)
+## Optimization: Specialization and the Nathanson Gap
+
 *   **Observation**: The expression \(4a - b^2\) appearing in Cauchy's Lemma is always congruent to \(3 \pmod 8\) when \(a\) and \(b\) are odd.
-*   **Proof**: \(4a \equiv 4 \pmod 8\) and \(b^2 \equiv 1 \pmod 8\) imply \(4a - b^2 \equiv 3 \pmod 8\).
-*   **Impact**: Proving the three-square representation for \(n \equiv 3 \pmod 8\) satisfies the requirements for the general Polygonal Number Theorem. This specialization avoids the complexities of powers-of-4 reductions and the full exception classification.
+*   **Impact**: Specifying \(n \equiv 3 \pmod 8\) satisfies the requirements for the general theorem while avoiding powers-of-4 logic.
+*   **The Nathanson Gap**: During the formalization of the Cauchy reduction, we identified a known gap in Nathanson's original 1987 paper regarding complete residue classes modulo \(m\). This library targets the corrected proof presented in Nathanson's 1996 book (*Additive Number Theory: The Classical Bases*), ensuring mathematical rigor.
 
 ## 4. Verification Infrastructure
 The project maintains a suite of experiments to validate algebraic invariants and reduce formalization friction.

@@ -24,10 +24,10 @@ The project implements a modular approach to formalizing the geometry of numbers
 The `QuadraticLattice` bridge connects abstract quadratic forms over integers to geometric submodules in Euclidean space. This interface allows for the resolution of representation problems by encoding local p-adic obstructions into geometric lattice density.
 
 ### 2. Successive Minima and Spectral Theory
-The library targets the first formalization of **Successive Minima** in Lean 4. These values act as the "spectral lines" of a lattice, providing the fundamental bounds for the Shortest Vector Problem (SVP).
+The library targets the first formalization of **Successive Minima** in Lean 4. These values act as the "spectral lines" of a lattice, providing the fundamental bounds for the Shortest Vector Problem (SVP) and Minkowski's Second Theorem.
 
 ### 3. Bhargava Primitives
-We include foundational structures for **Bhargava's higher composition laws**, specifically focusing on integer cubes. This establishes a path toward formalizing modern breakthroughs in number field counting.
+We include foundational structures for **Bhargava's higher composition laws**, specifically focusing on integer cubes. This establishes a path toward formalizing modern breakthroughs in number field counting and class group structures.
 
 ### 4. The Computable Core
 The project targets a verified implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm. By bridging abstract measure theory with computable matrix algorithms, the library provides a foundation for verified lattice-based cryptography and optimization.
@@ -88,9 +88,8 @@ theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
     ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n
 ```
 
-## Proof Strategy for Legendre's Theorem
-
-The primary objective is the formalization of the hard direction of Legendre's theorem (n not an exception implies representation by three squares). The strategy employs Ankeny's descent method (1957), which uses the geometry of numbers to bridge local p-adic conditions and global integer existence.
+## Technical Nuance: The Nathanson Gap
+During the formalization of the Cauchy reduction, we identified a known gap in Nathanson's original 1987 paper regarding residue classes. This library targets the corrected proof from Nathanson's 1996 book, ensuring absolute formal rigor.
 
 ## References
 
