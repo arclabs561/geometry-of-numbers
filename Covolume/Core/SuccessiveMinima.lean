@@ -5,6 +5,7 @@ import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Data.Set.Card
 import Mathlib.Algebra.Order.Field.Pointwise
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.MeasureTheory.Integral.IntegrableOn
 
 /-!
 # Successive Minima
@@ -55,6 +56,14 @@ lemma minkowski_second_theorem {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [Di
 lemma successive_minima_mono {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
     (K : Set (Fin n → ℝ)) (i j : ℕ) (hij : i ≤ j) (hi : 1 ≤ i) (hj : j ≤ n) :
     successive_minima L K i ≤ successive_minima L K j :=
+  sorry
+
+/-- Siegel's Mean Value Theorem (Formula) placeholder.
+    States that the integral over the space of lattices of the sum of a function f over lattice points
+    equals the integral of f over the whole space times the volume of the fundamental domain. -/
+lemma siegel_mean_value_theorem {n : ℕ} (f : (Fin n → ℝ) → ℝ) (hf : MeasureTheory.Integrable f MeasureTheory.volume) :
+    -- This requires a definition of the measure on the space of lattices
+    True :=
   sorry
 
 end Covolume
