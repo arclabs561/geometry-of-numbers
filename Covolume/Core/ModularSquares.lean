@@ -1,4 +1,5 @@
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Data.ZMod.QuotientRing
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Tactic.LinearCombination
 import Mathlib.FieldTheory.Finite.Basic
@@ -202,12 +203,73 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p k : ℕ) [hp : Fact p.Pr
 `u^2 + v^2 + 1 ≡ 0 [ZMOD n]`. -/
 lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
     ∃ u v : ℤ, u^2 + v^2 + 1 ≡ 0 [ZMOD n] := by
-  -- For n = 1, (0,0) is a valid solution.
-  rcases n with _ | n
-  · simp [Odd] at hn
-  rcases n with _ | n'
-  · use 0, 0; simp [Int.ModEq]
-  -- For n > 1, use prime power decomposition and CRT.
-  sorry
+  classical
+  cases n with
+  | zero =>
+      -- `Odd 0` is impossible.
+      simpa [Odd] using hn
+  | succ n =>
+      -- Work in `ZMod (n+1)` and use the CRT ring equivalence
+      -- `ZMod (n+1) ≃ Π p : (n+1).primeFactors, ZMod (p^(v_p(n+1)))`.
+      let N : ℕ := Nat.succ n
+      have hNodd : Odd N := by simpa [N] using hn
+      have hN0 : N ≠ 0 := by simp [N]
+
+      let e := ZMod.equivPi (n := N) hN0
+
+      -- For each prime-power component, build a solution using `exists_sq_add_sq_add_one_eq_zero_mod_prime_pow`.
+      have hcomp :
+          ∀ p : N.primeFactors,
+            ∃ u v : ZMod ((p : ℕ) ^ (N.factorization p)), u ^ 2 + v ^ 2 + 1 = 0 := by
+        intro p
+        have hp_prime : Nat.Prime (p : ℕ) := Nat.prime_of_mem_primeFactors p.property
+        have hp_dvd : (p : ℕ) ∣ N := Nat.dvd_of_mem_primeFactors p.property
+        have hp_ne2 : (p : ℕ) ≠ 2 := by
+          intro hp2
+          have h2dvd : 2 ∣ N := by simpa [hp2] using hp_dvd
+          have hmod1 : N % 2 = 1 := Nat.odd_iff.1 hNodd
+          have hmod0 : N % 2 = 0 := Nat.mod_eq_zero_of_dvd h2dvd
+          exact by simpa [hmod0] using hmod1
+        have hp_odd : (p : ℕ) % 2 = 1 := hp_prime.eq_two_or_odd.resolve_left hp_ne2
+        haveI : Fact (Nat.Prime (p : ℕ)) := ⟨hp_prime⟩
+        -- Use the prime-power lemma to get integer witnesses, then cast into `ZMod`.
+        obtain ⟨uI, vI, huvI⟩ :=
+          exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p := (p : ℕ)) (k := N.factorization p) hp_odd
+        refine ⟨(uI : ZMod ((p : ℕ) ^ (N.factorization p))),
+          (vI : ZMod ((p : ℕ) ^ (N.factorization p))), ?_⟩
+        -- Convert `Int.ModEq` into equality in `ZMod`.
+        have hZ :
+            ((uI ^ 2 + vI ^ 2 + 1 : ℤ) : ZMod ((p : ℕ) ^ (N.factorization p))) = (0 : ZMod ((p : ℕ) ^ (N.factorization p))) := by
+          simpa using
+            (ZMod.intCast_eq_intCast_iff (uI ^ 2 + vI ^ 2 + 1 : ℤ) 0 ((p : ℕ) ^ (N.factorization p))).2 huvI
+        -- Normalize casts.
+        simpa [pow_two, Int.cast_add, Int.cast_mul, Int.cast_one] using hZ
+
+      classical
+      choose uC vC huvC using hcomp
+
+      let uZ : ZMod N := e.symm uC
+      let vZ : ZMod N := e.symm vC
+
+      have huvZ : uZ ^ 2 + vZ ^ 2 + 1 = 0 := by
+        -- Prove the equality by applying the ring equivalence and checking componentwise.
+        apply e.injective
+        ext p
+        -- `e (e.symm x) = x`.
+        simp [uZ, vZ, huvC]
+
+      -- Lift `uZ, vZ` back to integers and convert the equality to `Int.ModEq`.
+      rcases ZMod.intCast_surjective uZ with ⟨uI, huI⟩
+      rcases ZMod.intCast_surjective vZ with ⟨vI, hvI⟩
+      refine ⟨uI, vI, ?_⟩
+      have hZ : ((uI ^ 2 + vI ^ 2 + 1 : ℤ) : ZMod N) = 0 := by
+        -- Replace by `uZ, vZ` via the chosen representatives.
+        have : ((uI : ZMod N) ^ 2 + (vI : ZMod N) ^ 2 + 1) = 0 := by
+          simpa [huI, hvI, pow_two] using huvZ
+        -- Turn it into a statement about the cast of the integer expression.
+        simpa [pow_two, Int.cast_add, Int.cast_mul, Int.cast_one] using this
+      have hdvd : (N : ℤ) ∣ (uI ^ 2 + vI ^ 2 + 1) :=
+        (ZMod.intCast_zmod_eq_zero_iff_dvd (uI ^ 2 + vI ^ 2 + 1 : ℤ) N).1 hZ
+      exact (Int.modEq_zero_iff_dvd).2 hdvd
 
 end Covolume
