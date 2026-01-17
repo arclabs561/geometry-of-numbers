@@ -88,9 +88,39 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : 
     Hypothesis `Squarefree n` makes the `p | n` case easier (contradiction via `z^2 ≡ -1`). -/
 lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
     (h_ankeny : 2 * q * x^2 + y^2 + n * z^2 = 2 * n * q)
-    (hq : Nat.Prime q) (hq1 : q % 4 = 1) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) 
+    (hq_prime : Nat.Prime q) (hq1 : q % 4 = 1) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹) 
     (hn : n % 8 = 3) (hn_sq : Squarefree n) :
     ∃ u v : ℤ, n = x^2 + u^2 + v^2 := by
+  have h_eq : y^2 + n * z^2 = 2 * q * (n - x^2) := by
+    calc y^2 + n * z^2 = (2 * q * x^2 + y^2 + n * z^2) - 2 * q * x^2 := by ring
+      _ = 2 * n * q - 2 * q * x^2 := by rw [h_ankeny]
+      _ = 2 * q * (n - x^2) := by ring
+  
+  -- Show n - x^2 >= 0
+  have h_diff_nonneg : 0 ≤ n - x^2 := by
+    have h_rhs : 0 ≤ y^2 + n * z^2 := by
+      apply add_nonneg (sq_nonneg y)
+      apply mul_nonneg (Int.natCast_nonneg n) (sq_nonneg z)
+    rw [h_eq] at h_rhs
+    have h2q : 0 < (2 * q : ℤ) := by
+      have hq_pos : 0 < q := hq_prime.pos
+      norm_cast; linarith
+    exact nonneg_of_mul_nonneg_right h_rhs h2q
+
+  let K := (n - x^2).natAbs
+  have hK_eq : (K : ℤ) = n - x^2 := Int.natAbs_of_nonneg h_diff_nonneg
+  
+  -- Use Nat.eq_sq_add_sq_iff
+  suffices ∃ u v : ℕ, K = u ^ 2 + v ^ 2 by
+    obtain ⟨u, v, huv⟩ := this
+    use (u : ℤ), (v : ℤ)
+    have : (n : ℤ) = x^2 + (n - x^2) := by ring
+    rw [this, ← hK_eq]
+    simp [huv]
+    ring
+
+  rw [Nat.eq_sq_add_sq_iff]
+  intro p hp_prime_factors hp_mod3
   sorry
 
 /-- Final theorem for `n ≡ 3 (mod 8)`. -/

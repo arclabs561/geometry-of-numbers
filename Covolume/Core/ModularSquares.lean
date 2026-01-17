@@ -52,7 +52,6 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p k : ℕ) [hp : Fact p.Pr
   induction k with
   | zero => use 0, 0; simp [Int.ModEq]
   | succ k' ih =>
-    obtain ⟨u0, v0, h0⟩ := ih
     sorry
 
 /-- Odd modulus case: for odd `n`, there exist integers `u, v` such that
