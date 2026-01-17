@@ -41,8 +41,6 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_prime_pow (p k : ℕ) [hp : Fact p.Pr
   | succ k' ih =>
     obtain ⟨u0, v0, h0⟩ := ih
     -- Lift from p^k' to p^{k'+1} using Hensel's lemma logic.
-    -- For k'=0, use prime case existence.
-    -- For k'>0, at least one of u0, v0 is a unit mod p.
     sorry
 
 /-- Odd modulus case: for odd `n`, there exist integers `u, v` such that

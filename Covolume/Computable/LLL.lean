@@ -1,6 +1,7 @@
 import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
+import Mathlib.Analysis.InnerProductSpace.PiL2
 
 /-!
 # LLL Algorithm Implementation
@@ -23,9 +24,9 @@ inductive LLLStatus
 
 /-- Perform size reduction on vector k with respect to vector j.
     b_k := b_k - round(μ_{k,j}) * b_j -/
-def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℚ) : 
+noncomputable def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℝ) : 
     Matrix (Fin n) (Fin n) ℤ :=
-  let q := ⌊μ + 1/2⌋
+  let q : ℤ := ⌊μ + 1/2⌋
   B.updateRow k (B k - q • B j)
 
 /-- Perform a swap of two adjacent basis vectors. -/
@@ -35,10 +36,14 @@ def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
   let row_j := B j
   B.updateRow k row_j |>.updateRow j row_k
 
-/-- Gram-Schmidt orthogonalization step for the LLL conditions.
-    Most implementations use floating-point or rational approximations for these values. -/
-noncomputable def gram_schmidt_step {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) : 
-    (Fin n → Fin n → ℝ) × (Fin n → ℝ) :=
+/-- Gram-Schmidt orthogonalization coefficients μ_{i,j}.
+    μ_{i,j} = (b_i, b*_j) / (b*_j, b*_j) -/
+noncomputable def gram_schmidt_projections {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) : 
+    (Fin n → Fin n → ℝ) :=
+  sorry
+
+/-- Compute the squared norm of the i-th Gram-Schmidt vector. -/
+noncomputable def gso_norm_sq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) : ℝ :=
   sorry
 
 /-- Compute the potential function D = Π d_i, where d_i is the determinant of the 
@@ -57,9 +62,6 @@ def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
 def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
     Matrix (Fin n) (Fin n) ℤ :=
   -- This will use well-founded recursion based on the potential function.
-  sorry
-def lll_step {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
-    Matrix (Fin n) (Fin n) ℤ :=
   sorry
 
 end Covolume.Computable

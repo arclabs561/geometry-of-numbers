@@ -25,4 +25,10 @@ lemma minkowski_first_theorem_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ
     (successive_minima L K 1)^n * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
   sorry
 
+/-- The successive minima are non-decreasing: λ₁ ≤ λ₂ ≤ ... ≤ λₙ. -/
+lemma successive_minima_mono {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
+    (K : Set (Fin n → ℝ)) (i j : ℕ) (hij : i ≤ j) (hi : 1 ≤ i) (hj : j ≤ n) :
+    successive_minima L K i ≤ successive_minima L K j :=
+  sorry
+
 end Covolume
