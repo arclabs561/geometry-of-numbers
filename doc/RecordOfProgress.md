@@ -5,15 +5,21 @@
 *   **Cauchy Identity**: Proved the core algebraic identity connecting sums of polygonal numbers to sums of squares: `2 * ∑ P(s, x_i) = (s-2) * ∑ x_i^2 + (4-s) * ∑ x_i`.
 
 ## Phase 2: Legendre's Three-Squares Theorem
-*   **Lattice Construction**: Constructed a 3D lattice `Λ` with covolume `n²` satisfying `x² + y² + z² ≡ 0 (mod n)`.
-*   **Covolume Lemma**: Proved that the fundamental domain volume is exactly `n²`.
-*   **Research Pivot**: Realized via experiments that Minkowski's direct volume argument is only sufficient for very small `n`. Potted a pivot to the **Method of Descent** (Ankeny/Mordell).
+*   **Lattice construction (scaffold)**: Implemented candidate lattice definitions for both the Minkowski-style and Ankeny-style routes.
+    The intended invariants are congruence-defined membership and a computable covolume; some of these are still `sorry`.
+*   **Covolume computation (scaffold)**: The main covolume statements are currently scaffolds (`sorry`) in the main proof files,
+    but there is a fair amount of working API exploration in `Experiments/CheckMinkowski.lean`.
+*   **Research pivot**: The direct Minkowski “one-shot volume” argument is not strong enough uniformly.
+    The current direction is descent (Ankeny-style): find a representation of \(2nq\) and reduce to \(n\).
 
 ## Phase 3: Cauchy's Lemma
 *   **Interval Logic**: Formalized lemmas for finding odd integers in real intervals.
-*   **Gauss's Eureka Theorem**: Sketched the reduction of the triangular number theorem to the three-squares theorem for `8n+3`.
+*   **Gauss's Eureka Theorem**: Currently a scaffold in `Cauchy/Main.lean` (uses `sorry`).
 
 ## Current Status (Jan 2026)
 *   Main theorem `fermat_polygonal` is defined but uses `sorry`.
-*   Active development is in `PolygonalNumberTheorem/Legendre/Minkowski.lean` (Descent step).
-*   Small cases `n < 108(s-2)` verified via Python script.
+*   Active development is split:
+    - `PolygonalNumberTheorem/Legendre/AnkenyLemmas.lean` is the cleanest component (0 `sorry`).
+    - `PolygonalNumberTheorem/Legendre/Ankeny.lean` is the main scaffold (several `sorry`).
+    - `PolygonalNumberTheorem/Cauchy/Main.lean` is the polygonal theorem scaffold (`sorry`).
+*   Numeric sanity: `uv run Experiments/ankeny_check.py` checks small instances of the Ankeny reduction setup (not a proof).
