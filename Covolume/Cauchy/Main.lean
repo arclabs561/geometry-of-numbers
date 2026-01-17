@@ -23,8 +23,8 @@ lemma exists_odd_in_interval {L U : ℝ} (hLU : L + 2 < U) :
     ∃ b : ℤ, Odd b ∧ L < (b : ℝ) ∧ (b : ℝ) < U := by
   sorry
 
-/-- Gauss’s Eureka theorem: every natural number is a sum of three triangular numbers. -/
-theorem gauss_eureka (n : ℕ) :
+/-- Gauss's Triangular Number Theorem: every natural number is a sum of three triangular numbers. -/
+theorem gauss_triangular (n : ℕ) :
     ∃ a b c : ℕ, triangular a + triangular b + triangular c = n := by
   sorry
 
@@ -32,8 +32,8 @@ theorem gauss_eureka (n : ℕ) :
 theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
     ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n := by
   rcases hs with h_s3 | h_s4 | h_s5
-  · -- s = 3: Gauss's Eureka theorem.
-    obtain ⟨a, b, c, habc⟩ := gauss_eureka n
+  · -- s = 3: Gauss's Triangular Number Theorem.
+    obtain ⟨a, b, c, habc⟩ := gauss_triangular n
     use ![a, b, c]
     dsimp [triangular] at habc
     rw [← habc]

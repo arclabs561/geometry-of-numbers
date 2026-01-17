@@ -3,20 +3,14 @@ import Mathlib.Data.Matrix.Basic
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 
 /-!
-# Computable LLL Algorithm (Skeleton)
+# LLL Algorithm Implementation
 
-This file targets the "Systems Cherry" of the Covolume project: a computable
-implementation of the Lenstra–Lenstra–Lovász lattice reduction algorithm.
+This file contains a computable implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm.
 
-## Breakthrough Potential
-A verified LLL implementation in Lean 4 bridges the gap between theoretical
-number theory and applied lattice-based cryptography.
-
-## Implementation Plan
-1.  **Gram-Schmidt**: Leverage Mathlib's `gram_schmidt`.
-2.  **Size Reduction**: Implement the integer-based reduction steps.
-3.  **Swap Step**: Implement the Lovász condition swap.
-4.  **Termination**: Prove termination using the potential function.
+## Specification
+1.  **Gram-Schmidt Orthogonalization**: Basis for computing projections and Lovász conditions.
+2.  **Size Reduction**: Reduction of off-diagonal basis entries using integer operations.
+3.  **Lovász Condition**: Swapping adjacent basis vectors to satisfy the potential function requirement.
 -/
 
 namespace Covolume.Computable

@@ -1,33 +1,23 @@
 # Technical Notes and Shelved Approaches
 
-## 1. Direct Minkowski for Sum of Three Squares
-*   **Approach**: Use Minkowski's Convex Body Theorem on a ball of radius `√n` in a lattice of covolume `n`.
-*   **Problem**: In 3D, the volume of a ball of radius `R` is `(4/3)πR³`. For a point to be guaranteed, we need `(4/3)πn^{3/2} > 8 * covolume`.
-*   **Result**: If `covolume = n`, we need `n^{1/2} > 6/π ≈ 1.91`, so `n > 3.65`. However, for `n=3`, the volume is `(4/3)π(3√3) ≈ 21.7 < 24`.
-*   **Refinement**: If we use the lattice with `covolume = n²` (from `x ≡ uz, y ≡ vz`), the gap is even larger.
-*   **Decision**: Shelved direct application in favor of **Descent**. We find a representation of `kn` and descend to `k=1`.
+## 1. Direct Minkowski Application for Sum of Three Squares
+*   **Approach**: Utilize Minkowski's Convex Body Theorem on a sphere of radius \(\sqrt{n}\) within a lattice of covolume \(n\).
+*   **Analysis**: In three dimensions, the volume of a sphere with radius \(R\) is \(\frac{4}{3}\pi R^3\). For a non-zero lattice point to be guaranteed, the volume must exceed \(8 \cdot \text{covolume}\).
+*   **Constraint**: For \(\text{covolume} = n\), the requirement is \(\frac{4}{3}\pi n^{3/2} > 8n\), or \(\sqrt{n} > \frac{6}{\pi} \approx 1.91\), implying \(n > 3.65\). For \(n=3\), the volume is \(\frac{4}{3}\pi (3\sqrt{3}) \approx 21.7\), which is less than the required 24.
+*   **Conclusion**: Direct application is insufficient for small \(n\). The project has pivoted to a descent method, representing \(kn\) and descending to \(k=1\).
 
 ## 2. Ternary Quadratic Forms (Archive/TernaryQF.lean)
-*   **Approach**: Use the theory of ternary quadratic forms and genus/class numbers.
-*   **Problem**: Requires extensive infrastructure for quadratic forms (genus, mass formula, etc.) that is partially missing or very complex in current Mathlib4.
-*   **Decision**: Shelved in favor of the more elementary (though technically involved) Minkowski Descent.
+*   **Approach**: Employ the theory of ternary quadratic forms, including genus and class number considerations.
+*   **Obstacle**: This route requires significant infrastructure for quadratic form equivalence and mass formulas, which is currently underdeveloped or highly complex in Mathlib4.
+*   **Conclusion**: Shelved in favor of the more direct geometric descent method.
 
-## 3. Discovery: Cauchy's proof only needs \(n \equiv 3 \pmod 8\)
-*   **Discovery**: The integer $4a - b^2$ that appears in Cauchy's Lemma is always $\equiv 3 \pmod 8$ when $a$ and $b$ are odd.
-*   **Parity Proof**: $4a \equiv 4 \pmod 8$ and $b^2 \equiv 1 \pmod 8$, so $4a - b^2 \equiv 3 \pmod 8$.
-*   **Impact**: We only need to prove the representation theorem for the specific case $n \equiv 3 \pmod 8$. This case avoids all powers-of-4 logic and the most difficult exception classes.
-*   **Revised Roadmap**: Focus on the \(n \equiv 3 \pmod 8\) case, prove it via Ankeny/Minkowski descent,
-    then use standard reductions to the full exception characterization.
+## 3. Optimization: Reduction to the Case \(n \equiv 3 \pmod 8\)
+*   **Observation**: The expression \(4a - b^2\) appearing in Cauchy's Lemma is always congruent to \(3 \pmod 8\) when \(a\) and \(b\) are odd.
+*   **Proof**: \(4a \equiv 4 \pmod 8\) and \(b^2 \equiv 1 \pmod 8\) imply \(4a - b^2 \equiv 3 \pmod 8\).
+*   **Impact**: Proving the three-square representation for \(n \equiv 3 \pmod 8\) satisfies the requirements for the general Polygonal Number Theorem. This specialization avoids the complexities of powers-of-4 reductions and the full exception classification.
 
-## 4. Evidence scaffolds (experiments that reduce proof friction)
+## 4. Verification Infrastructure
+The project maintains a suite of experiments to validate algebraic invariants and reduce formalization friction.
 
-These experiments are “engineering evidence”: they do not prove the theorem, but they pin down the
-exact Mathlib lemma shapes we need and sanity-check the intended arithmetic.
-
-* **`Experiments/CheckZMod.lean` (Lean)**: compiles small bridge lemmas used by `Legendre/Ankeny.lean`:
-  - moving between `ZMod` equalities and `Int.ModEq` congruences via `ZMod.intCast_eq_intCast_iff`;
-  - combining congruences via `Int.modEq_and_modEq_iff_modEq_mul`.
-
-* **`Experiments/ankeny_check.py` (Python)**: brute searches small instances of the quadratic form
-  \(2qx^2 + y^2 + nz^2 = 2nq\) and checks whether \(n - x^2\) is a sum of two squares.
-  This is useful for catching sign mistakes before formalizing descent.
+*   **Congruence Bridges (`Experiments/CheckZMod.lean`)**: Validates the mapping between `ZMod` equalities and `Int.ModEq` congruences, including CRT-style combinations.
+*   **Numeric Validation (`Experiments/ankeny_check.py`)**: Performs exhaustive searches for small instances of the Ankeny quadratic form setup to verify the sum-of-two-squares condition on the reduced terms.

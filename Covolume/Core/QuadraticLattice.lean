@@ -4,19 +4,14 @@ import Mathlib.Algebra.Module.ZLattice.Basic
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 
 /-!
-# Bridge between Quadratic Forms and Lattices
+# Quadratic Forms and Lattices
 
-This file defines the `QuadraticLattice` interface, which is the "Systems Kernel"
-of the Covolume library. It bridges the gap between abstract quadratic forms
-over ℤ and the geometric properties of lattices in Euclidean space.
+This file defines the `QuadraticLattice` interface, which connects abstract quadratic forms over the integers to the geometric properties of lattices in Euclidean space.
 
-## Design Goals
-1.  **Local-Global Encoding**: Provide a way to embed p-adic solvability
-    conditions into lattice geometry.
-2.  **Infrastructure Play**: Enable reuse of Minkowski's theorem for any
-    quadratic form representation problem.
-3.  **Measurable Performance**: Interface with `MeasureTheory` for volume
-    arguments while keeping the lattice structure computable.
+## Implementation Details
+1.  **Lattice Embedding**: A method for representing quadratic form values as lattice norms.
+2.  **Geometric Reduction**: Provision for utilizing Minkowski's Convex Body Theorem in representation problems.
+3.  **Volume Invariants**: Definitions linking the covolume of the lattice to the fundamental domain measure.
 -/
 
 namespace Covolume

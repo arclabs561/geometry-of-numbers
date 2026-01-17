@@ -6,16 +6,16 @@ import Mathlib.Tactic
 namespace Covolume
 
 /-!
-## Polygonal numbers
+# Polygonal Numbers
 
-We’ll eventually formalize Cauchy’s proof of Fermat’s polygonal number theorem:
+This file defines the `polygonal` number sequence and establishes identities required for the formalization of Cauchy's Polygonal Number Theorem.
 
-```text
-Every natural number is a sum of s s-gonal numbers.
-```
+## Main Definitions
+- `polygonal s n`: The nth s-gonal number.
+- `triangular`, `square`, `pentagonal`: Special cases for s = 3, 4, 5.
 
-This file is the “algebra spine” for polygonal numbers: definitions and a few
-identities that make later ring manipulations feasible.
+## Implementation Notes
+The definitions are primarily in `ℕ` for consistency with standard library conventions, while significant algebraic identities are proved in `ℤ` to utilize commutative ring properties.
 -/
 
 /-- The `s`-gonal number at index `n`.
@@ -41,15 +41,10 @@ def pentagonal (n : ℕ) : ℕ := polygonal 5 n
 @[simp] lemma triangular_def (n : ℕ) : triangular n = n + n * (n - 1) / 2 := by
   simp [triangular, polygonal]
 
-/-!
-### Exactness of the `/ 2`
-
-The definition uses `/ 2` in `ℕ`. A recurring need is to “clear denominators”:
-show the relevant numerator is even, so multiplying by 2 cancels the division.
--/
+/-! ### Divisibility Properties -/
 
 lemma two_dvd_polygonal_numer (s n : ℕ) : 2 ∣ (s - 2) * n * (n - 1) := by
-  -- `n * (n - 1)` is always even.
+  -- n * (n - 1) is always even.
   have hn : 2 ∣ n * (n - 1) := (Nat.even_mul_pred_self n).two_dvd
   -- Multiply by `(s-2)`.
   simpa [Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] using dvd_mul_of_dvd_right hn (s - 2)
