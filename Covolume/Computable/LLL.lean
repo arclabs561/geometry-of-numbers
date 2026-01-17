@@ -35,6 +35,12 @@ def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
   let row_j := B j
   B.updateRow k row_j |>.updateRow j row_k
 
+/-- Compute the potential function D = Π d_i, where d_i is the determinant of the 
+    sublattice spanned by the first i vectors. 
+    This function is used to prove the termination of the LLL algorithm. -/
+noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℝ :=
+  sorry
+
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
 def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
