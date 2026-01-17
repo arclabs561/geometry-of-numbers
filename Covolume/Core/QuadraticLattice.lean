@@ -28,8 +28,8 @@ structure QuadraticLattice (n : ℕ) (Q : QuadraticForm ℤ (Fin n → ℤ)) whe
   covolume : ℝ
   /-- The lattice norm squared matches the quadratic form value for integer vectors. -/
   norm_sq_eq : ∀ (v : Fin n → ℤ), ‖(fun i => (v i : ℝ))‖^2 = (Q v : ℝ)
-  /-- Integer vectors are in the lattice iff they satisfy specific congruences (embedded in the lattice definition). -/
-  mem_lattice_iff : ∀ (v : Fin n → ℤ), (fun i => (v i : ℝ)) ∈ lattice ↔ True -- Placeholder for specific lattice congruences
+  /-- Integer vectors are in the lattice iff they satisfy specific congruences. -/
+  mem_lattice_iff : ∀ (v : Fin n → ℤ), (fun i => (v i : ℝ)) ∈ lattice ↔ (∀ i, (v i : ZMod n) = 0) -- Placeholder example
   /-- The measure of the fundamental domain matches the covolume. -/
   volume_eq : sorry
 

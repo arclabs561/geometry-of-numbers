@@ -64,9 +64,23 @@ def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
 
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
+def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ) : 
+    Matrix (Fin n) (Fin n) ℤ :=
+  if hk : k < n then
+    if h0 : k = 0 then
+      lll_reduce_loop B δ 1
+    else
+      -- 1. Size reduce B[k] with respect to all B[j] for j < k
+      -- 2. Check Lovász condition
+      -- 3. If ok, k := k + 1
+      -- 4. If swap, k := max(1, k-1)
+      sorry
+  else B
+termination_by sorry
+
+/-- Main entry point for the LLL algorithm. -/
 def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : 
     Matrix (Fin n) (Fin n) ℤ :=
-  -- This will use well-founded recursion based on the potential function.
-  sorry
+  lll_reduce_loop B δ 1
 
 end Covolume.Computable

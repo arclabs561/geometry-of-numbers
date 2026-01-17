@@ -28,7 +28,7 @@ open Set Pointwise
 /-- The k-th successive minimum of a lattice with respect to a symmetric convex body. -/
 noncomputable def successive_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L] 
     (K : Set (Fin n → ℝ)) (k : ℕ) : ℝ :=
-  if 1 ≤ k ∧ k ≤ n then
+  if hk : 1 ≤ k ∧ k ≤ n then
     sInf { r | 0 < r ∧ ∃ (s : Set (Fin n → ℝ)), (∀ x ∈ s, x ∈ L) ∧ s.Countable ∧ 
       LinearIndependent ℝ (fun (x : s) => (x : Fin n → ℝ)) ∧ s.ncard = k ∧ ∀ x ∈ s, x ∈ r • K }
   else 0
@@ -39,6 +39,14 @@ lemma minkowski_first_theorem_minima {n : ℕ} (L : Submodule ℤ (Fin n → ℝ
     (K : Set (Fin n → ℝ)) [IsZLattice ℝ L] (hK_conv : Convex ℝ K) (hK_symm : ∀ x ∈ K, -x ∈ K) 
     (hK_vol : 0 < MeasureTheory.volume K) :
     (successive_minima L K 1)^n * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
+  sorry
+
+/-- Minkowski's Second Theorem: the product of successive minima is bounded.
+    λ₁λ₂...λₙ * volume(K) ≤ 2^n * covolume(L). -/
+lemma minkowski_second_theorem {n : ℕ} (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
+    (K : Set (Fin n → ℝ)) [IsZLattice ℝ L] (hK_conv : Convex ℝ K) (hK_symm : ∀ x ∈ K, -x ∈ K)
+    (hK_vol : 0 < MeasureTheory.volume K) :
+    (∏ i in Finset.Icc 1 n, successive_minima L K i) * (MeasureTheory.volume K).toReal ≤ 2^n * (ZLattice.covolume L) :=
   sorry
 
 /-- The successive minima are non-decreasing: λ₁ ≤ λ₂ ≤ ... ≤ λₙ. -/

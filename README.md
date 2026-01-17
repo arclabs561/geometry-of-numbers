@@ -32,7 +32,7 @@ We include foundational structures for **Bhargava's higher composition laws**, s
 ### 4. The Computable Core
 The project targets a verified implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm. By bridging abstract measure theory with computable matrix algorithms, the library provides a foundation for verified lattice-based cryptography and optimization.
 
-### 3. Parallel Constructive Track
+### 5. Parallel Constructive Track
 To address the non-constructive nature of abstract Minkowski theory, the library maintains a parallel track for computable small-case verification.
 
 ## Structure
@@ -42,7 +42,10 @@ Covolume/
   Core/
     Basic.lean            -- Polygonal number definitions and identities.
     QuadraticLattice.lean -- Systems Kernel: Quadratic form to lattice bridge.
+    SuccessiveMinima.lean -- Lattice spectral theory.
+    Composition.lean      -- Bhargava higher composition primitives.
     ModularSquares.lean   -- Local solvability conditions.
+    Determinant.lean      -- Lattice determinant and covolume links.
   Computable/
     LLL.lean              -- Verified LLL implementation.
   Legendre/
@@ -59,6 +62,10 @@ Experiments/
   CheckZMod.lean             -- Congruence bridge validation.
   AnkenyCheck.lean           -- Ankeny prime existence probes.
   ankeny_check.py            -- Numeric validation for Ankeny reduction.
+  LLLBasic.lean              -- LLL step and Gram-Schmidt probing.
+  SuccessiveMinimaBasic.lean -- Spectral theory validation on Z2.
+  BhargavaCubes.lean         -- Discriminant invariant checks.
+  DescentValuation.lean      -- Valuation contradiction formalization.
 ```
 
 ## Key Theorems
@@ -69,9 +76,9 @@ theorem sum_three_squares_iff (n : ℕ) :
     (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n
 ```
 
-**Gauss's Eureka Theorem**:
+**Gauss's Triangular Number Theorem**:
 ```lean
-theorem gauss_eureka (n : ℕ) :
+theorem gauss_triangular (n : ℕ) :
     ∃ a b c : ℕ, triangular a + triangular b + triangular c = n
 ```
 
@@ -91,3 +98,4 @@ The primary objective is the formalization of the hard direction of Legendre's t
 - Cauchy, A. L. (1813). *Démonstration du théorème général de Fermat sur les nombres polygones*.
 - Ankeny, N. C. (1957). *Sums of three squares*. Proceedings of the American Mathematical Society.
 - Nathanson, M. B. (1987). *A short proof of Cauchy's polygonal number theorem*.
+- Bhargava, M. (2004). *Higher composition laws*. Annals of Mathematics.

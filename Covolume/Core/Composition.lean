@@ -53,4 +53,14 @@ def slice_quadratic_form (A : IntegerCube) (dim : Fin 3) : QuadraticForm ℤ (Fi
       -- Binary quadratic forms over ℤ always have a companion bilinear form
       sorry }
 
+/-- The discriminant of a binary quadratic form ax^2 + bxy + cy^2 is b^2 - 4ac. -/
+def discriminant (Q : QuadraticForm ℤ (Fin 2 → ℤ)) : ℤ :=
+  -- This is a placeholder for extraction of coefficients a, b, c
+  sorry
+
+/-- A key result by Bhargava: all three slice quadratic forms have the same discriminant. -/
+theorem slice_discriminants_equal (A : IntegerCube) (i j : Fin 3) :
+    discriminant (slice_quadratic_form A i) = discriminant (slice_quadratic_form A j) := by
+  sorry
+
 end Covolume.Composition
