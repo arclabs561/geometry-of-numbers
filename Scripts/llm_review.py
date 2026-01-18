@@ -57,6 +57,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.models.openrouter import OpenRouterModel
+from pydantic_ai.models.openrouter import OpenRouterModelSettings
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 
@@ -607,6 +608,40 @@ def default_models_for_provider(provider: str, *, stage: str) -> list[str]:
     return [m] if m else ["gpt-4o-mini"]
 
 
+def openrouter_models_index(base_url: str, *, timeout_s: int = 10) -> set[str]:
+    """
+    Fetch OpenRouter model ids via GET /models.
+
+    This is best-effort and should never block the hook. It’s used for:
+    - validating that requested ids exist
+    - avoiding wasting requests on typos / deprecated ids
+    """
+    url = base_url.rstrip("/") + "/models"
+    r = requests.get(url, timeout=timeout_s)
+    r.raise_for_status()
+    data = r.json()
+    out: set[str] = set()
+    for m in data.get("data", []) or []:
+        mid = (m.get("id") or "").strip()
+        if mid:
+            out.add(mid)
+    return out
+
+
+def pick_stage_tuning(*, stage: str, tier: str, timeout_default: int, concurrency_default: int) -> tuple[int, int]:
+    """
+    Conservative defaults so heavy+deep doesn’t time out constantly.
+
+    Explicit env overrides still win (handled in main), but if the user doesn’t set them,
+    these defaults keep behavior sane.
+    """
+    if tier == "heavy" and stage == "deep":
+        return (max(timeout_default, 180), min(concurrency_default, 2))
+    if stage == "triage":
+        return (min(timeout_default, 60), concurrency_default)
+    return (timeout_default, concurrency_default)
+
+
 def format_report(rep: ReviewReport) -> str:
     def fmt_issue(i: ReviewIssue, k: int) -> str:
         fp = i.file_path or "(no file)"
@@ -734,6 +769,12 @@ Return a single JSON object (no surrounding prose) of the form:
 
     # Default: pydantic-ai structured output (uses tool calling internally).
     if provider == "openrouter":
+        # Optional: ask OpenRouter for stronger reasoning on deep runs.
+        # Keep opt-in to avoid surprising cost/latency increases.
+        effort = os.environ.get("COVOLUME_LLM_REVIEW_REASONING_EFFORT", "").strip().lower()
+        settings = None
+        if effort in ("low", "medium", "high"):
+            settings = OpenRouterModelSettings(openrouter_reasoning={"effort": effort})
         model = OpenRouterModel(
             model_id,
             provider=OpenRouterProvider(
@@ -751,7 +792,7 @@ Return a single JSON object (no surrounding prose) of the form:
             ),
         )
 
-    agent = Agent(model, output_type=ReviewReport, system_prompt=system_prompt)
+    agent = Agent(model, output_type=ReviewReport, system_prompt=system_prompt, model_settings=settings)
     # Hard timeout at the coroutine level.
     res = await asyncio.wait_for(agent.run(user_prompt), timeout=timeout_s)
     return res.output
@@ -888,6 +929,7 @@ def main() -> int:
     models_override = [args.model.strip()] if args.model.strip() else []
     concurrency_default = int(os.environ.get("COVOLUME_LLM_REVIEW_CONCURRENCY", "3").strip() or "3")
     timeout_default = int(os.environ.get("COVOLUME_LLM_REVIEW_TIMEOUT_S", str(args.timeout_s)).strip() or str(args.timeout_s))
+    tier = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip().lower()
 
     system = domain_prompt()
     wisdom = repo_wisdom(root)
@@ -925,10 +967,31 @@ def main() -> int:
 
     async def run_stage(stage_name: str, user_prompt: str) -> ReviewReport:
         reports: list[tuple[str, ReviewReport]] = []
-        stage_timeout = int(os.environ.get(f"COVOLUME_LLM_REVIEW_TIMEOUT_S_{stage_name.upper()}", str(timeout_default)).strip() or str(timeout_default))
-        stage_concurrency = int(os.environ.get(f"COVOLUME_LLM_REVIEW_CONCURRENCY_{stage_name.upper()}", str(concurrency_default)).strip() or str(concurrency_default))
+        base_timeout, base_conc = pick_stage_tuning(
+            stage=stage_name,
+            tier=tier,
+            timeout_default=timeout_default,
+            concurrency_default=concurrency_default,
+        )
+        stage_timeout = int(os.environ.get(f"COVOLUME_LLM_REVIEW_TIMEOUT_S_{stage_name.upper()}", str(base_timeout)).strip() or str(base_timeout))
+        stage_concurrency = int(os.environ.get(f"COVOLUME_LLM_REVIEW_CONCURRENCY_{stage_name.upper()}", str(base_conc)).strip() or str(base_conc))
         sem = asyncio.Semaphore(max(1, stage_concurrency))
         models = models_override or default_models_for_provider(provider, stage=stage_name)
+
+        # Optional preflight: drop unknown OpenRouter model ids early to avoid wasting requests.
+        if provider == "openrouter":
+            preflight = os.environ.get("COVOLUME_LLM_REVIEW_PREFLIGHT_MODELS", "1").strip().lower()
+            if preflight not in ("0", "false", "no", "off"):
+                try:
+                    known = openrouter_models_index(base_url, timeout_s=10)
+                    models2 = [m for m in models if m in known]
+                    if models2:
+                        models = models2
+                    else:
+                        # If everything got filtered, keep original list (don’t brick the reviewer).
+                        pass
+                except Exception:
+                    pass
 
         async def run_model(m: str, role: str) -> tuple[str, ReviewReport] | None:
             key_id = cache_key(
