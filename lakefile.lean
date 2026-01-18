@@ -21,3 +21,7 @@ lean_lib «Experiments» {
 lean_exe «status_report» {
   root := `Scripts.StatusReport
 }
+
+lean_exe «covolume_checks» {
+  root := `Scripts.Checkers
+}
