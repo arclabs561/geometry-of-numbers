@@ -9,6 +9,7 @@ import Mathlib.Data.Matrix.Mul
 import Mathlib.Tactic
 
 import Covolume.Core.MinkowskiHelpers
+import Experiments.AnkenyVolumeConstants
 
 /-!
 # Ankeny ellipsoid using the L2 ball (experiment)
@@ -94,9 +95,23 @@ hence \(\mathrm{vol}(\text{ellipsoid}) > 16\,n\,q\).
 
 lemma volume_ankenyEllipsoidL2_gt (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
     ENNReal.ofReal (16 * (n * q)) < volume (ankenyEllipsoidL2 n q) := by
-  -- TODO(sorry): finish the ENNReal algebra and `ofReal` monotonicity.
-  -- We keep this lemma here so it can be developed without blocking the main Ankeny file.
-  sorry
+  -- Reduce to the “constant factor is > 1” inequality, plus a single normalization step
+  -- turning `volume (ankenyEllipsoidL2 n q)` into `ENNReal.ofReal (16*n*q * (sqrt 2 * pi / 3))`.
+  have ha : 0 < (16 * (n * q) : ℝ) := by nlinarith
+  have hconst :
+      ENNReal.ofReal (16 * (n * q)) <
+        ENNReal.ofReal ((16 * (n * q)) * (Real.sqrt 2 * Real.pi / 3)) := by
+    simpa [mul_assoc, mul_left_comm, mul_comm] using
+      Covolume.Experiments.ofReal_mul_lt_ofReal_mul_sqrt2_mul_pi_div_three_of_pos
+        (a := (16 * (n * q) : ℝ)) ha
+
+  -- TODO(sorry): prove the closed form for the volume (nontrivial ENNReal normalization step).
+  have hvol :
+      volume (ankenyEllipsoidL2 n q) =
+        ENNReal.ofReal ((16 * (n * q)) * (Real.sqrt 2 * Real.pi / 3)) := by
+    sorry
+
+  simpa [hvol] using hconst
 
 end Covolume.Experiments
 
