@@ -42,7 +42,12 @@ case "$profile" in
       echo "[check:pre-commit] llm-review (default on; set COVOLUME_LLM_REVIEW=0 to disable)"
       if command -v uv >/dev/null 2>&1; then
         set +e
-        uv run Scripts/llm_review.py --scope staged
+        # If strict, require an API key to be configured (so we don't silently skip).
+        req=()
+        if [[ "${COVOLUME_LLM_REVIEW_STRICT:-0}" != "0" ]]; then
+          req+=(--require-key)
+        fi
+        uv run Scripts/llm_review.py --scope staged "${req[@]+"${req[@]}"}"
         rc=$?
         set -e
         if [[ $rc -ne 0 ]]; then

@@ -309,6 +309,12 @@ def main() -> int:
     ap.add_argument("--provider", choices=["auto", "openrouter", "openai"], default="auto")
     ap.add_argument("--base-url", default="")
     ap.add_argument("--model", default="")
+    ap.add_argument("--doctor", action="store_true", help="Print provider/model/base_url selection and exit.")
+    ap.add_argument(
+        "--require-key",
+        action="store_true",
+        help="Exit nonzero if no provider API key is configured.",
+    )
     args = ap.parse_args()
 
     root = repo_root()
@@ -317,6 +323,35 @@ def main() -> int:
     openrouter_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
 
+    # Doctor mode should be able to run even when no keys exist.
+    if args.doctor:
+        chosen = args.provider
+        if chosen == "auto":
+            if openrouter_key:
+                chosen = "openrouter"
+            elif openai_key:
+                chosen = "openai"
+            else:
+                chosen = "none"
+
+        if chosen == "openrouter":
+            base_url = args.base_url or os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            model = args.model or os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        elif chosen == "openai":
+            base_url = args.base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+            model = args.model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        else:
+            base_url = args.base_url or ""
+            model = args.model or ""
+
+        print(f"provider_request={args.provider}")
+        print(f"provider_selected={chosen}")
+        print(f"openrouter_key_present={bool(openrouter_key)}")
+        print(f"openai_key_present={bool(openai_key)}")
+        print(f"model={model}")
+        print(f"base_url={base_url}")
+        return 0
+
     provider = args.provider
     if provider == "auto":
         if openrouter_key:
@@ -324,12 +359,18 @@ def main() -> int:
         elif openai_key:
             provider = "openai"
         else:
+            if args.require_key:
+                print("llm_review: no OPENROUTER_API_KEY or OPENAI_API_KEY", file=sys.stderr)
+                return 2
             print("llm_review: no OPENROUTER_API_KEY or OPENAI_API_KEY; skipping", file=sys.stderr)
             return 0
 
     if provider == "openrouter":
         api_key = openrouter_key
         if not api_key:
+            if args.require_key:
+                print("llm_review: OPENROUTER_API_KEY not set", file=sys.stderr)
+                return 2
             print("llm_review: OPENROUTER_API_KEY not set; skipping", file=sys.stderr)
             return 0
         base_url = args.base_url or os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -344,6 +385,9 @@ def main() -> int:
     else:
         api_key = openai_key
         if not api_key:
+            if args.require_key:
+                print("llm_review: OPENAI_API_KEY not set", file=sys.stderr)
+                return 2
             print("llm_review: OPENAI_API_KEY not set; skipping", file=sys.stderr)
             return 0
         base_url = args.base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
