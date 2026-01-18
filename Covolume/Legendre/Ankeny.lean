@@ -730,10 +730,16 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : 
   have hineq :
       volume F * 2 ^ (Module.finrank ℝ E3) < volume (ell (n : ℝ) (q : ℝ)) := by
     -- TODO(sorry): pure analytic inequality; keep the Minkowski structure typechecked.
-    -- We want:
-    -- `volume F * 2^3 = 16*n*q < volume (ell n q) = 16*n*q * (sqrt 2 * pi / 3)`.
     --
-    -- The proof is straightforward but a bit algebra-heavy in `ℝ≥0∞`; we finish it next.
+    -- Normal form we want:
+    --
+    --   `volume F * 2^3 = 16*n*q`
+    --
+    -- and
+    --
+    --   `volume (ell n q) = 16*n*q * (sqrt 2 * pi / 3)`.
+    --
+    -- Then `pi > 3` and `sqrt 2 > 1` give the strict inequality.
     sorry
 
   rcases

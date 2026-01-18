@@ -12,12 +12,25 @@ This is intentionally NOT part of CI by default:
 - it requires network + secrets
 
 Intended usage (locally):
+  OPENROUTER_API_KEY=... uv run Scripts/llm_review.py --scope staged
+  # or:
   OPENAI_API_KEY=... uv run Scripts/llm_review.py --scope staged
 
 To disable from `Scripts/check.sh pre-commit`:
   COVOLUME_LLM_REVIEW=0
 
-OpenAI-compatible API:
+Providers (auto-detected):
+  - OpenRouter (preferred if OPENROUTER_API_KEY is set)
+  - OpenAI (if OPENAI_API_KEY is set)
+
+OpenRouter env:
+  - OPENROUTER_API_KEY
+  - OPENROUTER_BASE_URL (default: https://openrouter.ai/api/v1)
+  - OPENROUTER_MODEL (default: openai/gpt-4o-mini)
+  - OPENROUTER_SITE_URL (optional; sent as HTTP-Referer)
+  - OPENROUTER_APP_NAME (optional; sent as X-Title)
+
+OpenAI env:
   - OPENAI_API_KEY
   - OPENAI_BASE_URL (default: https://api.openai.com/v1)
   - OPENAI_MODEL (default: gpt-4o-mini)
@@ -206,9 +219,12 @@ def openai_chat(
     system: str,
     user: str,
     timeout_s: int,
+    extra_headers: dict[str, str] | None = None,
 ) -> str:
     url = base_url.rstrip("/") + "/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    if extra_headers:
+        headers.update(extra_headers)
     payload = {
         "model": model,
         "temperature": 0.2,
@@ -231,14 +247,46 @@ def main() -> int:
     ap.add_argument("--max-bytes-per-file", type=int, default=12_000)
     ap.add_argument("--max-total-bytes", type=int, default=220_000)
     ap.add_argument("--timeout-s", type=int, default=60)
-    ap.add_argument("--base-url", default=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"))
-    ap.add_argument("--model", default=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+    ap.add_argument("--provider", choices=["auto", "openrouter", "openai"], default="auto")
+    ap.add_argument("--base-url", default="")
+    ap.add_argument("--model", default="")
     args = ap.parse_args()
 
-    key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not key:
-        print("llm_review: OPENAI_API_KEY not set; skipping", file=sys.stderr)
-        return 0
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
+
+    provider = args.provider
+    if provider == "auto":
+        if openrouter_key:
+            provider = "openrouter"
+        elif openai_key:
+            provider = "openai"
+        else:
+            print("llm_review: no OPENROUTER_API_KEY or OPENAI_API_KEY; skipping", file=sys.stderr)
+            return 0
+
+    if provider == "openrouter":
+        api_key = openrouter_key
+        if not api_key:
+            print("llm_review: OPENROUTER_API_KEY not set; skipping", file=sys.stderr)
+            return 0
+        base_url = args.base_url or os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        model = args.model or os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        extra_headers: dict[str, str] = {}
+        site_url = os.environ.get("OPENROUTER_SITE_URL", "").strip()
+        app_name = os.environ.get("OPENROUTER_APP_NAME", "").strip()
+        if site_url:
+            extra_headers["HTTP-Referer"] = site_url
+        if app_name:
+            extra_headers["X-Title"] = app_name
+    else:
+        api_key = openai_key
+        if not api_key:
+            print("llm_review: OPENAI_API_KEY not set; skipping", file=sys.stderr)
+            return 0
+        base_url = args.base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        model = args.model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        extra_headers = None
 
     root = repo_root()
     if args.scope == "staged":
@@ -258,7 +306,7 @@ def main() -> int:
     if args.scope == "staged" and args.include_diff:
         diff_txt = staged_diff()
 
-    key_id = cache_key(model=args.model, scope=args.scope, diff_txt=diff_txt, blobs=blobs)
+    key_id = cache_key(model=model, scope=args.scope, diff_txt=diff_txt, blobs=blobs)
     cache_path = cache_dir(root) / f"{key_id}.txt"
     if cache_path.exists():
         print(cache_path.read_text(encoding="utf-8", errors="replace"))
@@ -279,12 +327,13 @@ def main() -> int:
 
     try:
         out = openai_chat(
-            base_url=args.base_url,
-            api_key=key,
-            model=args.model,
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
             system=domain_prompt(),
             user=user_prompt,
             timeout_s=args.timeout_s,
+            extra_headers=extra_headers,
         )
     except Exception as e:
         print(f"llm_review: request failed: {e}", file=sys.stderr)
