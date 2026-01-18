@@ -19,6 +19,7 @@ curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
 lake build
 lake exe status_report
 lake exe lint-style
+./Scripts/install_git_hooks.sh
 ```
 
 ## Two formulas we use a lot

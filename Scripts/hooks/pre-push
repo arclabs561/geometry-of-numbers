@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Git hook: pre-push
+#
+# Goal: run “likely to pass CI” checks. This can be slower than pre-commit.
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "[pre-push] lake build"
+lake build
+
+echo "[pre-push] lake lint"
+lake lint
+
+echo "[pre-push] lint-style"
+./Scripts/run_lint_style.sh
+

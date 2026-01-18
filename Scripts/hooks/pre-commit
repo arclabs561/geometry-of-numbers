@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Git hook: pre-commit
+#
+# Goal: run fast, deterministic checks that catch common footguns without rebuilding the world.
+# Heavy checks belong in CI or pre-push.
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "[pre-commit] covolume_checks"
+lake exe covolume_checks
+
+echo "[pre-commit] lint-style (fast)"
+./Scripts/run_lint_style.sh --fast
+
