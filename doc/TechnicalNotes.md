@@ -11,7 +11,7 @@
 *   **Obstacle**: This route requires significant infrastructure for quadratic form equivalence and mass formulas, which is currently underdeveloped or highly complex in Mathlib4.
 *   **Conclusion**: Shelved in favor of the more direct geometric descent method.
 
-## Optimization: Specialization and the Nathanson Gap
+## Specialization: the Nathanson (1987) gap
 
 *   **Observation**: The expression $4a - b^2$ appearing in Cauchy's Lemma is always congruent to $3 \pmod 8$ when $a$ and $b$ are odd.
 *   **Impact**: Specifying \(n \equiv 3 \pmod 8\) satisfies the requirements for the general theorem while avoiding powers-of-4 logic.

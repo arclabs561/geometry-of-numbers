@@ -1,6 +1,9 @@
 # Covolume
 
-A Constructive Geometry of Numbers Library for Lean 4.
+Lean 4 code around a geometry-of-numbers route to:
+
+- Legendre’s three-square theorem (via Ankeny 1957 + Minkowski)
+- Cauchy’s reduction for Fermat’s polygonal number theorem
 
 This library targets the Ankeny–Minkowski pipeline for Legendre's Three-Square Theorem and the Fermat/Cauchy Polygonal Number Theorem.
 At present it is a mix of proved lemmas and “scaffold” modules that typecheck but still contain `sorry`.
@@ -18,7 +21,7 @@ lake exe status_report
 lake exe lint-style
 ```
 
-## Math (rendered on GitHub)
+## Two formulas we use a lot
 
 Three-square “exception” numbers have the form
 
@@ -34,25 +37,13 @@ $$
 
 and a Minkowski step on a suitable ellipsoid for a lattice of covolume $2nq$.
 
-## Strategy
+## What’s here (roughly)
 
-The project implements a modular approach to formalizing the geometry of numbers, prioritizing infrastructure over isolated proofs.
-
-### 1. The Systems Kernel
-The `QuadraticLattice` bridge connects abstract quadratic forms over integers to geometric submodules in Euclidean space. This interface allows for the resolution of representation problems by encoding local p-adic obstructions into geometric lattice density.
-
-### 2. Successive Minima and Spectral Theory
-The library targets the first formalization of **Successive Minima** in Lean 4. These values act as the "spectral lines" of a lattice, providing the fundamental bounds for the Shortest Vector Problem (SVP) and Minkowski's Second Theorem.
-
-### 3. Bhargava Primitives
-We include foundational structures for **Bhargava's higher composition laws**, specifically focusing on integer cubes. This establishes a path toward formalizing modern breakthroughs in number field counting and class group structures.
-
-### 4. The Computable Core
-The project targets a verified implementation of the Lenstra–Lenstra–Lovász (LLL) lattice reduction algorithm.
-The current `Covolume/Computable/LLL.lean` code is a scaffold (with placeholders), and `Experiments/LLLRational.lean` provides a small rational-arithmetic probe.
-
-### 5. Parallel Constructive Track
-To address the non-constructive nature of abstract Minkowski theory, the library maintains a parallel track for computable small-case verification.
+- `Covolume/Core/`: reusable lemmas/definitions (some files are still scaffolds)
+- `Covolume/Legendre/`: the Ankeny proof path and the three-square theorem entry point
+- `Covolume/Cauchy/`: the polygonal-number reduction (currently scaffolded)
+- `Covolume/Computable/LLL.lean`: LLL scaffold; see also `Experiments/LLLRational.lean`
+- `Experiments/`: small probes and scratch files; these are allowed to use `sorry` but must compile
 
 ## Structure
 
@@ -60,13 +51,13 @@ To address the non-constructive nature of abstract Minkowski theory, the library
 Covolume/
   Core/
     Basic.lean            -- Polygonal number definitions and identities.
-    QuadraticLattice.lean -- Systems Kernel: Quadratic form to lattice bridge.
+    QuadraticLattice.lean -- Quadratic forms ↔ lattices (scaffold).
     SuccessiveMinima.lean -- Lattice spectral theory.
-    Composition.lean      -- Bhargava higher composition primitives.
+    Composition.lean      -- Composition-law scaffolding.
     ModularSquares.lean   -- Local solvability conditions.
     Determinant.lean      -- Lattice determinant and covolume links.
   Computable/
-    LLL.lean              -- Verified LLL implementation.
+    LLL.lean              -- LLL scaffold.
   Legendre/
     AnkenyLemmas.lean     -- Squarefree decomposition and mod-8 logic.
     Ankeny.lean           -- Ankeny (1957) descent proof.
@@ -87,28 +78,28 @@ Experiments/
   DescentValuation.lean      -- Valuation contradiction formalization.
 ```
 
-## Key Theorems
+## Entry points (some are scaffolds)
 
-**Legendre's Three-Square Theorem**:
+**Legendre's Three-Square Theorem** (target):
 ```lean
 theorem sum_three_squares_iff (n : ℕ) :
     (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n
 ```
 
-**Gauss's Triangular Number Theorem**:
+**Gauss's Triangular Number Theorem** (target):
 ```lean
 theorem gauss_triangular (n : ℕ) :
     ∃ a b c : ℕ, triangular a + triangular b + triangular c = n
 ```
 
-**Fermat's Polygonal Number Theorem**:
+**Fermat's Polygonal Number Theorem** (target):
 ```lean
 theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
     ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n
 ```
 
-## Technical Nuance: The Nathanson Gap
-During the formalization of the Cauchy reduction, we identified a known gap in Nathanson's original 1987 paper regarding residue classes. This library targets the corrected proof from Nathanson's 1996 book, ensuring absolute formal rigor.
+## Note: Nathanson (1987)
+For the Cauchy reduction, we rely on the corrected proof from Nathanson’s 1996 book (not the 1987 note), due to a known gap about residue classes.
 
 ## References
 

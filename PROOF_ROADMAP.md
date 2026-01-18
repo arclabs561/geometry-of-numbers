@@ -6,7 +6,7 @@
 Nat.sum_four_squares (Mathlib)
          │
          ▼
-QuadraticLattice Bridge  ◄── SYSTEMS KERNEL
+QuadraticLattice Bridge
          │
          ▼
 sum_three_squares_of_not_exception

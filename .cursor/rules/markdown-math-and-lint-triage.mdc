@@ -3,7 +3,7 @@ description: Markdown math + lint triage (Covolume)
 alwaysApply: true
 ---
 
-## Markdown math (GitHub-rendered)
+## Markdown math
 
 - Use GitHub’s KaTeX support via:
   - inline: `$ ... $`
