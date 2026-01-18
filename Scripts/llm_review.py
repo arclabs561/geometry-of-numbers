@@ -298,6 +298,34 @@ def openai_chat(
     return data["choices"][0]["message"]["content"]
 
 
+def default_openrouter_model() -> str:
+    """
+    Opinionated defaults for OpenRouter.
+
+    Rationale:
+    - pre-commit should be usable by default (latency/cost bounded)
+    - allow opting into heavier models without editing scripts
+
+    Controls:
+    - OPENROUTER_MODEL: explicit override
+    - COVOLUME_LLM_REVIEW_TIER: fast|balanced|heavy
+    """
+
+    # Explicit override wins.
+    m = os.environ.get("OPENROUTER_MODEL", "").strip()
+    if m:
+        return m
+
+    tier = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip().lower()
+    if tier == "heavy":
+        # Dedicated coding/review model (higher cost).
+        return "openai/gpt-5.2-codex"
+    if tier == "fast":
+        return "openai/gpt-4o-mini"
+    # balanced: prefer a slightly stronger general model if available.
+    return "openai/gpt-4.1-mini"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scope", choices=["staged", "all"], default="staged")
@@ -336,7 +364,7 @@ def main() -> int:
 
         if chosen == "openrouter":
             base_url = args.base_url or os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-            model = args.model or os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+            model = args.model or default_openrouter_model()
         elif chosen == "openai":
             base_url = args.base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
             model = args.model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
@@ -374,7 +402,7 @@ def main() -> int:
             print("llm_review: OPENROUTER_API_KEY not set; skipping", file=sys.stderr)
             return 0
         base_url = args.base_url or os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-        model = args.model or os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+        model = args.model or default_openrouter_model()
         extra_headers: dict[str, str] = {}
         site_url = os.environ.get("OPENROUTER_SITE_URL", "").strip()
         app_name = os.environ.get("OPENROUTER_APP_NAME", "").strip()
@@ -441,8 +469,32 @@ def main() -> int:
             extra_headers=extra_headers,
         )
     except Exception as e:
-        print(f"llm_review: request failed: {e}", file=sys.stderr)
-        return 1
+        # If a default OpenRouter model is unavailable, fall back once to a safer model id.
+        # This is deliberately narrow: we only retry for OpenRouter with an implicit default.
+        msg = str(e)
+        can_fallback = (
+            provider == "openrouter"
+            and not args.model
+            and not os.environ.get("OPENROUTER_MODEL", "").strip()
+            and model != "openai/gpt-4o-mini"
+        )
+        if can_fallback:
+            try:
+                out = openai_chat(
+                    base_url=base_url,
+                    api_key=api_key,
+                    model="openai/gpt-4o-mini",
+                    system=domain_prompt(),
+                    user=user_prompt,
+                    timeout_s=args.timeout_s,
+                    extra_headers=extra_headers,
+                )
+            except Exception as e2:
+                print(f"llm_review: request failed: {e2}", file=sys.stderr)
+                return 1
+        else:
+            print(f"llm_review: request failed: {msg}", file=sys.stderr)
+            return 1
 
     try:
         cache_path.write_text(out, encoding="utf-8")
