@@ -399,13 +399,40 @@ def _severity_weight(sev: str) -> int:
 def _is_policy_conflict(issue: ReviewIssue) -> bool:
     txt = (issue.concrete_edit + "\n" + issue.rationale).lower()
     # The model frequently “helpfully” suggests this, but it's explicitly wrong here.
-    if "rename" in txt and "scripts/" in txt and "`scripts/`" in txt:
+    # Repo policy: `Scripts/` is canonical and intentionally capitalized.
+    if "rename" in txt and "`scripts/`" in txt:
         return True
-    if "rename the directory" in txt and "scripts/" in txt and "capital" in txt:
+    if "rename" in txt and "scripts/" in txt and "capital" in txt:
         return True
-    if "rename" in txt and "`scripts/`" in txt and "`scripts/`" in txt:
+    if "standardize" in txt and "`scripts/`" in txt:
         return True
     return False
+
+
+def role_prompts() -> dict[str, str]:
+    """
+    Role-specific deltas appended to the base system prompt.
+
+    Enable multiple roles with:
+      COVOLUME_LLM_REVIEW_ROLES=lean,math,repo
+    """
+    return {
+        "lean": (
+            "ROLE: Lean hygiene.\n"
+            "- Prefer issues that mention a specific lemma/definition and a concrete rewrite.\n"
+            "- Prioritize: simp fragility, casts, defeq coercions, typeclass inference risks.\n"
+        ),
+        "math": (
+            "ROLE: Mathematical coherence.\n"
+            "- Prioritize: missing hypotheses, incorrect quantifiers, wrong domains (ℕ/ℤ/ℝ), nontriviality.\n"
+            "- If a step is called “trivial”, demand the exact lemma/inequality used.\n"
+        ),
+        "repo": (
+            "ROLE: Repo coherence.\n"
+            "- Prioritize: docs diverging from code, scaffolds unclear, stale paths, misleading claims.\n"
+            "- Do NOT suggest renaming Scripts/.\n"
+        ),
+    }
 
 
 def aggregate_reports(reports: list[tuple[str, ReviewReport]]) -> ReviewReport:
@@ -517,27 +544,45 @@ def default_openrouter_model() -> str:
     return "openai/gpt-4.1-mini"
 
 
-def default_models_for_provider(provider: str) -> list[str]:
+def _parse_models_env(env_value: str) -> list[str]:
+    xs = [x.strip() for x in env_value.split(",") if x.strip()]
+    # De-dup preserving order.
+    out: list[str] = []
+    seen: set[str] = set()
+    for x in xs:
+        if x in seen:
+            continue
+        seen.add(x)
+        out.append(x)
+    return out
+
+
+def default_models_for_provider(provider: str, *, stage: str) -> list[str]:
     """
     Choose a model ensemble for the given provider.
 
     Overrides:
+    - COVOLUME_LLM_REVIEW_MODELS_<STAGE>: comma-separated model ids for that stage
     - COVOLUME_LLM_REVIEW_MODELS: comma-separated model ids
     - OPENROUTER_MODEL / OPENAI_MODEL: single-model override (provider-specific)
     - COVOLUME_LLM_REVIEW_TIER: fast|balanced|heavy (OpenRouter only for now)
     """
+    stage_key = f"COVOLUME_LLM_REVIEW_MODELS_{stage.upper()}"
+    explicit = os.environ.get(stage_key, "").strip()
+    if explicit:
+        return _parse_models_env(explicit)[:8]
+
     explicit = os.environ.get("COVOLUME_LLM_REVIEW_MODELS", "").strip()
     if explicit:
-        xs = [x.strip() for x in explicit.split(",") if x.strip()]
-        return xs[:8]
+        return _parse_models_env(explicit)[:8]
 
     if provider == "openrouter":
         tier = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip().lower()
         if tier == "heavy":
             return [
                 "openai/gpt-5.2-codex",
-                # keep this list conservative; users can override via COVOLUME_LLM_REVIEW_MODELS
-                "openai/gpt-4.1-mini",
+                "anthropic/claude-opus-4.5",
+                "google/gemini-3-pro-preview",
             ]
         if tier == "fast":
             return ["openai/gpt-4o-mini"]
@@ -643,6 +688,7 @@ def main() -> int:
     ap.add_argument("--base-url", default="")
     ap.add_argument("--model", default="")
     ap.add_argument("--stage", choices=["triage", "deep", "both"], default="")
+    ap.add_argument("--roles", default="")
     ap.add_argument("--doctor", action="store_true", help="Print provider/model/base_url selection and exit.")
     ap.add_argument(
         "--require-key",
@@ -757,13 +803,26 @@ def main() -> int:
         # Default: keep pre-commit fast.
         stage = "triage" if args.scope == "staged" else "deep"
 
-    models = [args.model.strip()] if args.model.strip() else default_models_for_provider(provider)
+    # Default ensemble can depend on stage; if --model is specified, it applies to both stages.
+    models_override = [args.model.strip()] if args.model.strip() else []
     concurrency = int(os.environ.get("COVOLUME_LLM_REVIEW_CONCURRENCY", "3").strip() or "3")
 
     system = domain_prompt()
     wisdom = repo_wisdom(root)
     if wisdom:
         system = system + "\n\n" + wisdom
+
+    role_cfg = args.roles.strip() or os.environ.get("COVOLUME_LLM_REVIEW_ROLES", "").strip()
+    role_map = role_prompts()
+    if role_cfg:
+        roles = [r.strip() for r in role_cfg.split(",") if r.strip()]
+        # Filter to known roles; keep order.
+        roles = [r for r in roles if r in role_map]
+        if not roles:
+            roles = ["lean", "math", "repo"]
+    else:
+        # Default: single blended reviewer (fast).
+        roles = ["default"]
 
     # Stage prompts.
     triage_prompt = (
@@ -780,19 +839,29 @@ def main() -> int:
     async def run_stage(stage_name: str, user_prompt: str) -> ReviewReport:
         reports: list[tuple[str, ReviewReport]] = []
         sem = asyncio.Semaphore(max(1, concurrency))
+        models = models_override or default_models_for_provider(provider, stage=stage_name)
 
-        async def run_model(m: str) -> tuple[str, ReviewReport] | None:
-            key_id = cache_key(model=f"{provider}:{m}:{stage_name}", scope=args.scope, diff_txt=diff_txt, blobs=blobs)
+        async def run_model(m: str, role: str) -> tuple[str, ReviewReport] | None:
+            key_id = cache_key(
+                model=f"{provider}:{m}:{stage_name}:role={role}",
+                scope=args.scope,
+                diff_txt=diff_txt,
+                blobs=blobs,
+            )
             cache_path = cache_dir(root) / f"{key_id}.json"
             if cache_path.exists():
                 try:
                     rep = ReviewReport.model_validate_json(cache_path.read_text(encoding="utf-8", errors="replace"))
+                    if role != "default":
+                        for iss in rep.top_issues:
+                            iss.tags = sorted(set(iss.tags + [f"role:{role}"]))
                     return (m, rep)
                 except Exception:
                     pass
 
             async with sem:
                 try:
+                    sys2 = system if role == "default" else (system + "\n\n" + role_map[role])
                     rep = await run_one_report(
                         provider=provider,
                         model_id=m,
@@ -800,10 +869,13 @@ def main() -> int:
                         base_url=base_url,
                         app_url=site_url,
                         app_title=app_name,
-                        system_prompt=system,
+                        system_prompt=sys2,
                         user_prompt=user_prompt,
                         timeout_s=args.timeout_s,
                     )
+                    if role != "default":
+                        for iss in rep.top_issues:
+                            iss.tags = sorted(set(iss.tags + [f"role:{role}"]))
                     try:
                         cache_path.write_text(rep.model_dump_json(indent=2), encoding="utf-8")
                     except Exception:
@@ -811,10 +883,11 @@ def main() -> int:
                     return (m, rep)
                 except Exception as e:
                     # Non-blocking: missing model / transient error shouldn't break pre-commit.
-                    print(f"llm_review: model_failed model={m} stage={stage_name}: {e}", file=sys.stderr)
+                    print(f"llm_review: model_failed model={m} stage={stage_name} role={role}: {e}", file=sys.stderr)
                     return None
 
-        xs = await asyncio.gather(*(run_model(m) for m in models))
+        # Role x model grid, concurrent with a semaphore.
+        xs = await asyncio.gather(*(run_model(m, role) for role in roles for m in models))
         for x in xs:
             if x is not None:
                 reports.append(x)
