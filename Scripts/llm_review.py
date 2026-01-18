@@ -60,6 +60,20 @@ from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.models.openrouter import OpenRouterModelSettings
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
+WORLD_WISDOM = """WORLD KNOWLEDGE (curated, short):
+
+- OpenRouter Models API: GET /models returns a JSON object with `data: [ { id, canonical_slug, context_length,
+  pricing, supported_parameters, ... } ]`. Model ids are the strings you pass as `model`.
+
+- OpenRouter reasoning/tool-calling: reasoning-enabled models may return `reasoning_details`. For multi-step
+  tool calling, the client must preserve and resend the *exact* `reasoning_details` blocks between steps.
+
+- Gemini 3 (and similar Gemini reasoning models) enforce an additional constraint: function/tool calling can
+  fail with 400 errors if `thought_signature` / reasoning-details continuity is not preserved. Many OpenAI-style
+  wrappers (and some structured-output libraries) drop these fields. Workaround: avoid tool calling for Gemini
+  and request plain JSON, then parse locally.
+"""
+
 
 def sh(*args: str) -> str:
     return subprocess.check_output(list(args), text=True).strip()
@@ -441,6 +455,41 @@ def role_prompts() -> dict[str, str]:
         ),
     }
 
+def power_presets() -> dict[str, dict[str, str]]:
+    """
+    A single knob for “simple but powerful”.
+
+    - low: cheap-ish, fast; good default for hooks
+    - high: stronger models + multi-role + deep by default
+    """
+    return {
+        "low": {
+            # leave defaults mostly alone
+        },
+        "high": {
+            # These are applied only if the user hasn't set the corresponding env vars.
+            "COVOLUME_LLM_REVIEW_TIER": "heavy",
+            "COVOLUME_LLM_REVIEW_ROLES": "lean,math,repo",
+            "COVOLUME_LLM_REVIEW_STAGE": "deep",
+            # Deep needs more time; keep concurrency low to avoid rate/timeouts.
+            "COVOLUME_LLM_REVIEW_TIMEOUT_S_DEEP": "180",
+            "COVOLUME_LLM_REVIEW_CONCURRENCY_DEEP": "2",
+        },
+    }
+
+
+def apply_power_preset(power: str) -> None:
+    preset = power_presets().get(power, {})
+    for k, v in preset.items():
+        if os.environ.get(k, "").strip():
+            continue
+        os.environ[k] = v
+
+
+def world_wisdom() -> str:
+    # Keep it short; this is for alignment against common provider pitfalls.
+    return WORLD_WISDOM.strip()
+
 
 def aggregate_reports(reports: list[tuple[str, ReviewReport]]) -> ReviewReport:
     """
@@ -768,11 +817,11 @@ Return a single JSON object (no surrounding prose) of the form:
                 )
 
     # Default: pydantic-ai structured output (uses tool calling internally).
+    settings = None
     if provider == "openrouter":
         # Optional: ask OpenRouter for stronger reasoning on deep runs.
         # Keep opt-in to avoid surprising cost/latency increases.
         effort = os.environ.get("COVOLUME_LLM_REVIEW_REASONING_EFFORT", "").strip().lower()
-        settings = None
         if effort in ("low", "medium", "high"):
             settings = OpenRouterModelSettings(openrouter_reasoning={"effort": effort})
         model = OpenRouterModel(
@@ -811,6 +860,7 @@ def main() -> int:
     ap.add_argument("--model", default="")
     ap.add_argument("--stage", choices=["triage", "deep", "both"], default="")
     ap.add_argument("--roles", default="")
+    ap.add_argument("--power", choices=["low", "high"], default="")
     ap.add_argument("--doctor", action="store_true", help="Print provider/model/base_url selection and exit.")
     ap.add_argument(
         "--require-key",
@@ -821,6 +871,12 @@ def main() -> int:
 
     root = repo_root()
     load_dotenv_if_present(root)
+
+    # Apply the “power” preset early so it influences stage/tier/roles defaults.
+    power = (args.power.strip() or os.environ.get("COVOLUME_LLM_REVIEW_POWER", "low")).strip().lower()
+    if power not in ("low", "high"):
+        power = "low"
+    apply_power_preset(power)
 
     openrouter_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
@@ -852,6 +908,14 @@ def main() -> int:
         print(f"openai_key_present={bool(openai_key)}")
         print(f"model={model}")
         print(f"base_url={base_url}")
+        print(f"power={power}")
+        # Helpful for understanding what will run.
+        stage2 = os.environ.get("COVOLUME_LLM_REVIEW_STAGE", "").strip() or "(default)"
+        tier2 = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip()
+        roles2 = os.environ.get("COVOLUME_LLM_REVIEW_ROLES", "").strip() or "(default)"
+        print(f"stage={stage2}")
+        print(f"tier={tier2}")
+        print(f"roles={roles2}")
         return 0
 
     provider = args.provider
@@ -932,6 +996,7 @@ def main() -> int:
     tier = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip().lower()
 
     system = domain_prompt()
+    system = system + "\n\n" + world_wisdom()
     wisdom = repo_wisdom(root)
     if wisdom:
         system = system + "\n\n" + wisdom
