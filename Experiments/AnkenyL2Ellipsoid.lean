@@ -88,6 +88,10 @@ lemma ankenyBallRadius_pow_three (n q : ℝ) :
   -- `r = 2 * sqrt(n*q)` and `(2 * a)^3 = 8 * a^3`, then `a^3 = (n*q) * sqrt(n*q)` for `a = sqrt(n*q)`.
   simp [Covolume.Minkowski.ankenyBallRadius, pow_succ, pow_two, mul_assoc, mul_left_comm, mul_comm]
 
+lemma sqrt_mul_of_nonneg {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
+    Real.sqrt (a * b) = Real.sqrt a * Real.sqrt b := by
+  simpa [mul_comm, mul_left_comm, mul_assoc] using (Real.sqrt_mul ha hb)
+
 /-!
 ## The inequality we need for Minkowski
 
