@@ -79,6 +79,15 @@ lemma volume_ankenyEllipsoidL2 (n q : ℝ) :
   · -- Degenerate case: we do not need it for Ankeny; keep as a marked placeholder.
     sorry
 
+lemma det_ankenyDiagMap (n q : ℝ) :
+    LinearMap.det (Covolume.Minkowski.ankenyDiagMap n q) = Real.sqrt (2 * q) * (1 : ℝ) * Real.sqrt n := by
+  simp [Covolume.Minkowski.ankenyDiagMap, LinearMap.det_toLin', Matrix.det_diagonal, Fin.prod_univ_three]
+
+lemma ankenyBallRadius_pow_three (n q : ℝ) :
+    (Covolume.Minkowski.ankenyBallRadius n q) ^ 3 = 8 * (n * q) * Real.sqrt (n * q) := by
+  -- `r = 2 * sqrt(n*q)` and `(2 * a)^3 = 8 * a^3`, then `a^3 = (n*q) * sqrt(n*q)` for `a = sqrt(n*q)`.
+  simp [Covolume.Minkowski.ankenyBallRadius, pow_succ, pow_two, mul_assoc, mul_left_comm, mul_comm]
+
 /-!
 ## The inequality we need for Minkowski
 
