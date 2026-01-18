@@ -418,6 +418,11 @@ def role_prompts() -> dict[str, str]:
       COVOLUME_LLM_REVIEW_ROLES=lean,math,repo
     """
     return {
+        "default": (
+            "ROLE: Blended reviewer.\n"
+            "- Cover Lean hygiene, mathematical coherence, and repo coherence.\n"
+            "- Prefer concrete edits over general advice.\n"
+        ),
         "lean": (
             "ROLE: Lean hygiene.\n"
             "- Prefer issues that mention a specific lemma/definition and a concrete rewrite.\n"
@@ -580,6 +585,14 @@ def default_models_for_provider(provider: str, *, stage: str) -> list[str]:
     if provider == "openrouter":
         tier = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip().lower()
         if tier == "heavy":
+            # Stage-aware defaults:
+            # - triage: fast-ish frontier models (still “big”), no need for max depth
+            # - deep: full ensemble
+            if stage == "triage":
+                return [
+                    "anthropic/claude-opus-4.5",
+                    "openai/gpt-4.1-mini",
+                ]
             return [
                 "openai/gpt-5.2-codex",
                 "anthropic/claude-opus-4.5",
@@ -705,8 +718,19 @@ Return a single JSON object (no surrounding prose) of the form:
         try:
             return ReviewReport.model_validate_json(txt)
         except Exception:
-            obj_txt = extract_json_object(txt)
-            return ReviewReport.model_validate(json.loads(obj_txt))
+            try:
+                obj_txt = extract_json_object(txt)
+                return ReviewReport.model_validate(json.loads(obj_txt))
+            except Exception as e:
+                # Return a structured error instead of crashing the whole reviewer.
+                tail = txt[-800:] if isinstance(txt, str) else ""
+                return ReviewReport(
+                    meta=[
+                        f"gemini_json_parse_failed: {type(e).__name__}: {e!r}",
+                        "gemini_raw_tail(last_800_chars):",
+                        tail,
+                    ]
+                )
 
     # Default: pydantic-ai structured output (uses tool calling internally).
     if provider == "openrouter":
@@ -862,7 +886,8 @@ def main() -> int:
 
     # Default ensemble can depend on stage; if --model is specified, it applies to both stages.
     models_override = [args.model.strip()] if args.model.strip() else []
-    concurrency = int(os.environ.get("COVOLUME_LLM_REVIEW_CONCURRENCY", "3").strip() or "3")
+    concurrency_default = int(os.environ.get("COVOLUME_LLM_REVIEW_CONCURRENCY", "3").strip() or "3")
+    timeout_default = int(os.environ.get("COVOLUME_LLM_REVIEW_TIMEOUT_S", str(args.timeout_s)).strip() or str(args.timeout_s))
 
     system = domain_prompt()
     wisdom = repo_wisdom(root)
@@ -889,13 +914,20 @@ def main() -> int:
         + "===== FILE LIST =====\n"
         + "\n".join(f"- {b.rel}" for b in blobs)
         + "\n"
+        + "\n\nTRIAGE MODE:\n"
+        + "- You do NOT have full file contents.\n"
+        + "- Do NOT complain about missing content.\n"
+        + "- Only report issues you can justify from the diff or file list.\n"
+        + "- If you must recommend a deeper check, express it as a concrete follow-up action, not as a complaint.\n"
         + "\n(Do not ask questions. Propose edits.)\n"
     )
     deep_prompt = meta + "\n" + diff_block + corpus
 
     async def run_stage(stage_name: str, user_prompt: str) -> ReviewReport:
         reports: list[tuple[str, ReviewReport]] = []
-        sem = asyncio.Semaphore(max(1, concurrency))
+        stage_timeout = int(os.environ.get(f"COVOLUME_LLM_REVIEW_TIMEOUT_S_{stage_name.upper()}", str(timeout_default)).strip() or str(timeout_default))
+        stage_concurrency = int(os.environ.get(f"COVOLUME_LLM_REVIEW_CONCURRENCY_{stage_name.upper()}", str(concurrency_default)).strip() or str(concurrency_default))
+        sem = asyncio.Semaphore(max(1, stage_concurrency))
         models = models_override or default_models_for_provider(provider, stage=stage_name)
 
         async def run_model(m: str, role: str) -> tuple[str, ReviewReport] | None:
@@ -928,7 +960,7 @@ def main() -> int:
                         app_title=app_name,
                         system_prompt=sys2,
                         user_prompt=user_prompt,
-                        timeout_s=args.timeout_s,
+                        timeout_s=stage_timeout,
                     )
                     if role != "default":
                         for iss in rep.top_issues:
