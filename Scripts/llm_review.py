@@ -5,14 +5,17 @@
 # ///
 
 """
-Optional LLM-based “read everything and critique” review.
+LLM-based “read everything and critique” review.
 
 This is intentionally NOT part of CI by default:
 - it is non-deterministic
 - it requires network + secrets
 
-Intended usage (locally, opt-in):
-  COVOLUME_LLM_REVIEW=1 OPENAI_API_KEY=... uv run Scripts/llm_review.py --scope staged
+Intended usage (locally):
+  OPENAI_API_KEY=... uv run Scripts/llm_review.py --scope staged
+
+To disable from `Scripts/check.sh pre-commit`:
+  COVOLUME_LLM_REVIEW=0
 
 OpenAI-compatible API:
   - OPENAI_API_KEY
@@ -56,6 +59,12 @@ def staged_paths(root: Path) -> list[Path]:
         if p.exists() and p.is_file():
             paths.append(p)
     return paths
+
+
+def staged_diff() -> str:
+    # Keep this bounded; it is easy to overflow context.
+    # (We use max_total_bytes at the prompt-assembly layer as the hard cap.)
+    return subprocess.check_output(["git", "diff", "--cached"], text=True)
 
 
 def all_review_paths(root: Path) -> list[Path]:
@@ -132,32 +141,60 @@ def assemble_corpus(blobs: Iterable[FileBlob], max_total_bytes: int) -> tuple[st
     return "".join(chunks), total
 
 
+def cache_dir(root: Path) -> Path:
+    d = root / ".git" / "llm_review_cache"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def cache_key(*, model: str, scope: str, diff_txt: str, blobs: list[FileBlob]) -> str:
+    h = hashlib.sha256()
+    h.update(model.encode("utf-8"))
+    h.update(b"\0")
+    h.update(scope.encode("utf-8"))
+    h.update(b"\0")
+    h.update(diff_txt.encode("utf-8"))
+    h.update(b"\0")
+    for b in blobs:
+        h.update(b.rel.encode("utf-8"))
+        h.update(b"\0")
+        h.update(b.sha256.encode("utf-8"))
+        h.update(b"\0")
+    return h.hexdigest()
+
+
 def domain_prompt() -> str:
-    return """You are reviewing a Lean 4 / mathlib project implementing geometry-of-numbers tooling
-for Ankeny (1957) + Minkowski, with supporting number theory (Cauchy polygonal reduction).
+    return """You are doing a pre-commit review of a Lean 4 / mathlib project implementing
+geometry-of-numbers tooling for Ankeny (1957) + Minkowski, with supporting number theory
+(Cauchy polygonal reduction).
 
-Be adversarial and specific. Focus on:
+Be adversarial and highly opinionated. Your job is to catch the kinds of mistakes that:
+- compile today but break on mathlib updates,
+- introduce proof fragility via `simp`/defeq coercions,
+- indicate missing hypotheses (positivity/invertibility) that the math relies on,
+- make the project read like it doesn't understand Lean or the domain.
 
-1) Lean / mathlib hygiene
-   - suspicious use of simp/simpa, fragile rewriting, typeclass inference footguns
-   - style problems that indicate beginner-level Lean (unnecessary casts, needless `by_cases`, etc.)
-   - module structure issues (imports, circularity, poor factoring)
+Strong priors (apply them):
+- Prefer proof terms that match mathlib idioms (short lemmas, stable goal shapes).
+- Large `simp [...]` sets with comm/assoc lemmas are a smell: prefer `ring_nf`, `nlinarith`, or a
+  dedicated lemma.
+- If coercions/definitional equality are the blocker, introduce a named lemma that fixes the type
+  presentation once (e.g. `Fin 3 → ℝ` vs `EuclideanSpace ℝ (Fin 3)`).
+- Keep `Scripts/` (capital S) as canonical; call out casing/paths that will break on Linux.
 
-2) Mathematical coherence
-   - mismatched notation or stated goals vs code
-   - missing assumptions (e.g. positivity, nonzero determinant) that are relied on later
-
-3) Project coherence to a reader
-   - does README/docs reflect what the code actually does?
-   - anything that signals “we don’t know Lean” or “we don’t know the domain”
+Focus areas:
+1) Lean / mathlib hygiene (fragility, casts, simp misuse, typeclass gotchas)
+2) Mathematical coherence (hypotheses, invariants, goal alignment)
+3) Repo coherence (README/docs vs reality, scaffolds clearly marked, naming consistency)
 
 Constraints:
    - Some files are scaffolds and contain `sorry` intentionally, especially under Experiments/.
    - Prefer small, concrete edits that reduce future proof friction.
 
 Output format:
-   - A short top list of concrete issues (with file paths + what to change)
-   - Then optional “nice to have” items.
+   - Top issues (each must include: file path, quote/snippet anchor, and a concrete edit)
+   - Then "Nice-to-have"
+   - Then "Most likely future break" (1–3 bullets: where/why).
 """
 
 
@@ -189,6 +226,8 @@ def openai_chat(
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scope", choices=["staged", "all"], default="staged")
+    ap.add_argument("--include-diff", action="store_true", default=True)
+    ap.add_argument("--no-include-diff", dest="include_diff", action="store_false")
     ap.add_argument("--max-bytes-per-file", type=int, default=12_000)
     ap.add_argument("--max-total-bytes", type=int, default=220_000)
     ap.add_argument("--timeout-s", type=int, default=60)
@@ -215,6 +254,16 @@ def main() -> int:
     blobs = [read_blob(p, root, args.max_bytes_per_file) for p in paths]
     corpus, used = assemble_corpus(blobs, args.max_total_bytes)
 
+    diff_txt = ""
+    if args.scope == "staged" and args.include_diff:
+        diff_txt = staged_diff()
+
+    key_id = cache_key(model=args.model, scope=args.scope, diff_txt=diff_txt, blobs=blobs)
+    cache_path = cache_dir(root) / f"{key_id}.txt"
+    if cache_path.exists():
+        print(cache_path.read_text(encoding="utf-8", errors="replace"))
+        return 0
+
     meta = (
         f"Review scope: {args.scope}\n"
         f"Files included: {len(blobs)}\n"
@@ -222,7 +271,11 @@ def main() -> int:
         f"Per-file truncation: max_bytes_per_file={args.max_bytes_per_file}\n"
     )
 
-    user_prompt = meta + "\n" + corpus
+    diff_block = ""
+    if diff_txt.strip():
+        diff_block = "===== git diff --cached =====\n" + diff_txt + "\n\n"
+
+    user_prompt = meta + "\n" + diff_block + corpus
 
     try:
         out = openai_chat(
@@ -236,6 +289,12 @@ def main() -> int:
     except Exception as e:
         print(f"llm_review: request failed: {e}", file=sys.stderr)
         return 1
+
+    try:
+        cache_path.write_text(out, encoding="utf-8")
+    except Exception:
+        # Cache failures should never block.
+        pass
 
     print(out)
     return 0

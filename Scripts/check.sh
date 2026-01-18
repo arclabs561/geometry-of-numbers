@@ -38,8 +38,8 @@ case "$profile" in
     lake exe covolume_checks
     echo "[check:pre-commit] lint-style (fast)"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}" --fast
-    if [[ "${COVOLUME_LLM_REVIEW:-0}" != "0" ]]; then
-      echo "[check:pre-commit] llm-review (optional)"
+    if [[ "${COVOLUME_LLM_REVIEW:-1}" != "0" ]]; then
+      echo "[check:pre-commit] llm-review (default on; set COVOLUME_LLM_REVIEW=0 to disable)"
       if command -v uv >/dev/null 2>&1; then
         set +e
         uv run Scripts/llm_review.py --scope staged

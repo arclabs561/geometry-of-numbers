@@ -17,6 +17,7 @@ alwaysApply: true
 
 - **Style**: `lake exe lint-style`
 - **Build**: `lake build`
+- **Checks entrypoint (canonical)**: `./Scripts/check.sh pre-commit` / `./Scripts/check.sh pre-push`
 - (Optional, interactive) **Lean lints**: `#lint` / `#lint_mathlib` in a scratch file when diagnosing suspicious patterns.
 
 ### High-signal (usually fix when you touch the code nearby)
@@ -32,6 +33,17 @@ alwaysApply: true
 ### Low-signal (explicitly allowed in this repo)
 
 - `declaration uses 'sorry'` inside `Experiments/` or marked scaffolds, provided the file still builds.
+
+## LLM review (local only)
+
+- `Scripts/check.sh pre-commit` runs an LLM-based review by default (non-blocking if it fails).
+  - Disable: `COVOLUME_LLM_REVIEW=0`
+  - Make failures block: `COVOLUME_LLM_REVIEW_STRICT=1`
+
+## Case-sensitive paths (Linux/CI)
+
+- `Scripts/` is canonical (capital S). On macOS you may be able to *type* `scripts/` and hit the
+  same directory, but CI/Linux will not. Write paths as `Scripts/...` in docs and scripts.
 
 ## When to suppress a linter (rare)
 

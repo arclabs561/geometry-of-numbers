@@ -11,6 +11,19 @@ alwaysApply: true
   (e.g. `IsAddFundamentalDomain (↥L) ...`), prefer returning an explicit `L` plus a lemma relating it
   (e.g. `L ⊆ ankeny_lattice ...`) instead of rewriting across `L = L'`.
 
+## Local checks workflow (canonical)
+
+- Run checks via the single entrypoint:
+  - `./Scripts/check.sh pre-commit`
+  - `./Scripts/check.sh pre-push`
+- The pre-commit profile includes an LLM review by default (local-only, not CI):
+  - Disable: `COVOLUME_LLM_REVIEW=0`
+  - Make failures block: `COVOLUME_LLM_REVIEW_STRICT=1`
+
+## Case-sensitive paths (Linux/CI)
+
+- Use `Scripts/...` (capital S) in docs and scripts.
+
 ## Documentation & comments (repo-specific)
 
 This repo is about formalizing hard number theory and geometry-of-numbers arguments. Comments are not

@@ -5,7 +5,7 @@ alwaysApply: true
 
 ## Scope
 
-This rule applies to `polygonal-number-theorem/` only. It is not a general “dev” rule.
+This rule applies to this repo (`covolume/`) only. It is not a general “dev” rule.
 
 ## Goal
 
