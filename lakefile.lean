@@ -2,7 +2,8 @@ import Lake
 open Lake DSL
 
 package «covolume» {
-  -- add package configuration options here
+  -- Configure `lake lint` to run our project-owned checker.
+  lintDriver := "covolume_checks"
 }
 
 require mathlib from git
@@ -15,7 +16,26 @@ lean_lib «Covolume» {
 
 lean_lib «Experiments» {
   srcDir := "Experiments"
-  roots := #[`AnkenyCheck, `LLLBasic, `CauchyIntervals, `AnkenyReduction, `CheckMinkowski, `CheckNatPow, `CheckZMod, `DescentValuation, `SuccessiveMinimaBasic, `BhargavaCubes, `LLLRational, `GramSchmidtCheck, `HenselLiftTwoSquares]
+  -- Experiments policy: every file under `Experiments/` should compile under `lake build`.
+  roots := #[
+    `AnkenyCheck,
+    `AnkenyL2Ellipsoid,
+    `AnkenyReduction,
+    `AnkenyVolumeConstants,
+    `BhargavaCubes,
+    `CauchyIntervals,
+    `CheckMinkowski,
+    `CheckNatPow,
+    `CheckPiLpVolumePreserving,
+    `CheckZMod,
+    `DescentValuation,
+    `FunBallToQ,
+    `GramSchmidtCheck,
+    `HenselLiftTwoSquares,
+    `LLLBasic,
+    `LLLRational,
+    `SuccessiveMinimaBasic
+  ]
 }
 
 lean_exe «status_report» {
