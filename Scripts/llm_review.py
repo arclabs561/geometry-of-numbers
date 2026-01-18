@@ -54,6 +54,65 @@ def sh(*args: str) -> str:
     return subprocess.check_output(list(args), text=True).strip()
 
 
+def load_dotenv_if_present(root: Path) -> None:
+    """
+    Minimal dotenv loader.
+
+    Policy:
+    - Only reads `.env` in the *repo root* by default.
+    - Never overrides existing environment variables.
+    - Supports KEY=VALUE with optional single/double quotes.
+
+    Opt-in extra paths:
+    - COVOLUME_DOTENV_PATH: colon-separated list of dotenv files to load (in order).
+      This is the escape hatch if you keep your OpenRouter key elsewhere.
+    """
+
+    def parse_line(line: str) -> tuple[str, str] | None:
+        s = line.strip()
+        if not s or s.startswith("#"):
+            return None
+        if s.startswith("export "):
+            s = s[len("export ") :].lstrip()
+        if "=" not in s:
+            return None
+        k, v = s.split("=", 1)
+        k = k.strip()
+        v = v.strip()
+        if not k:
+            return None
+        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+            v = v[1:-1]
+        return k, v
+
+    candidates: list[Path] = []
+    extra = os.environ.get("COVOLUME_DOTENV_PATH", "").strip()
+    if extra:
+        for part in extra.split(":"):
+            part = part.strip()
+            if not part:
+                continue
+            candidates.append(Path(part))
+    else:
+        candidates.append(root / ".env")
+
+    for p in candidates:
+        try:
+            if not p.exists() or not p.is_file():
+                continue
+            for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                kv = parse_line(line)
+                if not kv:
+                    continue
+                k, v = kv
+                if k in os.environ:
+                    continue
+                os.environ[k] = v
+        except Exception:
+            # dotenv loading must never block the commit hook.
+            continue
+
+
 def repo_root() -> Path:
     return Path(sh("git", "rev-parse", "--show-toplevel"))
 
@@ -252,6 +311,9 @@ def main() -> int:
     ap.add_argument("--model", default="")
     args = ap.parse_args()
 
+    root = repo_root()
+    load_dotenv_if_present(root)
+
     openrouter_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
 
@@ -288,7 +350,6 @@ def main() -> int:
         model = args.model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
         extra_headers = None
 
-    root = repo_root()
     if args.scope == "staged":
         paths = staged_paths(root)
         # Always include top-level docs for coherence checks (cheap, high value).
