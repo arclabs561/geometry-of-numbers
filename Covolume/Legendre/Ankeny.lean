@@ -24,6 +24,7 @@ import Mathlib.Data.Matrix.Basic
 import Mathlib.Data.Matrix.Mul
 import Covolume.Legendre.Exceptions
 import Covolume.Legendre.AnkenyLemmas
+import Covolume.Core.MinkowskiHelpers
 import Covolume.NumberTheory.Utils
 
 namespace Covolume
@@ -612,6 +613,135 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : 
     (hq1 : q % 4 = 1) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
     (hb : b^2 ≡ - (n : ℤ) [ZMOD (4 * q)]) :
     ∃ x y z : ℤ, 2 * q * x^2 + y^2 + n * z^2 = 2 * n * q ∧ (x, y, z) ≠ (0, 0, 0) := by
+  classical
+  -- We will apply Minkowski in `E3 := Fin 3 → ℝ`, but with an `L2` ball defined via `WithLp.toLp 2`.
+  -- (This matches mathlib’s own pattern in `VolumeOfBalls.lean`.)
+
+  let E3L2 := EuclideanSpace ℝ (Fin 3)
+
+  -- The `L2` ball in `E3` as a preimage under `toLp`.
+  let l2Ball (r : ℝ) : Set E3 :=
+    (WithLp.toLp (2 : ℝ≥0∞)) ⁻¹' (Metric.ball (0 : E3L2) r)
+
+  -- The Ankeny ellipsoid is the preimage of the `L2` ball under the diagonal linear map.
+  let ell (nR qR : ℝ) : Set E3 :=
+    (Covolume.Minkowski.ankenyDiagMap nR qR) ⁻¹' (l2Ball (Covolume.Minkowski.ankenyBallRadius nR qR))
+
+  have hn_pos : 0 < n := by
+    -- `n % 8 = 3` forces `n ≠ 0`.
+    omega
+  have hq_pos : 0 < q := hq.pos
+
+  have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn_pos
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq_pos
+
+  -- Volume of the `L2` ball in `E3`, via the measure-preserving `toLp`.
+  have volume_l2Ball (r : ℝ) :
+      volume (l2Ball r) =
+        (ENNReal.ofReal r) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3) := by
+    -- `toLp` is measure-preserving, and `simp` knows the Euclidean 3-ball volume formula.
+    simpa [l2Ball] using
+      (PiLp.volume_preserving_toLp (ι := Fin 3)).measure_preimage measurableSet_ball.nullMeasurableSet
+
+  -- Volume scaling for the ellipsoid: preimage under a linear map.
+  have volume_ell (nR qR : ℝ) (hnR : 0 < nR) (hqR : 0 < qR) :
+      volume (ell nR qR) =
+        ENNReal.ofReal |(LinearMap.det (Covolume.Minkowski.ankenyDiagMap nR qR))⁻¹| *
+          ((ENNReal.ofReal (Covolume.Minkowski.ankenyBallRadius nR qR)) ^ 3 *
+            ENNReal.ofReal (Real.pi * 4 / 3)) := by
+    have hdet_ne0 : LinearMap.det (Covolume.Minkowski.ankenyDiagMap nR qR) ≠ 0 := by
+      -- Determinant is a product of square-roots; positivity gives nonzero.
+      have hsqrt2q : 0 < Real.sqrt (2 * qR) := Real.sqrt_pos.2 (by nlinarith)
+      have hsqrtn : 0 < Real.sqrt nR := Real.sqrt_pos.2 hnR
+      have hdet :
+          LinearMap.det (Covolume.Minkowski.ankenyDiagMap nR qR) =
+            Real.sqrt (2 * qR) * (1 : ℝ) * Real.sqrt nR := by
+        simp [Covolume.Minkowski.ankenyDiagMap, LinearMap.det_toLin', Matrix.det_diagonal, Fin.prod_univ_three]
+      have : LinearMap.det (Covolume.Minkowski.ankenyDiagMap nR qR) ≠ 0 := by
+        -- `sqrt(2q) * 1 * sqrt(n) ≠ 0`
+        have h1 : (Real.sqrt (2 * qR) * (1 : ℝ)) ≠ 0 := by
+          exact mul_ne_zero (ne_of_gt hsqrt2q) one_ne_zero
+        exact by simpa [hdet] using mul_ne_zero h1 (ne_of_gt hsqrtn)
+      exact this
+    have hpre :
+        volume (ell nR qR) =
+          ENNReal.ofReal |(LinearMap.det (Covolume.Minkowski.ankenyDiagMap nR qR))⁻¹| *
+            volume (l2Ball (Covolume.Minkowski.ankenyBallRadius nR qR)) := by
+      -- `addHaar_preimage_linearMap` is in `MeasureTheory.Measure`.
+      simpa [ell] using
+        (MeasureTheory.Measure.addHaar_preimage_linearMap
+          (μ := (volume : Measure E3))
+          (f := Covolume.Minkowski.ankenyDiagMap nR qR)
+          hdet_ne0
+          (l2Ball (Covolume.Minkowski.ankenyBallRadius nR qR)))
+    -- Substitute the ball volume.
+    simpa [hpre, volume_l2Ball] using hpre
+
+  -- Lattice + fundamental domain: use the explicit span lattice so `Countable ↥L` is available.
+  let L : AddSubgroup E3 := ankeny_span_lattice n q b hn_pos hq_pos
+  let F : Set E3 := ankeny_span_fundamentalDomain n q b hn_pos hq_pos
+
+  -- Provide the `Countable ↥L` instance required by Minkowski.
+  letI : Countable (↥L) := by
+    -- `L` is (definitionally) a `Submodule.span ℤ` of a finite set, hence countable.
+    change Countable (Submodule.span ℤ (Set.range (ankeny_span_basis n q b hn_pos hq_pos)))
+    infer_instance
+
+  have hfund : IsAddFundamentalDomain L F volume := by
+    simpa [L, F] using ankeny_span_isAddFundamentalDomain n q b hn_pos hq_pos
+
+  have hvolF : volume F = (2 * n * q : ℝ≥0∞) := by
+    simpa [F] using ankeny_span_volume_fundamentalDomain n q b hn_pos hq_pos
+
+  -- Symmetry: `x ∈ ell → -x ∈ ell`.
+  have hsymm : ∀ x ∈ ell (n : ℝ) (q : ℝ), -x ∈ ell (n : ℝ) (q : ℝ) := by
+    intro x hx
+    dsimp [ell, l2Ball] at hx ⊢
+    -- linearity + ball symmetry
+    have : WithLp.toLp (2 : ℝ≥0∞) (Covolume.Minkowski.ankenyDiagMap (n : ℝ) (q : ℝ) (-x)) ∈
+        Metric.ball (0 : E3L2) (Covolume.Minkowski.ankenyBallRadius (n : ℝ) (q : ℝ)) := by
+      -- `toLp` and `ankenyDiagMap` both commute with negation.
+      -- Then `‖-y‖ = ‖y‖` inside the ball.
+      simpa [map_neg] using hx
+    exact this
+
+  -- Convexity: preimage of a convex ball under an affine map.
+  have hconv : Convex ℝ (ell (n : ℝ) (q : ℝ)) := by
+    -- Use the linear-equivalence spelling of `toLp` to build an affine map.
+    let toLpLin : E3 →ₗ[ℝ] E3L2 :=
+      (WithLp.linearEquiv (2 : ℝ≥0∞) ℝ E3).symm.toLinearMap
+    let f : E3 →ᵃ[ℝ] E3L2 :=
+      toLpLin.toAffineMap.comp (Covolume.Minkowski.ankenyDiagMap (n : ℝ) (q : ℝ)).toAffineMap
+    have hs :
+        ell (n : ℝ) (q : ℝ) =
+          f ⁻¹' Metric.ball (0 : E3L2) (Covolume.Minkowski.ankenyBallRadius (n : ℝ) (q : ℝ)) := by
+      ext x
+      rfl
+    simpa [hs, ell, l2Ball, f, toLpLin] using
+      (Convex.affine_preimage
+        (f := f)
+        (s := Metric.ball (0 : E3L2) (Covolume.Minkowski.ankenyBallRadius (n : ℝ) (q : ℝ)))
+        (convex_ball (0 : E3L2) (Covolume.Minkowski.ankenyBallRadius (n : ℝ) (q : ℝ))))
+
+  -- Left side simplification: `finrank E3 = 3`.
+  have hrank : Module.finrank ℝ E3 = 3 := by simp [E3]
+
+  -- We will use the explicit volume formula and a coarse lower bound; keep as scaffold for now.
+  have hineq :
+      volume F * 2 ^ (Module.finrank ℝ E3) < volume (ell (n : ℝ) (q : ℝ)) := by
+    -- TODO: finish the real inequality `16*n*q < volume(ell)` from the closed form `volume_ell`.
+    -- This is the last analytic inequality needed for Minkowski.
+    sorry
+
+  rcases
+      MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
+        (μ := volume) (L := L) (F := F) (s := ell (n : ℝ) (q : ℝ))
+        hfund hsymm hconv hineq
+    with ⟨p, hp0, hp_mem⟩
+
+  -- TODO: extract integer coordinates from `p ∈ L ⊆ ankeny_lattice` and finish
+  -- the divisibility + bound argument forcing `Q = 2*n*q`.
+  -- (This will be done in the next slice once the Minkowski inequality is proved.)
   sorry
 
 /-- Reduction of `2qx² + y² + nz² = 2nq` to `n = x² + u² + v²`.
