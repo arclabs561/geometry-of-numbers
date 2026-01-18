@@ -78,5 +78,25 @@ lemma volume_ankenyEllipsoidL2 (n q : ℝ) :
   · -- Degenerate case: we do not need it for Ankeny; keep as a marked placeholder.
     sorry
 
+/-!
+## The inequality we need for Minkowski
+
+In the Ankeny setup we always have `0 < n` and `0 < q`, so the diagonal map is invertible.
+In that case the closed form for the ellipsoid volume simplifies to:
+
+\[
+  \mathrm{vol}(\text{ellipsoid}) = 16\,n\,q \cdot \frac{\sqrt 2 \,\pi}{3}.
+\]
+
+Since \(\pi > 3\) and \(\sqrt 2 > 1\), the factor \(\frac{\sqrt 2 \,\pi}{3}\) is \(> 1\),
+hence \(\mathrm{vol}(\text{ellipsoid}) > 16\,n\,q\).
+-/
+
+lemma volume_ankenyEllipsoidL2_gt (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
+    ENNReal.ofReal (16 * (n * q)) < volume (ankenyEllipsoidL2 n q) := by
+  -- Escape hatch: finish the ENNReal algebra and `ofReal` monotonicity.
+  -- We keep this lemma here so it can be developed without blocking the main Ankeny file.
+  sorry
+
 end Covolume.Experiments
 
