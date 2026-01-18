@@ -26,7 +26,8 @@ Providers (auto-detected):
 OpenRouter env:
   - OPENROUTER_API_KEY
   - OPENROUTER_BASE_URL (default: https://openrouter.ai/api/v1)
-  - OPENROUTER_MODEL (default: openai/gpt-4o-mini)
+  - OPENROUTER_MODEL (override; otherwise chosen from COVOLUME_LLM_REVIEW_TIER)
+  - COVOLUME_LLM_REVIEW_TIER (fast|balanced|heavy; default: balanced)
   - OPENROUTER_SITE_URL (optional; sent as HTTP-Referer)
   - OPENROUTER_APP_NAME (optional; sent as X-Title)
 
@@ -59,13 +60,22 @@ def load_dotenv_if_present(root: Path) -> None:
     Minimal dotenv loader.
 
     Policy:
-    - Only reads `.env` in the *repo root* by default.
+    - Reads `.env` in the *repo root* by default.
     - Never overrides existing environment variables.
     - Supports KEY=VALUE with optional single/double quotes.
 
     Opt-in extra paths:
     - COVOLUME_DOTENV_PATH: colon-separated list of dotenv files to load (in order).
       This is the escape hatch if you keep your OpenRouter key elsewhere.
+
+    Convenience (default-on) workspace search:
+    - If no API key is configured after loading the candidates above, we scan one level deep
+      under the parent directory of the repo root (e.g. `/Users/arc/Documents/dev/*/.env`),
+      and load the first dotenv file that contains `OPENROUTER_API_KEY` or `OPENAI_API_KEY`.
+
+      This matches the “super-workspace” setup where keys live in a sibling repo.
+      Disable with: COVOLUME_DOTENV_SEARCH=0
+      Override search root with: COVOLUME_DOTENV_SEARCH_ROOT=/abs/path
     """
 
     def parse_line(line: str) -> tuple[str, str] | None:
@@ -85,6 +95,32 @@ def load_dotenv_if_present(root: Path) -> None:
             v = v[1:-1]
         return k, v
 
+    def load_file(p: Path) -> bool:
+        """
+        Load dotenv file `p`.
+
+        Returns true if we successfully read the file (even if it contained nothing relevant).
+        Never overrides existing env vars.
+        """
+        try:
+            if not p.exists() or not p.is_file():
+                return False
+            for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                kv = parse_line(line)
+                if not kv:
+                    continue
+                k, v = kv
+                if k in os.environ:
+                    continue
+                os.environ[k] = v
+            return True
+        except Exception:
+            # dotenv loading must never block the commit hook.
+            return False
+
+    def has_any_key() -> bool:
+        return bool(os.environ.get("OPENROUTER_API_KEY", "").strip() or os.environ.get("OPENAI_API_KEY", "").strip())
+
     candidates: list[Path] = []
     extra = os.environ.get("COVOLUME_DOTENV_PATH", "").strip()
     if extra:
@@ -97,20 +133,43 @@ def load_dotenv_if_present(root: Path) -> None:
         candidates.append(root / ".env")
 
     for p in candidates:
-        try:
-            if not p.exists() or not p.is_file():
-                continue
-            for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
-                kv = parse_line(line)
-                if not kv:
-                    continue
-                k, v = kv
-                if k in os.environ:
-                    continue
-                os.environ[k] = v
-        except Exception:
-            # dotenv loading must never block the commit hook.
-            continue
+        load_file(p)
+
+    # If we still have no keys, scan the dev “super-workspace” for a sibling `.env`.
+    # This is intentionally shallow (one directory deep) to avoid expensive recursive walks.
+    if not has_any_key():
+        search = os.environ.get("COVOLUME_DOTENV_SEARCH", "1").strip().lower()
+        if search not in ("0", "false", "no", "off"):
+            search_root_raw = os.environ.get("COVOLUME_DOTENV_SEARCH_ROOT", "").strip()
+            search_root = Path(search_root_raw) if search_root_raw else root.parent
+
+            try:
+                # Only scan immediate child directories; skip hidden dirs.
+                for child in sorted(search_root.iterdir()):
+                    if not child.is_dir():
+                        continue
+                    if child.name.startswith("."):
+                        continue
+                    if child.resolve() == root.resolve():
+                        continue
+
+                    p = child / ".env"
+                    # Cheap “does it contain a key?” pre-scan without parsing everything.
+                    try:
+                        if not p.exists() or not p.is_file():
+                            continue
+                        txt = p.read_text(encoding="utf-8", errors="replace")
+                        if "OPENROUTER_API_KEY" not in txt and "OPENAI_API_KEY" not in txt:
+                            continue
+                    except Exception:
+                        continue
+
+                    load_file(p)
+                    if has_any_key():
+                        break
+            except Exception:
+                # Never block; just give up.
+                pass
 
 
 def repo_root() -> Path:
