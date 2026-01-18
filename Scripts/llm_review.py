@@ -42,6 +42,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -652,6 +653,62 @@ async def run_one_report(
     user_prompt: str,
     timeout_s: int,
 ) -> ReviewReport:
+    def extract_json_object(s: str) -> str:
+        """
+        Best-effort extraction of a single top-level JSON object from a text response.
+
+        This is for “JSON mode” prompts where models sometimes add prose before/after.
+        """
+        i = s.find("{")
+        j = s.rfind("}")
+        if i == -1 or j == -1 or j <= i:
+            raise ValueError("no JSON object delimiters found")
+        return s[i : j + 1]
+
+    # Gemini models on OpenRouter currently have tool/function-calling constraints
+    # (thought_signature / reasoning-details preservation) that break structured tool calling.
+    # Workaround: use plain JSON output (no tools) and parse locally.
+    if provider == "openrouter" and model_id.startswith("google/gemini-"):
+        schema_hint = """
+Return a single JSON object (no surrounding prose) of the form:
+{
+  "top_issues": [
+    {
+      "severity": "blocker|high|medium|low|nit",
+      "file_path": "path or null",
+      "snippet_anchor": "short quote or anchor",
+      "concrete_edit": "specific edit",
+      "rationale": "why",
+      "confidence": 0.0-1.0,
+      "tags": ["..."]
+    }
+  ],
+  "nice_to_have": ["..."],
+  "most_likely_future_break": ["..."],
+  "meta": ["..."]
+}
+"""
+        # We intentionally do NOT include any function/tool calling. Just JSON.
+        txt = openai_chat(
+            base_url=base_url,
+            api_key=api_key,
+            model=model_id,
+            system=system_prompt + "\n\n" + schema_hint,
+            user=user_prompt,
+            timeout_s=timeout_s,
+            extra_headers={
+                **({"HTTP-Referer": app_url} if app_url else {}),
+                **({"X-Title": app_title} if app_title else {}),
+            }
+            or None,
+        )
+        try:
+            return ReviewReport.model_validate_json(txt)
+        except Exception:
+            obj_txt = extract_json_object(txt)
+            return ReviewReport.model_validate(json.loads(obj_txt))
+
+    # Default: pydantic-ai structured output (uses tool calling internally).
     if provider == "openrouter":
         model = OpenRouterModel(
             model_id,
@@ -883,7 +940,10 @@ def main() -> int:
                     return (m, rep)
                 except Exception as e:
                     # Non-blocking: missing model / transient error shouldn't break pre-commit.
-                    print(f"llm_review: model_failed model={m} stage={stage_name} role={role}: {e}", file=sys.stderr)
+                    print(
+                        f"llm_review: model_failed model={m} stage={stage_name} role={role}: {type(e).__name__}: {e!r}",
+                        file=sys.stderr,
+                    )
                     return None
 
         # Role x model grid, concurrent with a semaphore.
