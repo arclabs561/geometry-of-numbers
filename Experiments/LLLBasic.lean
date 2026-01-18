@@ -20,17 +20,15 @@ def basis2d : Matrix (Fin 2) (Fin 2) ℝ := !![1, 1; 0, 1]
 -- with it here, we should move to `EuclideanSpace ℝ (Fin 2)` (or use `toLp 2`)
 -- so the inner-product-space instances line up.
 --
--- For now, keep this as a tiny “import + name lookup” probe.
+-- For now, keep this as a tiny “import + name lookup” experiment.
 open InnerProductSpace
 
 #check InnerProductSpace.gramSchmidt
 
-/- In 2D, if we have [1, 1] and [0, 1], the GS basis should be [1, 1] and [-1/2, 1/2]?
-   Wait, GS depends on the inner product.
-   Standard GS:
-   u1 = v1 = [1, 1]
-   u2 = v2 - proj_u1(v2) = [0, 1] - ([0,1]·[1,1] / [1,1]·[1,1]) * [1,1]
-      = [0, 1] - (1/2)*[1,1] = [-1/2, 1/2]
+/- In 2D with the standard inner product:
+   v1 = [1, 1], v2 = [0, 1]
+   u1 = v1
+   u2 = v2 - proj_{u1}(v2) = [-1/2, 1/2]
 -/
 
 end Covolume.Experiments

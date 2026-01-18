@@ -11,7 +11,7 @@ import Mathlib.Tactic
 import Covolume.Core.MinkowskiHelpers
 
 /-!
-# Ankeny ellipsoid using the L2 ball (probe)
+# Ankeny ellipsoid using the L2 ball (experiment)
 
 Goal: build a *correct* ellipsoid volume computation while keeping the lattice ambient type
 as `Fin 3 → ℝ`.
@@ -23,7 +23,7 @@ Key idea: define the Euclidean ball in `E3 := Fin 3 → ℝ` as a preimage under
 - `EuclideanSpace.volume_ball_fin_three`
 - `Measure.addHaar_preimage_linearMap` (volume scaling under linear maps)
 
-This is the clean path we’ll port into `Covolume/Legendre/Ankeny.lean`.
+This is the clean path we will port into `Covolume/Legendre/Ankeny.lean`.
 -/
 
 noncomputable section
@@ -94,7 +94,7 @@ hence \(\mathrm{vol}(\text{ellipsoid}) > 16\,n\,q\).
 
 lemma volume_ankenyEllipsoidL2_gt (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
     ENNReal.ofReal (16 * (n * q)) < volume (ankenyEllipsoidL2 n q) := by
-  -- Escape hatch: finish the ENNReal algebra and `ofReal` monotonicity.
+  -- TODO(sorry): finish the ENNReal algebra and `ofReal` monotonicity.
   -- We keep this lemma here so it can be developed without blocking the main Ankeny file.
   sorry
 

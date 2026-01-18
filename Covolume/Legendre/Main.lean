@@ -144,7 +144,7 @@ theorem not_exception_of_sum_three_squares (n : ℕ) (h : ∃ x y z : ℕ, x ^ 2
 theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exception n) :
     ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n := by
   /-
-  ESCAPE HATCH (current):
+  TODO (current):
   This is the “hard direction”. In this repo we route it through Ankeny’s descent pipeline:
   - reduce to the squarefree part `m` with `m % 8 = 3`,
   - choose `q` and `b`,

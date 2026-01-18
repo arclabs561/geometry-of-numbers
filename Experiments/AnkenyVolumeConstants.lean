@@ -3,7 +3,7 @@ import Mathlib.Data.Real.Sqrt
 import Mathlib.Tactic
 
 /-!
-# Ankeny: constant-side inequalities (probe)
+# Ankeny: constant-side inequalities (experiment)
 
 These are small, stable facts that we repeatedly need in the Minkowski/volume inequality:
 

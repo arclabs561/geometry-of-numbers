@@ -25,7 +25,7 @@ fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 ## Parallel Track: Computable LLL
 
 Independent of the primary proof, the library targets a *computable* LLL implementation in `Covolume/Computable/LLL.lean`.
-At the moment this is a scaffold (with placeholders), plus a small rational-arithmetic probe in `Experiments/LLLRational.lean`.
+At the moment this is a scaffold (with placeholders), plus a small rational-arithmetic experiment in `Experiments/LLLRational.lean`.
 
 ## Ankeny's Proof (Covolume/Legendre/Ankeny.lean)
 

@@ -23,7 +23,7 @@ The project maintains a suite of experiments to validate algebraic invariants an
 ### Experiments policy (buildability first)
 
 - Every file under `Experiments/` must **compile under `lake build`** at all times.
-- Proofs may use `sorry` (with a short “Escape Hatch” comment), but experiments should not contain
+- Proofs may use `sorry` (with a short “TODO(sorry)” comment), but experiments should not contain
   API-drifted proof attempts that break compilation.
 - If an experiment becomes stale, prefer replacing the proof body with a stable placeholder and a
   minimal statement that records intent.
@@ -32,7 +32,7 @@ The project maintains a suite of experiments to validate algebraic invariants an
 *   **Numeric Validation (`Experiments/ankeny_check.py`)**: Performs exhaustive searches for small instances of the Ankeny quadratic form setup.
 *   **Valuation Logic (`Experiments/DescentValuation.lean`)**: Sketch scaffold for the p-adic contradiction logic for the descent step (currently uses placeholders).
 *   **LLL Probing (`Experiments/LLLRational.lean`)**: Validates rational-arithmetic steps for the lattice reduction algorithm.
-*   **Successive Minima (`Experiments/SuccessiveMinimaBasic.lean`)**: Type-level probe for the spectral theory definition on a standard lattice (currently uses placeholders).
+*   **Successive Minima (`Experiments/SuccessiveMinimaBasic.lean`)**: Type-level experiment for the spectral theory definition on a standard lattice (currently uses placeholders).
 
 ## 5. Linting (what we treat as “useful”)
 
@@ -40,7 +40,7 @@ This repo uses two different kinds of linting:
 
 - **Text/style lint**: `lake exe lint-style`
   - This is high-signal because it catches purely mechanical drift (e.g. trailing whitespace) that creates noisy diffs.
-  - The file `scripts/nolints-style.txt` is the (optional) allowlist; keep it empty unless we have a specific justification.
+  - The file `Scripts/nolints-style.txt` is the (optional) allowlist; keep it empty unless we have a specific justification.
 
 - **Lean lints (proof hygiene)**: Lean’s built-in linters and Mathlib linters.
   - **High-signal**: unused simp args, unused arguments/locals, and anything indicating API drift.

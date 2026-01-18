@@ -36,7 +36,7 @@ lemma mem_ankenyEllipsoidAsPreimage_iff (n q : ℝ) (hn : 0 ≤ n) (hq : 0 ≤ q
     x ∈ ankenyEllipsoidAsPreimage n q ↔
       (2 * q) * (x 0) ^ 2 + (x 1) ^ 2 + n * (x 2) ^ 2 < (ankenyBallRadius n q) ^ 2 := by
   /-
-  Detour note: proving this cleanly in the `Fin 3 → ℝ` presentation runs into the `WithLp`/`PiLp`
+  Note: proving this cleanly in the `Fin 3 → ℝ` presentation runs into the `WithLp`/`PiLp`
   spelling (`x.ofLp i` vs `x i`) when using `EuclideanSpace.ball_zero_eq`.
 
   The right fix is to either:
