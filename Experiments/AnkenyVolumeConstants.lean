@@ -56,5 +56,15 @@ lemma mul_lt_mul_sqrt2_mul_pi_div_three_of_pos (a : ℝ) (ha : 0 < a) :
   have hc : (1 : ℝ) < (Real.sqrt 2 * Real.pi / 3) := one_lt_sqrt2_mul_pi_div_three
   simpa [mul_assoc] using (mul_lt_mul_of_pos_left hc ha)
 
+lemma ofReal_mul_lt_ofReal_mul_sqrt2_mul_pi_div_three_of_pos (a : ℝ) (ha : 0 < a) :
+    ENNReal.ofReal a < ENNReal.ofReal (a * (Real.sqrt 2 * Real.pi / 3)) := by
+  have hpos : 0 ≤ a * (Real.sqrt 2 * Real.pi / 3) := by
+    have hcpos : 0 < (Real.sqrt 2 * Real.pi / 3) := by
+      have hs2 : 0 < Real.sqrt 2 := Real.sqrt_pos.2 (by nlinarith)
+      have hpi : 0 < Real.pi := Real.pi_pos
+      nlinarith
+    exact le_of_lt (mul_pos ha hcpos)
+  exact (ENNReal.ofReal_lt_ofReal_iff hpos).2 (mul_lt_mul_sqrt2_mul_pi_div_three_of_pos a ha)
+
 end Covolume.Experiments
 
