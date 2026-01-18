@@ -23,7 +23,7 @@ jobs:
           use-mathlib-cache: true
       - name: lint-style (check)
         run: |
-          ./Scripts/run_lint_style.sh --github
+          ./Scripts/check.sh ci --github
       - uses: leanprover-community/docgen-action@v1
 
   actionlint:

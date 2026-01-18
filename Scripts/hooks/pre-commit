@@ -10,8 +10,5 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 echo "[pre-commit] covolume_checks"
-lake exe covolume_checks
-
-echo "[pre-commit] lint-style (fast)"
-./Scripts/run_lint_style.sh --fast
+./Scripts/check.sh pre-commit
 

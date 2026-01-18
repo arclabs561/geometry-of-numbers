@@ -20,6 +20,7 @@ lake build
 lake exe status_report
 lake exe lint-style
 ./Scripts/install_git_hooks.sh
+./Scripts/check.sh pre-commit
 ```
 
 ## Two formulas we use a lot

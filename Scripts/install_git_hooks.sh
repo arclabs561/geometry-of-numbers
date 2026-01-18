@@ -15,7 +15,7 @@ fi
 
 install_one() {
   local name="$1"
-  local src="scripts/hooks/${name}"
+  local src="Scripts/hooks/${name}"
   local dst=".git/hooks/${name}"
   if [[ ! -f "$src" ]]; then
     echo "error: missing $src" >&2
