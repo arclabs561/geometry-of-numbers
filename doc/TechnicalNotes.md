@@ -15,7 +15,7 @@
 
 *   **Observation**: The expression $4a - b^2$ appearing in Cauchy's Lemma is always congruent to $3 \pmod 8$ when $a$ and $b$ are odd.
 *   **Impact**: Specifying \(n \equiv 3 \pmod 8\) satisfies the requirements for the general theorem while avoiding powers-of-4 logic.
-*   **The Nathanson Gap**: During the formalization of the Cauchy reduction, we identified a known gap in Nathanson's original 1987 paper regarding complete residue classes modulo \(m\). This library targets the corrected proof presented in Nathanson's 1996 book (*Additive Number Theory: The Classical Bases*), ensuring mathematical rigor.
+*   **Note**: During the formalization of the Cauchy reduction, we rely on the corrected proof in Nathanson’s 1996 book (not the 1987 note), due to a known gap about complete residue classes modulo \(m\).
 
 ## 4. Verification Infrastructure
 The project maintains a suite of experiments to validate algebraic invariants and reduce formalization friction.
