@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["requests"]
+# dependencies = ["requests", "pydantic", "pydantic-ai", "openai"]
 # ///
 
 """
@@ -40,15 +40,23 @@ OpenAI env:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import hashlib
 import os
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 from typing import Iterable
 
 import requests
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.models.openrouter import OpenRouterModel
+from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 
 def sh(*args: str) -> str:
@@ -321,12 +329,136 @@ Focus areas:
 Constraints:
    - Some files are scaffolds and contain `sorry` intentionally, especially under Experiments/.
    - Prefer small, concrete edits that reduce future proof friction.
+   - This repo intentionally uses `Scripts/` (capital S). Do not suggest renaming it to `scripts/`.
 
 Output format:
    - Top issues (each must include: file path, quote/snippet anchor, and a concrete edit)
    - Then "Nice-to-have"
    - Then "Most likely future break" (1–3 bullets: where/why).
 """
+
+
+def repo_wisdom(root: Path, *, max_bytes: int = 12_000) -> str:
+    """
+    Small dynamic injection of repo policy.
+
+    Goal: prevent generic “ecosystem advice” that contradicts this repo.
+    We keep this intentionally short to avoid blowing token budgets.
+    """
+    candidates = [
+        root / ".cursor" / "rules" / "polygonal-number-theorem.mdc",
+        root / ".cursor" / "rules" / "markdown-math-and-lint-triage.mdc",
+    ]
+    chunks: list[str] = []
+    total = 0
+    for p in candidates:
+        try:
+            if not p.exists() or not p.is_file():
+                continue
+            txt = p.read_text(encoding="utf-8", errors="replace")
+            piece = f"\n===== REPO_WISDOM {p.relative_to(root)} =====\n{txt}\n"
+            b = len(piece.encode("utf-8"))
+            if total + b > max_bytes:
+                break
+            chunks.append(piece)
+            total += b
+        except Exception:
+            continue
+    return "".join(chunks).strip()
+
+
+class ReviewIssue(BaseModel):
+    severity: Literal["blocker", "high", "medium", "low", "nit"] = "medium"
+    file_path: str | None = None
+    snippet_anchor: str = Field(
+        description="Short quote/snippet (or anchor phrase) identifying the location."
+    )
+    concrete_edit: str = Field(description="A specific suggested edit, not general advice.")
+    rationale: str = Field(description="Why this matters (fragility, missing hypothesis, etc).")
+    confidence: float = Field(ge=0.0, le=1.0, default=0.6)
+    tags: list[str] = Field(default_factory=list)
+
+
+class ReviewReport(BaseModel):
+    top_issues: list[ReviewIssue] = Field(default_factory=list)
+    nice_to_have: list[str] = Field(default_factory=list)
+    most_likely_future_break: list[str] = Field(default_factory=list)
+    meta: list[str] = Field(default_factory=list)
+
+
+def _severity_weight(sev: str) -> int:
+    return {
+        "blocker": 50,
+        "high": 20,
+        "medium": 10,
+        "low": 5,
+        "nit": 1,
+    }.get(sev, 10)
+
+
+def _is_policy_conflict(issue: ReviewIssue) -> bool:
+    txt = (issue.concrete_edit + "\n" + issue.rationale).lower()
+    # The model frequently “helpfully” suggests this, but it's explicitly wrong here.
+    if "rename" in txt and "scripts/" in txt and "`scripts/`" in txt:
+        return True
+    if "rename the directory" in txt and "scripts/" in txt and "capital" in txt:
+        return True
+    if "rename" in txt and "`scripts/`" in txt and "`scripts/`" in txt:
+        return True
+    return False
+
+
+def aggregate_reports(reports: list[tuple[str, ReviewReport]]) -> ReviewReport:
+    """
+    Merge multiple model reports into a single report with light consensus weighting.
+
+    We intentionally keep this heuristic and transparent.
+    """
+    # Key by (file, snippet_anchor prefix) to dedup near-identical issues.
+    buckets: dict[tuple[str, str], list[tuple[str, ReviewIssue]]] = {}
+    policy_conflicts: list[tuple[str, ReviewIssue]] = []
+
+    for model_id, rep in reports:
+        for iss in rep.top_issues:
+            if _is_policy_conflict(iss):
+                policy_conflicts.append((model_id, iss))
+                continue
+            fp = (iss.file_path or "").strip()
+            anchor = iss.snippet_anchor.strip()
+            key = (fp, anchor[:120])
+            buckets.setdefault(key, []).append((model_id, iss))
+
+    merged: list[ReviewIssue] = []
+    for (_fp, _anch), xs in buckets.items():
+        # choose representative: max severity, then highest confidence
+        xs_sorted = sorted(xs, key=lambda t: (_severity_weight(t[1].severity), t[1].confidence), reverse=True)
+        rep_issue = xs_sorted[0][1]
+        votes = len(xs)
+        rep_issue = ReviewIssue(
+            severity=rep_issue.severity,
+            file_path=rep_issue.file_path,
+            snippet_anchor=rep_issue.snippet_anchor,
+            concrete_edit=rep_issue.concrete_edit,
+            rationale=rep_issue.rationale,
+            confidence=min(1.0, rep_issue.confidence + 0.1 * (votes - 1)),
+            tags=sorted(set(rep_issue.tags + [f"votes:{votes}"])),
+        )
+        merged.append(rep_issue)
+
+    merged.sort(key=lambda i: (_severity_weight(i.severity), i.confidence), reverse=True)
+
+    out = ReviewReport(
+        top_issues=merged[:10],
+        nice_to_have=[],
+        most_likely_future_break=[],
+        meta=[],
+    )
+
+    if policy_conflicts:
+        out.meta.append(
+            "Dropped policy-conflicting suggestions (e.g. renaming `Scripts/`); see per-model output for details."
+        )
+    return out
 
 
 def openai_chat(
@@ -385,6 +517,120 @@ def default_openrouter_model() -> str:
     return "openai/gpt-4.1-mini"
 
 
+def default_models_for_provider(provider: str) -> list[str]:
+    """
+    Choose a model ensemble for the given provider.
+
+    Overrides:
+    - COVOLUME_LLM_REVIEW_MODELS: comma-separated model ids
+    - OPENROUTER_MODEL / OPENAI_MODEL: single-model override (provider-specific)
+    - COVOLUME_LLM_REVIEW_TIER: fast|balanced|heavy (OpenRouter only for now)
+    """
+    explicit = os.environ.get("COVOLUME_LLM_REVIEW_MODELS", "").strip()
+    if explicit:
+        xs = [x.strip() for x in explicit.split(",") if x.strip()]
+        return xs[:8]
+
+    if provider == "openrouter":
+        tier = os.environ.get("COVOLUME_LLM_REVIEW_TIER", "balanced").strip().lower()
+        if tier == "heavy":
+            return [
+                "openai/gpt-5.2-codex",
+                # keep this list conservative; users can override via COVOLUME_LLM_REVIEW_MODELS
+                "openai/gpt-4.1-mini",
+            ]
+        if tier == "fast":
+            return ["openai/gpt-4o-mini"]
+        return ["openai/gpt-4.1-mini"]
+
+    # OpenAI direct: keep conservative.
+    m = os.environ.get("OPENAI_MODEL", "").strip()
+    return [m] if m else ["gpt-4o-mini"]
+
+
+def format_report(rep: ReviewReport) -> str:
+    def fmt_issue(i: ReviewIssue, k: int) -> str:
+        fp = i.file_path or "(no file)"
+        sev = i.severity
+        conf = f"{i.confidence:.2f}"
+        tags = f" [{', '.join(i.tags)}]" if i.tags else ""
+        return (
+            f"{k}. ({sev}, conf={conf}) {fp}{tags}\n"
+            f"   Snippet:\n"
+            f"   ```\n{i.snippet_anchor}\n   ```\n"
+            f"   Concrete edit:\n"
+            f"   {i.concrete_edit}\n"
+            f"   Rationale:\n"
+            f"   {i.rationale}\n"
+        )
+
+    out: list[str] = []
+    if rep.meta:
+        out.append("Meta:")
+        for m in rep.meta:
+            out.append(f"- {m}")
+        out.append("")
+
+    out.append("Top issues:")
+    if not rep.top_issues:
+        out.append("(none)")
+    else:
+        for idx, iss in enumerate(rep.top_issues, start=1):
+            out.append(fmt_issue(iss, idx))
+
+    out.append("Nice-to-have:")
+    if not rep.nice_to_have:
+        out.append("(none)")
+    else:
+        for s in rep.nice_to_have:
+            out.append(f"- {s}")
+
+    out.append("")
+    out.append("Most likely future break:")
+    if not rep.most_likely_future_break:
+        out.append("(none)")
+    else:
+        for s in rep.most_likely_future_break:
+            out.append(f"- {s}")
+    return "\n".join(out).rstrip() + "\n"
+
+
+async def run_one_report(
+    *,
+    provider: str,
+    model_id: str,
+    api_key: str,
+    base_url: str,
+    app_url: str,
+    app_title: str,
+    system_prompt: str,
+    user_prompt: str,
+    timeout_s: int,
+) -> ReviewReport:
+    if provider == "openrouter":
+        model = OpenRouterModel(
+            model_id,
+            provider=OpenRouterProvider(
+                api_key=api_key,
+                app_url=app_url or None,
+                app_title=app_title or None,
+            ),
+        )
+    else:
+        model = OpenAIChatModel(
+            model_id,
+            provider=OpenAIProvider(
+                base_url=base_url,
+                api_key=api_key,
+            ),
+        )
+
+    agent = Agent(model, output_type=ReviewReport, system_prompt=system_prompt)
+    # Hard timeout at the coroutine level.
+    res = await asyncio.wait_for(agent.run(user_prompt), timeout=timeout_s)
+    return res.output
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scope", choices=["staged", "all"], default="staged")
@@ -396,6 +642,7 @@ def main() -> int:
     ap.add_argument("--provider", choices=["auto", "openrouter", "openai"], default="auto")
     ap.add_argument("--base-url", default="")
     ap.add_argument("--model", default="")
+    ap.add_argument("--stage", choices=["triage", "deep", "both"], default="")
     ap.add_argument("--doctor", action="store_true", help="Print provider/model/base_url selection and exit.")
     ap.add_argument(
         "--require-key",
@@ -461,14 +708,9 @@ def main() -> int:
             print("llm_review: OPENROUTER_API_KEY not set; skipping", file=sys.stderr)
             return 0
         base_url = args.base_url or os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-        model = args.model or default_openrouter_model()
-        extra_headers: dict[str, str] = {}
+        # For pydantic-ai, we use OpenRouterProvider which handles attribution headers.
         site_url = os.environ.get("OPENROUTER_SITE_URL", "").strip()
         app_name = os.environ.get("OPENROUTER_APP_NAME", "").strip()
-        if site_url:
-            extra_headers["HTTP-Referer"] = site_url
-        if app_name:
-            extra_headers["X-Title"] = app_name
     else:
         api_key = openai_key
         if not api_key:
@@ -478,8 +720,9 @@ def main() -> int:
             print("llm_review: OPENAI_API_KEY not set; skipping", file=sys.stderr)
             return 0
         base_url = args.base_url or os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-        model = args.model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-        extra_headers = None
+        # Model selection is handled below.
+        site_url = ""
+        app_name = ""
 
     if args.scope == "staged":
         paths = staged_paths(root)
@@ -498,12 +741,6 @@ def main() -> int:
     if args.scope == "staged" and args.include_diff:
         diff_txt = staged_diff()
 
-    key_id = cache_key(model=model, scope=args.scope, diff_txt=diff_txt, blobs=blobs)
-    cache_path = cache_dir(root) / f"{key_id}.txt"
-    if cache_path.exists():
-        print(cache_path.read_text(encoding="utf-8", errors="replace"))
-        return 0
-
     meta = (
         f"Review scope: {args.scope}\n"
         f"Files included: {len(blobs)}\n"
@@ -515,53 +752,112 @@ def main() -> int:
     if diff_txt.strip():
         diff_block = "===== git diff --cached =====\n" + diff_txt + "\n\n"
 
-    user_prompt = meta + "\n" + diff_block + corpus
+    stage = args.stage.strip().lower() or os.environ.get("COVOLUME_LLM_REVIEW_STAGE", "").strip().lower()
+    if stage not in ("triage", "deep", "both"):
+        # Default: keep pre-commit fast.
+        stage = "triage" if args.scope == "staged" else "deep"
 
-    try:
-        out = openai_chat(
-            base_url=base_url,
-            api_key=api_key,
-            model=model,
-            system=domain_prompt(),
-            user=user_prompt,
-            timeout_s=args.timeout_s,
-            extra_headers=extra_headers,
-        )
-    except Exception as e:
-        # If a default OpenRouter model is unavailable, fall back once to a safer model id.
-        # This is deliberately narrow: we only retry for OpenRouter with an implicit default.
-        msg = str(e)
-        can_fallback = (
-            provider == "openrouter"
-            and not args.model
-            and not os.environ.get("OPENROUTER_MODEL", "").strip()
-            and model != "openai/gpt-4o-mini"
-        )
-        if can_fallback:
-            try:
-                out = openai_chat(
-                    base_url=base_url,
-                    api_key=api_key,
-                    model="openai/gpt-4o-mini",
-                    system=domain_prompt(),
-                    user=user_prompt,
-                    timeout_s=args.timeout_s,
-                    extra_headers=extra_headers,
-                )
-            except Exception as e2:
-                print(f"llm_review: request failed: {e2}", file=sys.stderr)
-                return 1
-        else:
-            print(f"llm_review: request failed: {msg}", file=sys.stderr)
-            return 1
+    models = [args.model.strip()] if args.model.strip() else default_models_for_provider(provider)
+    concurrency = int(os.environ.get("COVOLUME_LLM_REVIEW_CONCURRENCY", "3").strip() or "3")
 
-    try:
-        cache_path.write_text(out, encoding="utf-8")
-    except Exception:
-        # Cache failures should never block.
-        pass
+    system = domain_prompt()
+    wisdom = repo_wisdom(root)
+    if wisdom:
+        system = system + "\n\n" + wisdom
 
-    print(out)
+    # Stage prompts.
+    triage_prompt = (
+        meta
+        + "\n"
+        + diff_block
+        + "===== FILE LIST =====\n"
+        + "\n".join(f"- {b.rel}" for b in blobs)
+        + "\n"
+        + "\n(Do not ask questions. Propose edits.)\n"
+    )
+    deep_prompt = meta + "\n" + diff_block + corpus
+
+    async def run_stage(stage_name: str, user_prompt: str) -> ReviewReport:
+        reports: list[tuple[str, ReviewReport]] = []
+        sem = asyncio.Semaphore(max(1, concurrency))
+
+        async def run_model(m: str) -> tuple[str, ReviewReport] | None:
+            key_id = cache_key(model=f"{provider}:{m}:{stage_name}", scope=args.scope, diff_txt=diff_txt, blobs=blobs)
+            cache_path = cache_dir(root) / f"{key_id}.json"
+            if cache_path.exists():
+                try:
+                    rep = ReviewReport.model_validate_json(cache_path.read_text(encoding="utf-8", errors="replace"))
+                    return (m, rep)
+                except Exception:
+                    pass
+
+            async with sem:
+                try:
+                    rep = await run_one_report(
+                        provider=provider,
+                        model_id=m,
+                        api_key=api_key,
+                        base_url=base_url,
+                        app_url=site_url,
+                        app_title=app_name,
+                        system_prompt=system,
+                        user_prompt=user_prompt,
+                        timeout_s=args.timeout_s,
+                    )
+                    try:
+                        cache_path.write_text(rep.model_dump_json(indent=2), encoding="utf-8")
+                    except Exception:
+                        pass
+                    return (m, rep)
+                except Exception as e:
+                    # Non-blocking: missing model / transient error shouldn't break pre-commit.
+                    print(f"llm_review: model_failed model={m} stage={stage_name}: {e}", file=sys.stderr)
+                    return None
+
+        xs = await asyncio.gather(*(run_model(m) for m in models))
+        for x in xs:
+            if x is not None:
+                reports.append(x)
+
+        if not reports:
+            return ReviewReport(meta=[f"All models failed for stage={stage_name}."])
+        merged = aggregate_reports(reports)
+        # Pull through any “nice-to-have” / “future break” content without trying to do semantic dedup.
+        nice: list[str] = []
+        brk: list[str] = []
+        for _, rep in reports:
+            nice.extend(rep.nice_to_have)
+            brk.extend(rep.most_likely_future_break)
+        merged.nice_to_have = list(dict.fromkeys(nice))[:20]
+        merged.most_likely_future_break = list(dict.fromkeys(brk))[:10]
+        return merged
+
+    async def run_pipeline() -> list[ReviewReport]:
+        tasks: list[asyncio.Task[ReviewReport]] = []
+        if stage in ("triage", "both"):
+            tasks.append(asyncio.create_task(run_stage("triage", triage_prompt)))
+        if stage in ("deep", "both"):
+            tasks.append(asyncio.create_task(run_stage("deep", deep_prompt)))
+        if not tasks:
+            return []
+        return await asyncio.gather(*tasks)
+
+    reps = asyncio.run(run_pipeline())
+
+    final = ReviewReport()
+    for r in reps:
+        final.top_issues.extend(r.top_issues)
+        final.nice_to_have.extend(r.nice_to_have)
+        final.most_likely_future_break.extend(r.most_likely_future_break)
+        final.meta.extend(r.meta)
+
+    # De-dup combined issues by (file, snippet prefix).
+    combined = aggregate_reports([("combined", ReviewReport(top_issues=final.top_issues, meta=final.meta))])
+    combined.nice_to_have = list(dict.fromkeys(final.nice_to_have))[:20]
+    combined.most_likely_future_break = list(dict.fromkeys(final.most_likely_future_break))[:10]
+    combined.meta = list(dict.fromkeys(final.meta))[:20]
+
+    print(format_report(combined))
     return 0
 
 
