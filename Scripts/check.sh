@@ -71,28 +71,6 @@ case "$profile" in
       fi
 
       # Project-agnostic LLM diff review lives in the helper repo `proofloops` (Rust CLI).
-      # If no provider is configured, skip (or fail in strict mode) early to avoid
-      # doing a `cargo run` that can stall on locks.
-      has_provider=0
-      if [[ -n "${OLLAMA_MODEL:-}" ]] || [[ -n "${GROQ_API_KEY:-}" ]] || [[ -n "${OPENAI_API_KEY:-}" ]] || [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
-        has_provider=1
-      fi
-      do_llm=1
-      if [[ "$has_provider" -eq 0 ]]; then
-        if [[ "$strict" != "0" ]]; then
-          echo "[check:pre-commit] llm-review enabled but no provider configured" >&2
-          echo "Set one of: OLLAMA_MODEL | GROQ_API_KEY | OPENAI_API_KEY | OPENROUTER_API_KEY" >&2
-          exit 1
-        else
-          echo "[check:pre-commit] llm-review skipped (no provider configured)" >&2
-          do_llm=0
-        fi
-      fi
-
-      if [[ "$do_llm" -eq 0 ]]; then
-        set -e
-        true
-      else
       pl_bin=""
       # Prefer a sibling checkout (../proofloops). Fall back to PATH.
       pl_root=""
@@ -129,11 +107,15 @@ case "$profile" in
       fi
 
       if [[ -n "$pl_bin" ]]; then
+        # Keep pre-commit output readable: write full output to a local artifact and print a small JSON
+        # “written” record to stdout.
+        mkdir -p tmp/proofloops
+        out_json="${GON_LLM_REVIEW_JSON:-tmp/proofloops/review-diff.json}"
         if [[ "$pl_bin" == "cargo" ]]; then
           cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-            review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
+            review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}" --output-json "$out_json"
         else
-          "$pl_bin" review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
+          "$pl_bin" review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}" --output-json "$out_json"
         fi
 
         rc=$?
@@ -145,7 +127,6 @@ case "$profile" in
             echo "[check:pre-commit] llm-review failed (non-blocking); set GON_LLM_REVIEW_STRICT=1 to fail" >&2
           fi
         fi
-      fi
       fi
     fi
     ;;
