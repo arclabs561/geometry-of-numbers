@@ -30,20 +30,12 @@ abbrev triangular := Covolume.triangular
 abbrev fermat_polygonal := Covolume.fermat_polygonal
 abbrev gauss_triangular := Covolume.gauss_triangular
 
--- Geometry-of-numbers definitions / structures.
-abbrev QuadraticLattice := Covolume.QuadraticLattice
-
 namespace Minkowski
   noncomputable abbrev E3 := Covolume.Minkowski.E3
   noncomputable abbrev ankenyDiagMap := Covolume.Minkowski.ankenyDiagMap
   noncomputable abbrev ankenyBallRadius := Covolume.Minkowski.ankenyBallRadius
   noncomputable abbrev ankenyEllipsoidAsPreimage := Covolume.Minkowski.ankenyEllipsoidAsPreimage
 end Minkowski
-
-noncomputable abbrev successive_minima {n : ℕ}
-    (L : Submodule ℤ (Fin n → ℝ)) [DiscreteTopology L]
-    (K : Set (Fin n → ℝ)) (k : ℕ) : ℝ :=
-  Covolume.successive_minima (L := L) (K := K) k
 
 end GeometryOfNumbers
 
