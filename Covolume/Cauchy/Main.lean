@@ -271,7 +271,7 @@ lemma mod_sub_two_of_mod_eq_pred {m x : ℕ} (hm : 3 ≤ m) (hx : x % m = m - 1)
             simpa using (Nat.add_sub_assoc h2 (m * q))
       _ = m * q + (m - 3) := by omega
   calc
-    (x - 2) % m = (m * q + (m - 3)) % m := by simpa [hxsub]
+    (x - 2) % m = (m * q + (m - 3)) % m := by simp [hxsub]
     _ = ((m - 3) + m * q) % m := by ac_rfl
     _ = (m - 3) % m := by simp [Nat.add_mul_mod_self_left]
     _ = m - 3 := by
@@ -337,6 +337,11 @@ lemma nathanson_parameters (s : ℕ) (hs : 5 ≤ s) (n : ℕ) (hn : 0 < n) :
         ((b : ℤ) ^ 2 < 4 * ((2 * q + b : ℕ) : ℤ)) ∧
         (3 * ((2 * q + b : ℕ) : ℤ) < (b : ℤ) ^ 2 + 2 * (b : ℤ) + 4) ∧
         n = (s - 2) * q + b + r := by
+  -- TODO(nathanson): interval + inequality-window selection (Whitty/Nathanson).
+  --
+  -- The modular decomposition / residue-class avoidance step is now formalized as
+  -- `exists_qr_with_remainder_le`, but we still need the analytic argument that produces a `b`
+  -- satisfying the two inequalities for `a = 2q+b` (with `q` coming from `n = (s-2)q + b + r`).
   sorry
 
 /-- Cauchy’s lemma (stub).
