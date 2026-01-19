@@ -61,20 +61,30 @@ case "$profile" in
 
       # Project-agnostic LLM diff review lives in the helper repo `proofyloops` (Rust CLI).
       pl_bin=""
-      if [[ -x "$repo_root/../proofyloops/target/release/proofyloops" ]]; then
-        pl_bin="$repo_root/../proofyloops/target/release/proofyloops"
-      elif [[ -x "$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops" ]]; then
-        # Legacy path (pre-workspace); keep for safety.
-        pl_bin="$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops"
-      elif [[ -f "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
+      # Prefer a sibling checkout (../proofloops or ../proofyloops). Fall back to PATH.
+      pl_root=""
+      if [[ -d "$repo_root/../proofloops" ]]; then
+        pl_root="$repo_root/../proofloops"
+      elif [[ -d "$repo_root/../proofyloops" ]]; then
+        pl_root="$repo_root/../proofyloops"
+      fi
+
+      if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofyloops" ]]; then
+        pl_bin="$pl_root/target/release/proofyloops"
+      elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofyloops" ]]; then
+        # Legacy-ish path.
+        pl_bin="$pl_root/proofloops-core/target/release/proofyloops"
+      elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
         pl_bin="cargo"
       elif command -v proofyloops >/dev/null 2>&1; then
         pl_bin="proofyloops"
+      elif command -v proofloops >/dev/null 2>&1; then
+        pl_bin="proofloops"
       fi
 
       if [[ -z "$pl_bin" ]]; then
         if [[ "$strict" != "0" ]]; then
-          echo "[check:pre-commit] proofyloops not available (need ../proofyloops or proofyloops on PATH)" >&2
+          echo "[check:pre-commit] proofyloops not available (need ../proofloops or proofyloops/proofloops on PATH)" >&2
           exit 1
         else
           echo "[check:pre-commit] proofyloops not available; skipping llm-review" >&2
@@ -86,7 +96,7 @@ case "$profile" in
 
       if [[ -n "$pl_bin" ]]; then
         if [[ "$pl_bin" == "cargo" ]]; then
-          cargo run --manifest-path "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" --bin proofyloops -- \
+          cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofyloops -- \
             review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
         else
           "$pl_bin" review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"

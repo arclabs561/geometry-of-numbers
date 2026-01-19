@@ -63,15 +63,25 @@ fi
 # Prefer `proofyloops lint-style` (project-agnostic Rust CLI), but keep a self-contained fallback
 # for environments where proofyloops isn't available.
 pl_bin=""
-if [[ -x "$repo_root/../proofyloops/target/release/proofyloops" ]]; then
-  pl_bin="$repo_root/../proofyloops/target/release/proofyloops"
-elif [[ -x "$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops" ]]; then
-  # Legacy path (pre-workspace); keep for safety.
-  pl_bin="$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops"
-elif [[ -f "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
+# Prefer a sibling checkout (../proofloops or ../proofyloops). Fall back to PATH.
+pl_root=""
+if [[ -d "$repo_root/../proofloops" ]]; then
+  pl_root="$repo_root/../proofloops"
+elif [[ -d "$repo_root/../proofyloops" ]]; then
+  pl_root="$repo_root/../proofyloops"
+fi
+
+if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofyloops" ]]; then
+  pl_bin="$pl_root/target/release/proofyloops"
+elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofyloops" ]]; then
+  # Legacy-ish path.
+  pl_bin="$pl_root/proofloops-core/target/release/proofyloops"
+elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
   pl_bin="cargo"
 elif command -v proofyloops >/dev/null 2>&1; then
   pl_bin="proofyloops"
+elif command -v proofloops >/dev/null 2>&1; then
+  pl_bin="proofloops"
 fi
 
 if [[ -n "$pl_bin" ]]; then
@@ -80,7 +90,7 @@ if [[ -n "$pl_bin" ]]; then
     mod_args+=(--module "$m")
   done
   if [[ "$pl_bin" == "cargo" ]]; then
-    exec cargo run --manifest-path "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" --bin proofyloops -- \
+    exec cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofyloops -- \
       lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
   fi
   exec "$pl_bin" lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
