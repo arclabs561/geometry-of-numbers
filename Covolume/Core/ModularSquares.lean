@@ -67,7 +67,9 @@ private lemma hensel_lift_two_squares_one_step
         (ZMod.intCast_zmod_eq_zero_iff_dvd (2 : ℤ) p).1 (by simpa using h0)
       have hp_dvd_two : p ∣ 2 := Int.natCast_dvd_natCast.mp (by simpa using hp_dvd_two_z)
       have hp_ne2 : p ≠ 2 := by
-        intro hp2; subst hp2; simpa using hp_odd
+        intro hp2
+        subst hp2
+        simp at hp_odd
       have : p = 2 :=
         (Nat.prime_dvd_prime_iff_eq (Fact.out : Nat.Prime p) Nat.prime_two).1 hp_dvd_two
       exact hp_ne2 this
@@ -93,13 +95,13 @@ private lemma hensel_lift_two_squares_one_step
       calc
         u' ^ 2 + v ^ 2 + 1
             = (u ^ 2 + v ^ 2 + 1) + 2 * u * x * pk + x ^ 2 * pk ^ 2 := this
-        _ = (pk * m) + 2 * u * x * pk + x ^ 2 * pk ^ 2 := by simpa [hm]
+        _ = (pk * m) + 2 * u * x * pk + x ^ 2 * pk ^ 2 := by simp [hm]
         _ = pk * (m + u * (x * 2) + pk * x ^ 2) := by ring_nf
 
     have hp_dvd_pk : (p : ℤ) ∣ pk := by
       have hk0 : k ≠ 0 := Nat.ne_of_gt hk
       rcases Nat.exists_eq_succ_of_ne_zero hk0 with ⟨k0, rfl⟩
-      simpa [pk] using (dvd_pow_self (p : ℤ) (Nat.succ_ne_zero k0))
+      simp [pk]
     have hp_dvd_tail : (p : ℤ) ∣ (x ^ 2 * pk) :=
       dvd_mul_of_dvd_right hp_dvd_pk (x ^ 2)
 
@@ -109,13 +111,18 @@ private lemma hensel_lift_two_squares_one_step
         calc
           ((m + u * (x * 2) : ℤ) : ZMod p)
               = (mZ + a * (x : ZMod p)) := by
-                    simp [mZ, uZ, a, two_mul, add_assoc, add_left_comm, add_comm,
-                      mul_assoc, mul_left_comm, mul_comm]
+                    -- normalize multiplication order in `ZMod p`
+                    simp [mZ, uZ, a, mul_left_comm, mul_comm]
           _ = (mZ + a * xZ) := by simp [hx']
           _ = (mZ + a * (-mZ * a⁻¹)) := by simp [xZ]
           _ = (mZ - a * mZ * a⁻¹) := by ring
           _ = (mZ - mZ) := by
-                simp [mul_assoc, mul_left_comm, mul_comm, mul_inv_cancel₀ ha_ne0]
+                have : a * mZ * a⁻¹ = mZ := by
+                  calc
+                    a * mZ * a⁻¹ = mZ * (a * a⁻¹) := by ring
+                    _ = mZ * 1 := by simp [mul_inv_cancel₀ ha_ne0]
+                    _ = mZ := by simp
+                simp [this]
           _ = 0 := by simp
       exact (ZMod.intCast_zmod_eq_zero_iff_dvd (m + u * (x * 2) : ℤ) p).1 hZ0
 
@@ -139,7 +146,8 @@ private lemma hensel_lift_two_squares_one_step
     have : pk ∣ (u - u') := by
       refine ⟨-x, ?_⟩
       -- `u - (u + x*pk) = pk * (-x)`
-      simp [u', pk, sub_eq_add_neg, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm]
+      simp [u', pk, sub_eq_add_neg]
+      ring
     -- Convert to `Int.ModEq`.
     exact (Int.modEq_iff_dvd).2 this
 
@@ -207,7 +215,7 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
   cases n with
   | zero =>
       -- `Odd 0` is impossible.
-      simpa [Odd] using hn
+      simp [Odd] at hn
   | succ n =>
       -- Work in `ZMod (n+1)` and use the CRT ring equivalence
       -- `ZMod (n+1) ≃ Π p : (n+1).primeFactors, ZMod (p^(v_p(n+1)))`.
@@ -229,7 +237,7 @@ lemma exists_sq_add_sq_add_one_eq_zero_mod_odd (n : ℕ) (hn : Odd n) :
           have h2dvd : 2 ∣ N := by simpa [hp2] using hp_dvd
           have hmod1 : N % 2 = 1 := Nat.odd_iff.1 hNodd
           have hmod0 : N % 2 = 0 := Nat.mod_eq_zero_of_dvd h2dvd
-          exact by simpa [hmod0] using hmod1
+          simp [hmod0] at hmod1
         have hp_odd : (p : ℕ) % 2 = 1 := hp_prime.eq_two_or_odd.resolve_left hp_ne2
         haveI : Fact (Nat.Prime (p : ℕ)) := ⟨hp_prime⟩
         -- Use the prime-power lemma to get integer witnesses, then cast into `ZMod`.

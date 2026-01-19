@@ -527,26 +527,18 @@ def ankenyBallRadius (n q : ℝ) : ℝ :=
 def ankenyEllipsoidAsPreimage (n q : ℝ) : Set E3 :=
   ankenyDiagMap n q ⁻¹' Metric.ball (0 : E3) (ankenyBallRadius n q)
 
-lemma ankenyEllipsoidAsPreimage_volume (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
-    volume (ankenyEllipsoidAsPreimage n q) =
-      ENNReal.ofReal |(LinearMap.det (ankenyDiagMap n q))⁻¹| *
-        (ENNReal.ofReal (ankenyBallRadius n q)) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3) := by
-  /-
-  This was previously proved in this file, but it is delicate:
-  it mixes `WithLp`/`PiLp` spellings (via `EuclideanSpace`) with the `Fin 3 → ℝ` presentation.
+/-!
+Deprecated volume facts:
 
-  Keeping it as a scaffold here preserves buildability while we port the finished proof into
-  the main library (`Covolume/Legendre/Ankeny.lean`) in smaller slices.
-  -/
-  sorry
+Earlier versions of this scratchpad proved volume bounds for `ankenyEllipsoidAsPreimage` in the
+`Metric.ball` presentation. The stabilized, canonical proofs now live in:
 
-lemma ankenyEllipsoidAsPreimage_volume_gt16 (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
-    ENNReal.ofReal (16 * n * q) < volume (ankenyEllipsoidAsPreimage n q) := by
-  /-
-  Same note as above: this proof is currently disabled in `Experiments/` to keep the scratchpad
-  buildable while we stabilize the “L2 spelling” (WithLp/EuclideanSpace) and port to the main proof.
-  -/
-  sorry
+- `Covolume/Legendre/Ankeny.lean`:
+  - `volume_ankenyEllipsoidL2_eq`
+  - `volume_ankenyEllipsoidL2_gt`
+
+We intentionally avoid duplicating those proofs here.
+-/
 
 /-!
 ### Minkowski call-site (Ankeny, in `Experiments/`)
@@ -555,12 +547,12 @@ This produces the *raw geometric output* we need for `exists_ankeny_representati
 a nonzero lattice point inside the Ankeny ellipsoid.
 -/
 
-lemma exists_ne_zero_mem_ankenySpan_in_ellipsoid
-    (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
-    ∃ p : (Covolume.ankeny_span_lattice n q b hn hq),
-      p ≠ 0 ∧ (p : E3) ∈ ankenyEllipsoidAsPreimage (n : ℝ) (q : ℝ) := by
-  -- Scaffold: this is the “real” call-site once the volume inequality is re-enabled.
-  sorry
+/-!
+Deprecated Minkowski call-site:
+
+The “find a nonzero lattice point in the ellipsoid” call-site is now implemented and used in
+`Covolume.exists_ankeny_representation` (see `Covolume/Legendre/Ankeny.lean`).
+-/
 
 -- Symmetry is automatic because the defining expression is a sum of squares.
 lemma ankenyEllipsoid_symm (n q R : ℝ) : ∀ x ∈ ankenyEllipsoid n q R, -x ∈ ankenyEllipsoid n q R := by

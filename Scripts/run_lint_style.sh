@@ -12,6 +12,16 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+# `lake` may not be on PATH in non-interactive shells.
+LAKE="${LAKE:-}"
+if [[ -z "$LAKE" ]]; then
+  if [[ -x "$HOME/.elan/bin/lake" ]]; then
+    LAKE="$HOME/.elan/bin/lake"
+  else
+    LAKE="lake"
+  fi
+fi
+
 github=0
 fast=0
 for arg in "$@"; do
@@ -50,5 +60,5 @@ if [[ "$fast" -eq 0 ]]; then
   )
 fi
 
-exec lake exe lint-style "${lint_args[@]+"${lint_args[@]}"}" "${modules[@]}"
+exec "$LAKE" exe lint-style "${lint_args[@]+"${lint_args[@]}"}" "${modules[@]}"
 

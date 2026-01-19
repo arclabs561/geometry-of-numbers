@@ -80,4 +80,28 @@ lemma squarefree_part_mod_eight (n s m : ℕ) (heq : n = s^2 * m) (hn : n % 8 = 
   rw [hn, hs_sq_mod, one_mul] at h_mod
   exact (Nat.mod_mod m 8).symm.trans h_mod.symm
 
+/-- Scaling lemma: if `m` is a sum of three squares, then so is `s^2 * m`. -/
+lemma sum_three_squares_mul_sq (s m : ℕ)
+    (hm : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = m) :
+    ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = s ^ 2 * m := by
+  rcases hm with ⟨x, y, z, hxyz⟩
+  refine ⟨s * x, s * y, s * z, ?_⟩
+  -- Expand squares and factor `s^2`.
+  have hxy :
+      s ^ 2 * x ^ 2 + s ^ 2 * y ^ 2 = s ^ 2 * (x ^ 2 + y ^ 2) := by
+    simpa [Nat.mul_add] using (Nat.mul_add (s ^ 2) (x ^ 2) (y ^ 2)).symm
+  have hxyz' :
+      s ^ 2 * (x ^ 2 + y ^ 2) + s ^ 2 * z ^ 2 = s ^ 2 * (x ^ 2 + y ^ 2 + z ^ 2) := by
+    simpa [Nat.add_assoc, Nat.mul_add] using
+      (Nat.mul_add (s ^ 2) (x ^ 2 + y ^ 2) (z ^ 2)).symm
+  calc
+    (s * x) ^ 2 + (s * y) ^ 2 + (s * z) ^ 2
+        = s ^ 2 * x ^ 2 + s ^ 2 * y ^ 2 + s ^ 2 * z ^ 2 := by
+            simp [mul_pow, pow_two, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
+    _ = s ^ 2 * (x ^ 2 + y ^ 2) + s ^ 2 * z ^ 2 := by
+            -- fold the first two terms into `s^2 * (x^2 + y^2)`
+            simp [hxy, Nat.add_assoc]
+    _ = s ^ 2 * (x ^ 2 + y ^ 2 + z ^ 2) := hxyz'
+    _ = s ^ 2 * m := by simpa [hxyz]
+
 end Covolume

@@ -11,7 +11,14 @@
 
 ## Phase 3: Cauchy's Lemma
 *   **Interval Logic**: Scaffold for lemmas identifying odd integers within specified real intervals (proofs pending).
-*   **Gauss's Eureka Theorem**: The triangular number theorem ($s=3$) is currently a formalized scaffold awaiting proof completion.
+*   **Gauss's Eureka Theorem**: Implemented `gauss_triangular` in `Covolume/Cauchy/Main.lean` (proved).
+*   **Cauchy/Nathanson route (structure)**:
+    - Updated the target statement for `s ≥ 5` to the standard “four terms + residue” form
+      \(n = \sum_{i=1}^4 P(s,x_i) + r\) with \(0 \le r \le s-4\).
+    - Proved the padding/bookkeeping lemma that turns this into an `Fin s → ℕ` family by filling the
+      remaining slots with `1` (for the residue) and `0`.
+    - Extracted two explicit boundary lemmas as `sorry` stubs: `nathanson_parameters` and `cauchy_lemma`.
+    - Added an experiment module `Covolume/Experiments/CauchyIdentityScratch.lean` to validate the algebraic spine.
 
 ## Project Status (January 2026)
 *   The main theorem `fermat_polygonal` is defined, but still contains placeholders in the reduction chain.

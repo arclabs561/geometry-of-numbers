@@ -9,6 +9,6 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-echo "[pre-commit] covolume_checks"
+echo "[pre-commit] gon_checks"
 ./Scripts/check.sh pre-commit
 

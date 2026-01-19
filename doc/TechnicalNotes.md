@@ -45,3 +45,28 @@ This repo uses two different kinds of linting:
 - **Lean lints (proof hygiene)**: Lean’s built-in linters and Mathlib linters.
   - **High-signal**: unused simp args, unused arguments/locals, and anything indicating API drift.
   - **Lower-signal**: `try 'simp' instead of 'simpa'` warnings; treat as optional unless it improves readability.
+
+## 6. Notes / references we *don’t* store as PDFs in-tree
+
+This workspace uses a global `.cursorignore` that filters `**/*.pdf` (and other media formats).
+As a result, it’s better to store **links + extracted key statements** than to commit/download PDFs.
+
+### Whitty talk notes (compact Nathanson proof outline)
+
+- `https://www.theoremoftheday.org/NumberTheory/Eureka/PolygonalNumberTalk/PolygonalNumberTheoremTalk.pdf`
+
+Key pieces we are encoding in `Covolume/Cauchy/Main.lean`:
+
+- Pick \(m = s-2\).
+- Choose odd \(b\) and \(r\) with \(0 \le r \le m-2\) and \(n \equiv b+r \pmod m\).
+- Define \(a = 2\left(\frac{n-b-r}{m}\right) + b\).
+- Ensure \(b^2 < 4a\) and \(3a < b^2 + 2b + 4\).
+- Invoke Cauchy’s lemma: these inequalities imply \(a = \sum x_i^2\) and \(b = \sum x_i\).
+- Conclude \(n = \sum_{i=1}^4 P(s,x_i) + r\), then pad with `P(s,1)=1` and `P(s,0)=0`.
+
+### Wikipedia statement of “Cauchy’s lemma”
+
+- `https://en.wikipedia.org/wiki/Fermat_polygonal_number_theorem`
+
+We treat this as a *signpost* for the lemma we need to formalize; we still need a proof-level
+reference suitable for Lean (likely via Nathanson’s book treatment).

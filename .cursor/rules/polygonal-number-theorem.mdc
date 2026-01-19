@@ -16,9 +16,19 @@ alwaysApply: true
 - Run checks via the single entrypoint:
   - `./Scripts/check.sh pre-commit`
   - `./Scripts/check.sh pre-push`
+- Lake convenience wrapper (same behavior as `./Scripts/check.sh pre-commit`):
+  - `lake exe gon_precommit`
 - The pre-commit profile includes an LLM review by default (local-only, not CI):
-  - Disable: `COVOLUME_LLM_REVIEW=0`
-  - Make failures block: `COVOLUME_LLM_REVIEW_STRICT=1`
+  - Disable: `GON_LLM_REVIEW=0` (also accepts `COVOLUME_LLM_REVIEW=0`)
+  - Make failures block: `GON_LLM_REVIEW_STRICT=1` (also accepts `COVOLUME_LLM_REVIEW_STRICT=1`)
+  - Default “power” is intentionally high unless you override:
+    - Override: `GON_LLM_REVIEW_POWER=low|high|max` (also accepts `COVOLUME_LLM_REVIEW_POWER=...`)
+
+## Build determinism (do not blur layers)
+
+- Keep `lake build` deterministic and offline.
+- Do **not** hook networked/non-deterministic checks (LLM review, web search) into `lake build`.
+  Provide them as explicit commands (`./Scripts/check.sh ...`, `lake exe covolume_precommit`) instead.
 
 ## Case-sensitive paths (Linux/CI)
 
@@ -67,6 +77,68 @@ quadratic form manipulations), include:
 - Prefer `simp [foo]` over `simp_all` unless you know what hypotheses you want rewritten.
 - Prefer `simp [.., -lemmaName]` to disable a simp lemma that changes the “shape” you want (e.g.
   `Set.pi_univ_Icc` vs `Set.pi` goals).
+
+## Lean “tactic loop” protocol (recursion depth / simp loops)
+
+If Lean reports a recursion-depth failure (common message: “maximum recursion depth has been reached”),
+treat it as a **structure problem**, not a “bump the limits” problem.
+
+- Do **not** “fix” by increasing recursion limits (`set_option maxRecDepth ...`).
+- Preferred fix pattern:
+  - Extract the looping normalization into a named lemma (e.g. `have hp2 : ... := by ...`).
+  - Apply it explicitly via `rw` / `calc` to stabilize the goal.
+  - Then run `simp` with a tight whitelist (avoid comm/assoc spam), or finish with `ring_nf`.
+
+This should be the default response in both human proofs and the LLM reviewer output.
+
+## LLM reviewer output discipline (one repair step)
+
+When the LLM reviewer is used (especially at pre-commit time), prefer **one repair step at a time**:
+
+- Pick the single most important issue (blocker/high) and propose a minimal patch with a concrete snippet.
+- Other issues (if any) should be brief and should not trigger refactors.
+
+## Proof planning (use existing expositions when available)
+
+- If a classical proof is short and structured (e.g. Ankeny 1957 for the Minkowski step and the
+  “sum of two squares” reduction), prefer matching its *lemma graph* rather than inventing a new one.
+  This minimizes proof search, reduces Lean friction, and makes the code reviewable against a stable
+  reference.
+
+## Legendre three-squares completion strategy (glue layer)
+
+We currently have:
+
+- a completed **Ankeny route** for the key residue class \(n \equiv 3 \pmod 8\),
+- a partially-developed **Minkowski route** (lattice + covolume infrastructure),
+- and a pending “hard direction” wrapper in `Covolume/Legendre/Main.lean`.
+
+The canonical “glue” decomposition to keep stable is:
+
+\[
+n = 4^a \cdot t,\quad 4 \nmid t,\quad t \not\equiv 7 \pmod 8.
+\]
+
+Then:
+
+- solve the **4-free** case `t` (where `t % 8 ∈ {1,2,3,5,6}`),
+- scale back by \(4^a\) using a dedicated scaling lemma (do not re-prove scaling inside the main theorem).
+
+Concrete repo artifacts that should be preferred when wiring this:
+
+- `Covolume.Legendre.AnkenyLemmas.sum_three_squares_mul_sq` (scaling \(m \mapsto s^2 m\)),
+- `Covolume.Legendre.Main.exists_four_pow_mul_reduced` (peel off \(4^a\) while tracking `t % 8 ≠ 7`).
+
+Design knob (important for future iterations):
+
+- In `Covolume/Legendre/Ankeny.lean`, the hypothesis `n % 8 = 3` is used *nontrivially* in the Jacobi-symbol step
+  (`exists_ankeny_b`). Extending Ankeny beyond `3 mod 8` likely requires changing the congruence class used to pick `q`
+  (the `q ≡ -(2⁻¹) (mod n)` choice is not obviously correct for all residues).
+
+## Research workflow: prefer local Mathlib before GitHub search
+
+- Prefer searching the vendored Mathlib source in `.lake/packages/mathlib/Mathlib` before using GitHub code search.
+- GitHub code search (`gh search code`) can hit rate limits quickly; treat it as a last resort and cache results in chat.
 
 ## Meta
 

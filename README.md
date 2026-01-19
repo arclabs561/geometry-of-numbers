@@ -1,4 +1,4 @@
-# Covolume
+# Geometry of Numbers (Lean)
 
 Lean 4 code around a geometry-of-numbers route to:
 
@@ -19,6 +19,7 @@ curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
 lake build
 lake exe status_report
 lake exe lint-style
+lake exe gon_precommit
 ./Scripts/install_git_hooks.sh
 ./Scripts/check.sh pre-commit
 ```
@@ -41,6 +42,7 @@ and a Minkowski step on a suitable ellipsoid for a lattice of covolume $2nq$.
 
 ## What’s here (roughly)
 
+- `GeometryOfNumbers.lean`: public import root (curated facade)
 - `Covolume/Core/`: reusable lemmas/definitions (some files are still scaffolds)
 - `Covolume/Legendre/`: the Ankeny proof path and the three-square theorem entry point
 - `Covolume/Cauchy/`: the polygonal-number reduction (currently scaffolded)
@@ -101,7 +103,12 @@ theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
 ```
 
 ## Note: Nathanson (1987)
-For the Cauchy reduction, we rely on the corrected proof from Nathanson’s 1996 book (not the 1987 note), due to a known gap about residue classes.
+For the `s ≥ 5` case, we target the Cauchy/Nathanson reduction in the “four terms + residue” form
+\(n = \sum_{i=1}^4 P(s,x_i) + r\) with \(0 \le r \le s-4\), then pad with `0/1` polygonals.
+
+There is a known residue-class gap in some short presentations; we are following the modern
+streamlined route (e.g. Nathanson’s book treatment / the Whitty talk notes) rather than relying on
+an unverified modulo argument.
 
 ## References
 

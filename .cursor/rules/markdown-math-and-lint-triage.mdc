@@ -18,6 +18,7 @@ alwaysApply: true
 - **Style**: `lake exe lint-style`
 - **Build**: `lake build`
 - **Checks entrypoint (canonical)**: `./Scripts/check.sh pre-commit` / `./Scripts/check.sh pre-push`
+- **Checks (Lake wrapper)**: `lake exe gon_precommit` (runs `./Scripts/check.sh pre-commit`)
 - (Optional, interactive) **Lean lints**: `#lint` / `#lint_mathlib` in a scratch file when diagnosing suspicious patterns.
 
 ### High-signal (usually fix when you touch the code nearby)
@@ -30,6 +31,13 @@ alwaysApply: true
 
 - `linter.unnecessarySimpa`: change `simpa` → `simp` **only** if the proof stays readable and no extra casts/unfolding appear.
 
+## Lean failure mode: recursion depth / simp loops
+
+If Lean reports “maximum recursion depth has been reached” (often from `simp`), prefer structural fixes:
+
+- Avoid “fixing” by raising limits (`set_option maxRecDepth ...`).
+- Extract the looping rewrite into a named lemma, apply via `rw`/`calc`, then use a small `simp` set or `ring_nf`.
+
 ### Low-signal (explicitly allowed in this repo)
 
 - `declaration uses 'sorry'` inside `Experiments/` or marked scaffolds, provided the file still builds.
@@ -37,8 +45,15 @@ alwaysApply: true
 ## LLM review (local only)
 
 - `Scripts/check.sh pre-commit` runs an LLM-based review by default (non-blocking if it fails).
-  - Disable: `COVOLUME_LLM_REVIEW=0`
-  - Make failures block: `COVOLUME_LLM_REVIEW_STRICT=1`
+  - Disable: `GON_LLM_REVIEW=0` (also accepts `COVOLUME_LLM_REVIEW=0`)
+  - Make failures block: `GON_LLM_REVIEW_STRICT=1` (also accepts `COVOLUME_LLM_REVIEW_STRICT=1`)
+  - Tune strength: `GON_LLM_REVIEW_POWER=low|high|max` (also accepts `COVOLUME_LLM_REVIEW_POWER=...`)
+
+## Determinism / layering
+
+- `lake build` should stay deterministic + offline.
+- Never make `lake build` depend on networked checks (LLM review, web search).
+  Use explicit commands (`./Scripts/check.sh ...`, `lake exe covolume_precommit`) instead.
 
 ## Case-sensitive paths (Linux/CI)
 
@@ -52,4 +67,10 @@ alwaysApply: true
   - why it’s noisy here
   - what would make it actionable
   - example: `set_option linter.unnecessarySimpa false`
+
+## Research / iteration hygiene (so we can keep iterating)
+
+- Prefer **local** searches (repo + vendored Mathlib under `covolume/.lake/packages/mathlib/Mathlib`) before web/GitHub search.
+- If you use `gh search code`, expect rate limits; keep queries minimal and record “found/not found” in a short chat note.
+- When a `simp` recursion-depth failure shows up while doing glue work, treat it as a signal to add a named rewrite lemma.
 

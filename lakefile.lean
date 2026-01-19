@@ -1,9 +1,9 @@
 import Lake
 open Lake DSL
 
-package «covolume» {
+package «geometry_of_numbers» {
   -- Configure `lake lint` to run our project-owned checker.
-  lintDriver := "covolume_checks"
+  lintDriver := "gon_checks"
 }
 
 require mathlib from git
@@ -12,6 +12,16 @@ require mathlib from git
 @[default_target]
 lean_lib «Covolume» {
   -- add library configuration options here
+}
+
+/-!
+`GeometryOfNumbers` is the **public facade** namespace.
+
+Internally, most code still lives under `Covolume.*` (historical name), but new users should
+prefer `import GeometryOfNumbers` and the `GeometryOfNumbers.*` modules.
+-/
+lean_lib «GeometryOfNumbers» {
+  -- Facade: re-exports selected `Covolume` modules + curated API.
 }
 
 lean_lib «Experiments» {
@@ -42,6 +52,10 @@ lean_exe «status_report» {
   root := `Scripts.StatusReport
 }
 
-lean_exe «covolume_checks» {
+lean_exe «gon_checks» {
   root := `Scripts.Checkers
+}
+
+lean_exe «gon_precommit» {
+  root := `Scripts.PreCommit
 }

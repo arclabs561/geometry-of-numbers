@@ -41,7 +41,15 @@ The current implementation of `sum_three_squares_of_not_exception` follows the g
 
 ## Cauchy's Lemma (Covolume/Cauchy/Main.lean)
 
-The final stage of the project formalizes Cauchy's reduction of the general Fermat Polygonal Number Theorem to the sum of four s-gonal numbers, leveraging Legendre's Three-Square Theorem.
+The final stage of the project formalizes the **Cauchy/Nathanson reduction** in the sharper form:
+
+\[
+  \forall s \ge 5,\ \forall n,\ \exists x_1,x_2,x_3,x_4,r,\quad
+  n = \sum_{i=1}^4 P(s, x_i) + r,\qquad 0 \le r \le s-4.
+\]
+
+Then `r` is realized by padding with `r` copies of `P(s,1)=1` and `s-4-r` copies of `P(s,0)=0` to
+obtain exactly `s` terms.
 
 ## Project Status
 
