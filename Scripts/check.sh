@@ -51,24 +51,44 @@ case "$profile" in
     llm_on="${GON_LLM_REVIEW:-${COVOLUME_LLM_REVIEW:-1}}"
     if [[ "$llm_on" != "0" ]]; then
       echo "[check:pre-commit] llm-review (default on; set GON_LLM_REVIEW=0 to disable)"
-      if command -v uv >/dev/null 2>&1; then
-        set +e
-        # If strict, require an API key to be configured (so we don't silently skip).
-        req=()
-        strict="${GON_LLM_REVIEW_STRICT:-${COVOLUME_LLM_REVIEW_STRICT:-0}}"
+      set +e
+      # If strict, require an API key to be configured (so we don't silently skip).
+      req=()
+      strict="${GON_LLM_REVIEW_STRICT:-${COVOLUME_LLM_REVIEW_STRICT:-0}}"
+      if [[ "$strict" != "0" ]]; then
+        req+=(--require-key)
+      fi
+
+      # Project-agnostic LLM diff review lives in the helper repo `proofyloops` (Rust CLI).
+      pl_bin=""
+      if [[ -x "$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops" ]]; then
+        pl_bin="$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops"
+      elif [[ -f "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
+        pl_bin="cargo"
+      elif command -v proofyloops >/dev/null 2>&1; then
+        pl_bin="proofyloops"
+      fi
+
+      if [[ -z "$pl_bin" ]]; then
         if [[ "$strict" != "0" ]]; then
-          req+=(--require-key)
-        fi
-        # Project-agnostic LLM diff review lives in the helper repo `proofyloops`.
-        # Prefer a sibling checkout for fast local iteration; fall back to Git URL.
-        # If `--require-key` is not set, the tool prints a skip message and exits 0 when no provider is configured.
-        proofyloops_from=""
-        if [[ -f "$repo_root/../proofyloops/pyproject.toml" ]]; then
-          proofyloops_from="$repo_root/../proofyloops"
+          echo "[check:pre-commit] proofyloops not available (need ../proofyloops or proofyloops on PATH)" >&2
+          exit 1
         else
-          proofyloops_from="git+https://github.com/arclabs561/proofyloops"
+          echo "[check:pre-commit] proofyloops not available; skipping llm-review" >&2
+          set -e
+          # Skip (non-blocking). Keep going with the rest of the profile.
+          true
         fi
-        uvx --from "$proofyloops_from" proofyloops review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
+      fi
+
+      if [[ -n "$pl_bin" ]]; then
+        if [[ "$pl_bin" == "cargo" ]]; then
+          cargo run --manifest-path "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" --bin proofyloops -- \
+            review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
+        else
+          "$pl_bin" review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
+        fi
+
         rc=$?
         set -e
         if [[ $rc -ne 0 ]]; then
@@ -78,8 +98,6 @@ case "$profile" in
             echo "[check:pre-commit] llm-review failed (non-blocking); set GON_LLM_REVIEW_STRICT=1 to fail" >&2
           fi
         fi
-      else
-        echo "[check:pre-commit] uv not found; skipping llm-review" >&2
       fi
     fi
     ;;

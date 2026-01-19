@@ -60,20 +60,27 @@ if [[ "$fast" -eq 0 ]]; then
   )
 fi
 
-# Prefer `proofyloops lint-style` (project-agnostic wrapper), but keep a self-contained fallback
-# for environments where `uvx` isn't available (or proofyloops isn't reachable).
-if command -v uvx >/dev/null 2>&1; then
-  proofyloops_from=""
-  if [[ -f "$repo_root/../proofyloops/pyproject.toml" ]]; then
-    proofyloops_from="$repo_root/../proofyloops"
-  else
-    proofyloops_from="git+https://github.com/arclabs561/proofyloops"
-  fi
+# Prefer `proofyloops lint-style` (project-agnostic Rust CLI), but keep a self-contained fallback
+# for environments where proofyloops isn't available.
+pl_bin=""
+if [[ -x "$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops" ]]; then
+  pl_bin="$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops"
+elif [[ -f "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
+  pl_bin="cargo"
+elif command -v proofyloops >/dev/null 2>&1; then
+  pl_bin="proofyloops"
+fi
+
+if [[ -n "$pl_bin" ]]; then
   mod_args=()
   for m in "${modules[@]}"; do
     mod_args+=(--module "$m")
   done
-  exec uvx --from "$proofyloops_from" proofyloops lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
+  if [[ "$pl_bin" == "cargo" ]]; then
+    exec cargo run --manifest-path "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" --bin proofyloops -- \
+      lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
+  fi
+  exec "$pl_bin" lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
 fi
 
 exec "$LAKE" exe lint-style "${lint_args[@]+"${lint_args[@]}"}" "${modules[@]}"
