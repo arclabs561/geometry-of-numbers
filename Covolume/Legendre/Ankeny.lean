@@ -428,6 +428,15 @@ lemma exists_ankeny_prime (n : ℕ) (hn : n % 8 = 3) :
   have h2 : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hn_odd
   simpa using exists_prime_one_mod_four_and_eq_neg_inv n 2 hn_odd h2
 
+lemma exists_ankeny_prime_one_mod_eight (n : ℕ) (hn : n % 8 = 1) :
+    ∃ q : ℕ, Nat.Prime q ∧ q % 4 = 1 ∧ (q : ZMod n) = - (2 : ZMod n)⁻¹ := by
+  classical
+  have hn_odd : Odd n := by
+    have : n % 2 = 1 := by omega
+    exact Nat.odd_iff.2 this
+  have h2 : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hn_odd
+  simpa using exists_prime_one_mod_four_and_eq_neg_inv n 2 hn_odd h2
+
 /-- “Back half” of `exists_ankeny_b`: once you know `J(q | n) = 1`, build the congruence
 `b^2 ≡ -n [ZMOD 2q]`.
 
@@ -829,7 +838,7 @@ def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ := 2 * q * x^2 + y^2 + n * z^2
 
 /-- Any point in the Ankeny lattice satisfies `Q ≡ 0 (mod 2nq)`. -/
 lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ)
-    (hn : n % 8 = 3)
+    (hn_odd : Odd n)
     (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
     (hxy : x ≡ y [ZMOD n])
     (hybz : y ≡ b * z [ZMOD (2 * q)])
@@ -868,8 +877,7 @@ lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ)
     simpa [ankeny_Q, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using this
 
   -- Step 2: the mod-`n` part. This is where `hq_mod` is used to derive `2q ≡ -1 (mod n)`.
-  have hnodd : Odd n := Covolume.NumberTheory.odd_of_mod8_eq3 hn
-  have h2unit : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hnodd
+  have h2unit : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hn_odd
   have hqunit : IsUnit (q : ZMod n) := by
     have h2inv : IsUnit ((2 : ZMod n)⁻¹) := by
       -- `ZMod.isUnit_inv` is the correct lemma here (since `ZMod n` is not a division monoid).
@@ -879,7 +887,7 @@ lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ)
   have hnq : Nat.Coprime q n :=
     (ZMod.isUnit_iff_coprime q n).1 (by simpa using hqunit)
   have hncoprime : Nat.Coprime n (2 * q) := by
-    have hn2 : Nat.Coprime n 2 := (Nat.coprime_two_right.2 hnodd)
+    have hn2 : Nat.Coprime n 2 := (Nat.coprime_two_right.2 hn_odd)
     have hnq' : Nat.Coprime n q := (Nat.coprime_comm.1 hnq)
     simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using (hn2.mul_right hnq')
   have hmn : (n : ℤ).natAbs.Coprime (2 * q : ℤ).natAbs := by
@@ -939,7 +947,7 @@ lemma ankeny_Q_mod (n q : ℕ) (b : ℤ) (x y z : ℤ)
   simpa [hmul_nat] using hcrt
 
 /-- Minkowski application: there exists a representation `2qx² + y² + nz² = 2nq`. -/
-lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : Nat.Prime q)
+lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn_pos : 0 < n) (hn_odd : Odd n) (hq : Nat.Prime q)
     (_hq1 : q % 4 = 1) (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
     (hb : b^2 ≡ - (n : ℤ) [ZMOD (2 * q)]) :
     ∃ x y z : ℤ,
@@ -951,9 +959,6 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : 
   -- The Ankeny ellipsoid in `E3`, expressed via an L2-ball preimage.
   let ell (nR qR : ℝ) : Set E3 := ankenyEllipsoidL2 nR qR
 
-  have hn_pos : 0 < n := by
-    -- `n % 8 = 3` forces `n ≠ 0`.
-    omega
   have hq_pos : 0 < q := hq.pos
 
   have hnR : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn_pos
@@ -1054,7 +1059,7 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn : n % 8 = 3) (hq : 
 
   -- (a) Divisibility of `Q` by `2*n*q`.
   have hQmod : ankeny_Q n q x y z ≡ 0 [ZMOD (2 * n * q : ℤ)] := by
-    simpa using ankeny_Q_mod n q b x y z hn hq_mod hxy hybz hb
+    simpa using ankeny_Q_mod n q b x y z hn_odd hq_mod hxy hybz hb
   have hdivQ : (2 * n * q : ℤ) ∣ ankeny_Q n q x y z :=
     (Int.modEq_zero_iff_dvd).1 hQmod
 
@@ -1426,7 +1431,7 @@ This lemma is intentionally stated so its eventual proof can be developed (and t
 -/
 lemma ankeny_even_padicValNat_of_mem_primeFactors
     {n q K p : ℕ} {x y z b : ℤ}
-    (hn8 : n % 8 = 3)
+    (hn_odd : Odd n)
     (hq1 : q % 4 = 1)
     (hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
     (hq_prime : Nat.Prime q)
@@ -1540,9 +1545,8 @@ lemma ankeny_even_padicValNat_of_mem_primeFactors
       have hsf := (Nat.squarefree_iff_prime_squarefree).1 hn_sq p hp_nat
       exact hsf hp2_dvd_n
 
-    -- Step 3: use `hn8` to get `Odd n`, so `2` is a unit in `ZMod n` and
+    -- Step 3: use `Odd n`, so `2` is a unit in `ZMod n` and
     -- `hq_mod` really does mean `2*q = -1` in `ZMod n`. Then cast down to `ZMod p`.
-    have hn_odd : Odd n := Covolume.NumberTheory.odd_of_mod8_eq3 hn8
     have h2u_n : IsUnit (2 : ZMod n) := Covolume.NumberTheory.zmod_isUnit_two_of_odd n hn_odd
     have h2q_n : (2 : ZMod n) * (q : ZMod n) = (-1 : ZMod n) := by
       calc
@@ -1915,7 +1919,7 @@ to odd exponent.
 lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
     (h_ankeny : 2 * q * x^2 + y^2 + n * z^2 = 2 * n * q)
     (hq_prime : Nat.Prime q) (_hq1 : q % 4 = 1) (_hq_mod : (q : ZMod n) = - (2 : ZMod n)⁻¹)
-    (_hn : n % 8 = 3) (hn_sq : Squarefree n)
+    (hn_odd : Odd n) (hn_sq : Squarefree n)
     (b : ℤ)
     (hxy : x ≡ y [ZMOD (n : ℤ)]) (hybz : y ≡ b * z [ZMOD (2 * q : ℤ)]) :
     ∃ u v : ℤ, n = x^2 + u^2 + v^2 := by
@@ -1969,7 +1973,7 @@ lemma reduction_to_sum_three_squares (n q : ℕ) (x y z : ℤ)
       simpa using
         ankeny_even_padicValNat_of_mem_primeFactors (n := n) (q := q) (K := K) (p := p)
           (x := x) (y := y) (z := z) (b := b)
-          _hn _hq1 _hq_mod hq_prime hn_sq hK_eq (by
+          hn_odd _hq1 _hq_mod hq_prime hn_sq hK_eq (by
             -- Rewrite into the form expected by `ankeny_even_padicValNat_of_mem_primeFactors`.
             -- `h_eq : y^2 + n*z^2 = 2*q*(n - x^2)`
             simpa [hK_eq, mul_assoc, mul_left_comm, mul_comm] using congrArg (fun t : ℤ => t) h_eq)
@@ -1995,12 +1999,16 @@ theorem sum_three_squares_of_three_mod_eight (n : ℕ) (hn : n % 8 = 3) :
     ∃ x y z : ℕ, x^2 + y^2 + z^2 = n := by
   obtain ⟨s, m, hm_eq, hm_sq⟩ := exists_squarefree_part n
   have hm_mod : m % 8 = 3 := squarefree_part_mod_eight n s m hm_eq hn
+  have hm_odd : Odd m := by
+    have : m % 2 = 1 := by omega
+    exact Nat.odd_iff.2 this
+  have hm_pos : 0 < m := by omega
   obtain ⟨q, hqp, hq1, hq_mod⟩ := exists_ankeny_prime m hm_mod
   have : ∃ b : ℤ, b ^ 2 ≡ - (m : ℤ) [ZMOD (2 * q)] := exists_ankeny_b m q hm_mod hqp hq1 hq_mod
   obtain ⟨b, hb⟩ := this
-  obtain ⟨x, y, z, h_rep, h_nz, hxy, hybz⟩ := exists_ankeny_representation m q b hm_mod hqp hq1 hq_mod hb
+  obtain ⟨x, y, z, h_rep, h_nz, hxy, hybz⟩ := exists_ankeny_representation m q b hm_pos hm_odd hqp hq1 hq_mod hb
   obtain ⟨u, v, h_final⟩ :=
-    reduction_to_sum_three_squares m q x y z h_rep hqp hq1 hq_mod hm_mod hm_sq b hxy hybz
+    reduction_to_sum_three_squares m q x y z h_rep hqp hq1 hq_mod hm_odd hm_sq b hxy hybz
   use s * x.natAbs, s * u.natAbs, s * v.natAbs
   zify
   -- Keep this simp list minimal to avoid unused-simp-arg warnings.
@@ -2008,5 +2016,28 @@ theorem sum_three_squares_of_three_mod_eight (n : ℕ) (hn : n % 8 = 3) :
   have hm_eq_int : (n : ℤ) = s^2 * m := by exact_mod_cast hm_eq
   rw [← h_final, ← hm_eq_int]
   -- `ring` was previously here, but the goal is already closed after rewriting.
+
+/-- Variant of the Ankeny/Minkowski route for the residue class `n ≡ 1 (mod 8)`.
+
+This reuses the same lattice/ellipsoid setup (`2q` in the quadratic form) but swaps the Jacobi-symbol
+computation step (see `exists_ankeny_b_one_mod_eight`). -/
+theorem sum_three_squares_of_one_mod_eight (n : ℕ) (hn : n % 8 = 1) :
+    ∃ x y z : ℕ, x^2 + y^2 + z^2 = n := by
+  obtain ⟨s, m, hm_eq, hm_sq⟩ := exists_squarefree_part n
+  have hm_mod : m % 8 = 1 := _root_.Covolume.squarefree_part_mod_eight_one n s m hm_eq hn
+  have hm_odd : Odd m := by
+    have : m % 2 = 1 := by omega
+    exact Nat.odd_iff.2 this
+  have hm_pos : 0 < m := by omega
+  obtain ⟨q, hqp, hq1, hq_mod⟩ := exists_ankeny_prime_one_mod_eight m hm_mod
+  obtain ⟨b, hb⟩ := exists_ankeny_b_one_mod_eight m q hm_mod hqp hq1 hq_mod
+  obtain ⟨x, y, z, h_rep, h_nz, hxy, hybz⟩ := exists_ankeny_representation m q b hm_pos hm_odd hqp hq1 hq_mod hb
+  obtain ⟨u, v, h_final⟩ :=
+    reduction_to_sum_three_squares m q x y z h_rep hqp hq1 hq_mod hm_odd hm_sq b hxy hybz
+  use s * x.natAbs, s * u.natAbs, s * v.natAbs
+  zify
+  simp only [mul_pow, ← mul_add, sq_abs]
+  have hm_eq_int : (n : ℤ) = s^2 * m := by exact_mod_cast hm_eq
+  rw [← h_final, ← hm_eq_int]
 
 end Covolume

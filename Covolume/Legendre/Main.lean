@@ -220,8 +220,9 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
   obtain ⟨a, t, hn, _ht4, ht7⟩ := exists_four_pow_mul_reduced n hn0 h
   -- After peeling off powers of `4`, the remaining factor `t` satisfies `t % 8 ≠ 7`.
   --
-  -- We currently have a complete proof for the residue class `t % 8 = 3` via Ankeny.
-  -- The remaining reduced residue classes are `t % 8 ∈ {1,2,5,6}`; those are still TODO.
+  -- We currently have a complete proof for the residue classes `t % 8 = 3` and `t % 8 = 1`
+  -- via the Ankeny/Minkowski route. The remaining reduced residue classes are
+  -- `t % 8 ∈ {2,5,6}`; those are still TODO.
   by_cases ht3 : t % 8 = 3
   · have ht_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = t :=
       sum_three_squares_of_three_mod_eight t ht3
@@ -253,14 +254,9 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
     -- for the `3 mod 8` branch via Ankeny, and this is the next missing piece for the
     -- full Legendre theorem.
     have ht_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = t := by
-      -- TODO(legendre): handle the reduced residue classes `t % 8 ∈ {1,2,5,6}`.
-      --
-      -- Notes:
-      -- - `Covolume/Legendre/Ankeny.lean` already contains forward-looking lemmas for
-      --   choosing primes by Dirichlet in other residue branches (e.g. `n % 4 = 1`),
-      --   but the Minkowski/lattice layer is still specialized to the `3 mod 8` setup.
-      -- - A plausible next step is to generalize the lattice/Q-congruence layer so the
-      --   “Ankeny prime choice” can vary by residue class, matching the classical proof.
+      by_cases ht1 : t % 8 = 1
+      · exact sum_three_squares_of_one_mod_eight t ht1
+      -- TODO(legendre): handle the remaining reduced residue classes `t % 8 ∈ {2,5,6}`.
       sorry
     have hn_rep :
         ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = (2 ^ a) ^ 2 * t :=
