@@ -1,44 +1,43 @@
-# Geometry of Numbers (Lean)
+## Geometry of Numbers (Lean)
 
-Lean 4 code around a geometry-of-numbers route to:
+Lean 4 formalization around a geometry-of-numbers route to:
 
-- Legendre’s three-square theorem (via Ankeny 1957 + Minkowski)
-- Cauchy’s reduction for Fermat’s polygonal number theorem
+- **Legendre’s three-square theorem** (Ankeny 1957 + Minkowski)
+- **Cauchy’s reduction** for Fermat’s polygonal number theorem
 
-This library targets the Ankeny–Minkowski pipeline for Legendre's Three-Square Theorem and the Fermat/Cauchy Polygonal Number Theorem.
-At present it is a mix of proved lemmas and “scaffold” modules that typecheck but still contain `sorry`.
+This repo is a mix of proved lemmas and scaffolds that still contain `sorry`, but the whole project is expected to typecheck.
 
 Dual-licensed under MIT or Apache-2.0.
 
-```sh
-# Install Lean + lake (one-time). This repo is pinned by `lean-toolchain`.
-curl https://elan.lean-lang.org/elan-init.sh -sSf | sh
+### Quickstart
+
+Install Lean (one-time; pinned by `lean-toolchain`):
+
+```bash
+curl -sSf https://elan.lean-lang.org/elan-init.sh | sh
 ```
 
-```
+Build and run local checks:
+
+```bash
 lake build
-lake exe status_report
-lake exe lint-style
-lake exe gon_precommit
-./Scripts/install_git_hooks.sh
 ./Scripts/check.sh pre-commit
+./Scripts/check.sh pre-push
 ```
 
-## Two formulas we use a lot
+### Two formulas
 
-Three-square “exception” numbers have the form
+Three-square “exception” numbers have the form:
 
-$$
+\[
 n = 4^a(8k+7).
-$$
+\]
 
-Ankeny’s geometric descent is organized around the ternary quadratic form
+Ankeny’s descent is organized around the ternary quadratic form:
 
-$$
-Q(x,y,z) = 2qx^2 + y^2 + nz^2,
-$$
-
-and a Minkowski step on a suitable ellipsoid for a lattice of covolume $2nq$.
+\[
+Q(x,y,z) = 2qx^2 + y^2 + nz^2.
+\]
 
 ## What’s here (roughly)
 
@@ -48,6 +47,15 @@ and a Minkowski step on a suitable ellipsoid for a lattice of covolume $2nq$.
 - `Covolume/Cauchy/`: the polygonal-number reduction (currently scaffolded)
 - `Covolume/Computable/LLL.lean`: LLL scaffold; see also `Experiments/LLLRational.lean`
 - `Experiments/`: small probes and scratch files; these are allowed to use `sorry` but must compile
+
+### Tooling
+
+`./Scripts/check.sh pre-commit` runs `lake exe gon_checks` + lint-style. If a sibling checkout of `../proofloops`
+exists, it also runs a bounded “review-diff” step via the Rust helper CLI (non-blocking unless strict).
+
+Controls:
+- `GON_LLM_REVIEW=0` disables the review step
+- `GON_LLM_REVIEW_STRICT=1` makes “no reviewer available” / “review failed” fail the check
 
 ## Structure
 
