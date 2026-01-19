@@ -199,6 +199,25 @@ and the two inequalities needed to apply Cauchy’s lemma with \(a = 2q+b\):
 \]
 
 This is the “interval + residue class” step in the streamlined proof (e.g. Whitty’s talk notes). -/
+/-
+NOTE: This is a regular block comment (not a doc comment), because the preceding `/-- ... -/`
+is a docstring intended to attach to `nathanson_parameters`.
+
+The eventual proofs of `nathanson_parameters` / `cauchy_lemma` are arithmetic-heavy. A recurring
+source of friction is rewriting between `ℕ` and `ℤ` inequalities. We keep a couple of small,
+local lemmas here so the main proof skeleton can stay readable.
+-/
+
+lemma int_sq_lt_int_ofNat_mul {b q : ℕ} :
+    ((b : ℤ) ^ 2 < 4 * ((2 * q + b : ℕ) : ℤ)) ↔ b ^ 2 < 4 * (2 * q + b) := by
+  -- Both sides are comparisons of nonnegative integers; `norm_cast` can bridge them.
+  norm_cast
+
+lemma int_three_mul_ofNat_lt_int_poly {b q : ℕ} :
+    (3 * ((2 * q + b : ℕ) : ℤ) < (b : ℤ) ^ 2 + 2 * (b : ℤ) + 4) ↔
+      3 * (2 * q + b) < b ^ 2 + 2 * b + 4 := by
+  norm_cast
+
 lemma nathanson_parameters (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
     ∃ b q r : ℕ,
       r ≤ s - 4 ∧ Odd b ∧
