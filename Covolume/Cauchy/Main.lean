@@ -218,7 +218,7 @@ lemma int_three_mul_ofNat_lt_int_poly {b q : ℕ} :
       3 * (2 * q + b) < b ^ 2 + 2 * b + 4 := by
   norm_cast
 
-lemma nathanson_parameters (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
+lemma nathanson_parameters (s : ℕ) (hs : 5 ≤ s) (n : ℕ) (hn : 0 < n) :
     ∃ b q r : ℕ,
       r ≤ s - 4 ∧ Odd b ∧
         ((b : ℤ) ^ 2 < 4 * ((2 * q + b : ℕ) : ℤ)) ∧
@@ -254,6 +254,11 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
       r ≤ s - 4 ∧ polygonal s t + polygonal s u + polygonal s v + polygonal s w + r = n := by
   classical
   have hs3 : 3 ≤ s := le_trans (by decide : (3 : ℕ) ≤ 5) hs
+  by_cases hn0 : n = 0
+  · subst hn0
+    refine ⟨0, 0, 0, 0, 0, ?_, ?_⟩
+    · simpa using (Nat.zero_le (s - 4))
+    · simp
 
   /-
   ### Cauchy/Nathanson proof skeleton (leaves only two hard lemmas)
@@ -274,7 +279,8 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
   Everything after that is **pure algebra** via `cauchy_polygonal_identity`.
   -/
 
-  rcases nathanson_parameters s hs n with ⟨b, q, r, hr, hb_odd, hb2_lt, h3a_lt, hn⟩
+  have hn_pos : 0 < n := Nat.pos_of_ne_zero hn0
+  rcases nathanson_parameters s hs n hn_pos with ⟨b, q, r, hr, hb_odd, hb2_lt, h3a_lt, hn⟩
   let a : ℕ := 2 * q + b
   have ha_odd : Odd a := by
     -- `2*q` is even, so `Odd b` ⇒ `Odd (2*q + b)`.
