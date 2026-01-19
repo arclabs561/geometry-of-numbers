@@ -59,8 +59,16 @@ case "$profile" in
         if [[ "$strict" != "0" ]]; then
           req+=(--require-key)
         fi
-        # Single default behavior lives inside `Scripts/llm_review.py` (high timeout, best model).
-        uv run Scripts/llm_review.py "${req[@]+"${req[@]}"}"
+        # Project-agnostic LLM diff review lives in the helper repo `proofyloops`.
+        # Prefer a sibling checkout for fast local iteration; fall back to Git URL.
+        # If `--require-key` is not set, the tool prints a skip message and exits 0 when no provider is configured.
+        proofyloops_from=""
+        if [[ -f "$repo_root/../proofyloops/pyproject.toml" ]]; then
+          proofyloops_from="$repo_root/../proofyloops"
+        else
+          proofyloops_from="git+https://github.com/arclabs561/proofyloops"
+        fi
+        uvx --from "$proofyloops_from" proofyloops review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}"
         rc=$?
         set -e
         if [[ $rc -ne 0 ]]; then

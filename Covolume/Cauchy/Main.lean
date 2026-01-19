@@ -25,12 +25,12 @@ lemma exists_odd_in_interval {L U : ℝ} (hLU : L + 2 < U) :
   let b0 : ℤ := Int.floor L + 1
   have hL_b0 : L < (b0 : ℝ) := by
     -- `L < ⌊L⌋ + 1`
-    simpa [b0, Int.cast_add, Int.cast_one] using (Int.lt_floor_add_one L)
+    simp [b0, Int.cast_add, Int.cast_one]
   have hfloor_le : (Int.floor L : ℝ) ≤ L := Int.floor_le L
   have hb0_le : (b0 : ℝ) ≤ L + 1 := by
     -- `⌊L⌋ + 1 ≤ L + 1`
     have : (Int.floor L : ℝ) + 1 ≤ L + 1 := by linarith
-    simpa [b0, Int.cast_add, Int.cast_one, add_assoc, add_comm, add_left_comm] using this
+    simpa [b0, Int.cast_add, Int.cast_one, add_comm, add_left_comm] using this
   have hL1U : L + 1 < U := by linarith
   have hb0_U : (b0 : ℝ) < U := lt_of_le_of_lt hb0_le hL1U
 
@@ -46,7 +46,7 @@ lemma exists_odd_in_interval {L U : ℝ} (hLU : L + 2 < U) :
         -- `Even (b0 + 1) ↔ (Odd b0 ↔ Odd 1)` by `Int.even_add'`.
         -- Since `Odd 1`, this simplifies to `Even (b0 + 1) ↔ Odd b0`.
         have : Even (b0 + 1) ↔ Odd b0 := by
-          simpa [Int.even_add', (show Odd (1 : ℤ) by decide)]
+          simp
         exact this.mp hb_even
       exact (Int.not_odd_iff_even.2 hb0_even) hb0_odd'
 
@@ -62,7 +62,7 @@ lemma exists_odd_in_interval {L U : ℝ} (hLU : L + 2 < U) :
       have : (Int.floor L : ℝ) + 2 ≤ L + 2 := by linarith
       -- rewrite `b` as `⌊L⌋ + 2`
       have hb : (b : ℝ) = (Int.floor L : ℝ) + 2 := by
-        simp [b, b0, Int.cast_add, Int.cast_one, add_assoc, add_left_comm, add_comm]
+        simp [b, b0, Int.cast_add, add_left_comm, add_comm]
       simpa [hb]
     have hb_U : (b : ℝ) < U := lt_of_le_of_lt hb_le hLU
     exact ⟨b, hb_odd, hL_b, hb_U⟩
@@ -78,7 +78,7 @@ theorem gauss_triangular (n : ℕ) :
 
   have hmod4 :
       ((x : ZMod 4) ^ 2 + (y : ZMod 4) ^ 2 + (z : ZMod 4) ^ 2) = (3 : ZMod 4) := by
-    have hcast : ((x ^ 2 + y ^ 2 + z ^ 2 : ℕ) : ZMod 4) = (m : ZMod 4) := by simpa [hxyz]
+    have hcast : ((x ^ 2 + y ^ 2 + z ^ 2 : ℕ) : ZMod 4) = (m : ZMod 4) := by simp [hxyz]
     simpa [m, pow_two, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using hcast
 
   -- Finite check in `ZMod 4`: if a sum of three squares is `3`, then each square is `1`.
@@ -98,7 +98,7 @@ theorem gauss_triangular (n : ℕ) :
     · rcases hx_even with ⟨k, rfl⟩
       have h22 : ((2 : ZMod 4) * (2 : ZMod 4)) = 0 := by decide
       have h0' : ((2 * k : ℕ) : ZMod 4) ^ 2 = 0 := by
-        simp [pow_two, mul_left_comm, mul_comm, mul_assoc, h22]
+        simp [pow_two, mul_left_comm, mul_comm, h22]
       have h0 : ((k + k : ℕ) : ZMod 4) ^ 2 = 0 := by
         simpa [two_mul] using h0'
       have h1 : ((k + k : ℕ) : ZMod 4) ^ 2 = 1 := by
@@ -115,7 +115,7 @@ theorem gauss_triangular (n : ℕ) :
     · rcases hy_even with ⟨k, rfl⟩
       have h22 : ((2 : ZMod 4) * (2 : ZMod 4)) = 0 := by decide
       have h0' : ((2 * k : ℕ) : ZMod 4) ^ 2 = 0 := by
-        simp [pow_two, mul_left_comm, mul_comm, mul_assoc, h22]
+        simp [pow_two, mul_left_comm, mul_comm, h22]
       have h0 : ((k + k : ℕ) : ZMod 4) ^ 2 = 0 := by
         simpa [two_mul] using h0'
       have h1 : ((k + k : ℕ) : ZMod 4) ^ 2 = 1 := by
@@ -132,7 +132,7 @@ theorem gauss_triangular (n : ℕ) :
     · rcases hz_even with ⟨k, rfl⟩
       have h22 : ((2 : ZMod 4) * (2 : ZMod 4)) = 0 := by decide
       have h0' : ((2 * k : ℕ) : ZMod 4) ^ 2 = 0 := by
-        simp [pow_two, mul_left_comm, mul_comm, mul_assoc, h22]
+        simp [pow_two, mul_left_comm, mul_comm, h22]
       have h0 : ((k + k : ℕ) : ZMod 4) ^ 2 = 0 := by
         simpa [two_mul] using h0'
       have h1 : ((k + k : ℕ) : ZMod 4) ^ 2 = 1 := by
@@ -259,7 +259,7 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
   let a : ℕ := 2 * q + b
   have ha_odd : Odd a := by
     -- `2*q` is even, so `Odd b` ⇒ `Odd (2*q + b)`.
-    have heven : Even (2 * q) := ⟨q, by simp [two_mul, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]⟩
+    have heven : Even (2 * q) := ⟨q, by simp [two_mul]⟩
     simpa [a, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using hb_odd.add_even heven
 
   rcases cauchy_lemma a b ha_odd hb_odd (by simpa [a] using hb2_lt) (by simpa [a] using h3a_lt) with
@@ -312,12 +312,12 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
         (2 * (polygonal s x1 + polygonal s x2 + polygonal s x3 + polygonal s x4) : ℤ)
             = ((s : ℤ) - 2) * (a : ℤ) + ((2 : ℤ) - ((s : ℤ) - 2)) * (b : ℤ) := this
         _ = ((s : ℤ) - 2) * ((2 * q + b : ℕ) : ℤ) + ((4 : ℤ) - s) * (b : ℤ) := by
-              simp [haZ, sub_eq_add_neg, add_assoc, add_left_comm, add_comm]
+              simp [haZ, sub_eq_add_neg, add_left_comm, add_comm]
         _ = (2 * ((s - 2) * q + b) : ℤ) := by
               -- Close with ring arithmetic in ℤ, after expanding `Nat.cast_add/mul`.
               -- (Otherwise `ring_nf` tends to get stuck on terms like `↑(2*q+b)`.)
-              simp [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_one, Nat.cast_two,
-                sub_eq_add_neg, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm]
+              simp [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat,
+                sub_eq_add_neg, add_comm, mul_comm]
               ring_nf
     -- Convert the ℤ identity into an `Int.ofNat` identity, then use injectivity.
     -- (Our `simp` steps tend to normalize `((2 * n : ℕ) : ℤ)` into `2 * (n : ℤ)`,
@@ -330,8 +330,7 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
       have hs_sub : ((s - 2 : ℕ) : ℤ) = (s : ℤ) - 2 := Int.ofNat_sub hs2
       have hQZ : ((Q : ℕ) : ℤ) = ((s : ℤ) - 2) * (q : ℤ) + (b : ℤ) := by
         -- `Q = (s-2)*q + b`
-        simp [Q, Nat.cast_add, Nat.cast_mul, hs_sub, sub_eq_add_neg, add_assoc, add_left_comm, add_comm,
-          mul_assoc, mul_left_comm, mul_comm]
+        simp [Q, Nat.cast_add, Nat.cast_mul, hs_sub, sub_eq_add_neg, add_comm, mul_comm]
       have hPZ : ((P : ℕ) : ℤ) = (polygonal s x1 : ℤ) + (polygonal s x2 : ℤ) +
             (polygonal s x3 : ℤ) + (polygonal s x4 : ℤ) := by
         simp [P, Nat.cast_add, add_assoc, add_left_comm, add_comm]
@@ -340,12 +339,12 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
         ((2 * P : ℕ) : ℤ) = 2 * ((P : ℕ) : ℤ) := by
             simp [Nat.cast_mul]
         _ = 2 * ((polygonal s x1 : ℤ) + (polygonal s x2 : ℤ) + (polygonal s x3 : ℤ) + (polygonal s x4 : ℤ)) := by
-            simp [hPZ, add_assoc, add_left_comm, add_comm]
+            simp [hPZ, add_assoc]
         _ = 2 * (((s : ℤ) - 2) * (q : ℤ) + (b : ℤ)) := by
             simpa [P, Q, Nat.cast_add, Nat.cast_mul, sub_eq_add_neg, add_assoc, add_left_comm, add_comm,
               mul_assoc, mul_left_comm, mul_comm] using h2
         _ = 2 * ((Q : ℕ) : ℤ) := by
-            simp [hQZ, add_assoc, add_left_comm, add_comm]
+            simp [hQZ, add_comm]
         _ = ((2 * Q : ℕ) : ℤ) := by
             simp [Nat.cast_mul]
 
@@ -458,7 +457,7 @@ theorem fermat_polygonal_ge5_of_cauchy_decomposition
   have hsum :
       (∑ i : Fin (4 + r + k), polygonal (4 + r + k) (terms i))
         = (∑ i : Fin (4 + r), polygonal (4 + r + k) (terms (Fin.castAdd k i))) := by
-    simpa [Fin.sum_univ_add, htrunc]
+    simp [Fin.sum_univ_add, htrunc]
 
   -- On `Fin.castAdd`, we are always in the “first `4+r`” region, so the last `if` is false.
   have hterms_cast :
@@ -466,10 +465,10 @@ theorem fermat_polygonal_ge5_of_cauchy_decomposition
         if h0 : (i : ℕ) < 4 then first4 ⟨(i : ℕ), h0⟩ else 1 := by
     intro i
     have hi : ((Fin.castAdd k i : Fin (4 + r + k)) : ℕ) < 4 + r := by
-      simpa [Fin.castAdd] using i.isLt
+      simp [Fin.castAdd]
     by_cases h0 : (i : ℕ) < 4
-    · simp [terms, h0, hi]
-    · simp [terms, h0, hi]
+    · simp [terms, h0]
+    · simp [terms, h0]
 
   -- Split the remaining `Fin (4+r)` sum into the first 4 terms and the next `r` terms.
   have hsum4r :
@@ -490,13 +489,13 @@ theorem fermat_polygonal_ge5_of_cauchy_decomposition
         ∀ j : Fin r, terms (Fin.castAdd k (Fin.natAdd 4 j)) = 1 := by
       intro j
       have hj0 : ¬ ((Fin.natAdd 4 j : Fin (4 + r)) : ℕ) < 4 := by
-        simpa [Fin.natAdd, Nat.not_lt] using (Nat.le_add_right 4 (j : ℕ))
+        simp [Fin.natAdd]
       have hj1 : ((Fin.natAdd 4 j : Fin (4 + r)) : ℕ) < 4 + r := by
-        simpa [Fin.natAdd, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using (Fin.natAdd_lt.2 j.isLt)
+        simp [Fin.natAdd, Nat.add_comm]
       -- `hj1` is automatic, but we keep it explicit.
-      simp [terms, hj0, hj1]
+      simp [terms]
     -- Put the split together.
-    simpa [Fin.sum_univ_add, hfirst, hones, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+    simp [Fin.sum_univ_add, hfirst, hones, Nat.add_left_comm, Nat.add_comm]
 
   -- Put it together.
   calc
@@ -507,7 +506,7 @@ theorem fermat_polygonal_ge5_of_cauchy_decomposition
     _ = (polygonal (4 + r + k) t + polygonal (4 + r + k) u + polygonal (4 + r + k) v + polygonal (4 + r + k) w)
           + r := by
           -- Expand the `Fin 4` sum and compute the `Fin r` sum using `polygonal_one`.
-          simp [first4, Fin.sum_univ_four, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm]
+          simp [first4, Fin.sum_univ_four, Nat.add_left_comm, Nat.add_comm]
     _ = n := by
           -- `htuvw : polygonal s t + ... + polygonal s w + r = n` (with `s = 4+r+k`).
           simpa [Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using htuvw
