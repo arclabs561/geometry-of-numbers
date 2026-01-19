@@ -164,6 +164,26 @@ case "$profile" in
 
         rc=$?
         set -e
+        if [[ -f "$out_json" ]] && command -v jq >/dev/null 2>&1; then
+          echo "[check:pre-commit] llm-review summary"
+          if jq -e '.skipped == true' "$out_json" >/dev/null 2>&1; then
+            jq -r '"skipped=true\nreason=" + (.reason // "unknown")' "$out_json"
+          else
+            jq -r '"provider=" + (.provider // "unknown") + "\nmodel=" + (.model // "unknown")' "$out_json"
+            # Prefer structured output when available.
+            if jq -e '.review_struct != null' "$out_json" >/dev/null 2>&1; then
+              jq -r '"overall_score=" + (.review_struct.overall.score|tostring) + "\nverdict=" + (.review_struct.overall.verdict // "unknown") + "\nsummary=" + (.review_struct.overall.summary // "")' "$out_json"
+              echo "axes:"
+              jq -r '.review_struct.axes[0:6][]? | "- " + .name + " score=" + (.score|tostring) + " — " + (.summary // "")' "$out_json"
+              echo "top_issues:"
+              jq -r '.review_struct.top_issues[0:5][]? | "- [" + .severity + "] " + .title + (if (.files|length)>0 then " (" + (.files|join(", ")) + ")" else "" end)' "$out_json"
+              echo "quick_wins:"
+              jq -r '.review_struct.quick_wins[0:5][]? | "- " + .' "$out_json"
+            else
+              echo "review_text: see $out_json"
+            fi
+          fi
+        fi
         if [[ $rc -ne 0 ]]; then
           if [[ "$strict" != "0" ]]; then
             exit "$rc"
