@@ -61,7 +61,10 @@ case "$profile" in
 
       # Project-agnostic LLM diff review lives in the helper repo `proofyloops` (Rust CLI).
       pl_bin=""
-      if [[ -x "$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops" ]]; then
+      if [[ -x "$repo_root/../proofyloops/target/release/proofyloops" ]]; then
+        pl_bin="$repo_root/../proofyloops/target/release/proofyloops"
+      elif [[ -x "$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops" ]]; then
+        # Legacy path (pre-workspace); keep for safety.
         pl_bin="$repo_root/../proofyloops/proofyloops-core/target/release/proofyloops"
       elif [[ -f "$repo_root/../proofyloops/proofyloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
         pl_bin="cargo"
