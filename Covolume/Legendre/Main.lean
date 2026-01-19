@@ -34,13 +34,13 @@ private lemma zmod4_sq_eq_one_of_odd (x : ℕ) (hx : Odd x) : ((x : ZMod 4) ^ 2)
     simp [Nat.cast_add, Nat.cast_mul]
   calc
     (((2 * m + 1 : ℕ) : ZMod 4) ^ 2)
-        = ((2 * (m : ZMod 4) + 1) ^ 2) := by simpa [hcast]
+        = ((2 * (m : ZMod 4) + 1) ^ 2) := by simp [hcast]
     _ = (4 : ZMod 4) * (m : ZMod 4) * ((m : ZMod 4) + 1) + 1 := by ring
     _ = 1 := by
           -- `4 = 0` in `ZMod 4`.
           have h4 : (4 : ZMod 4) = 0 := by
             simpa using (ZMod.natCast_self 4)
-          simpa [h4]
+          simp [h4]
 
 private lemma zmod4_one_add_sq_add_sq_ne0 : ∀ y z : ZMod 4, (1 + y ^ 2 + z ^ 2) ≠ 0 := by
   decide
@@ -104,8 +104,8 @@ private lemma descend_four {x y z m : ℕ}
     calc
       4 * (x' ^ 2 + y' ^ 2 + z' ^ 2)
           = (x' + x') ^ 2 + (y' + y') ^ 2 + (z' + z') ^ 2 := by
-                simpa [hfactor] using hfactor.symm
-      _ = 4 * m := by simpa using h
+                exact hfactor.symm
+      _ = 4 * m := by exact h
   have hcancel : x' ^ 2 + y' ^ 2 + z' ^ 2 = m :=
     Nat.mul_left_cancel (show 0 < 4 from by decide) hmul
   exact ⟨x', y', z', hcancel⟩
