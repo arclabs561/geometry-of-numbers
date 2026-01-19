@@ -60,5 +60,21 @@ if [[ "$fast" -eq 0 ]]; then
   )
 fi
 
+# Prefer `proofyloops lint-style` (project-agnostic wrapper), but keep a self-contained fallback
+# for environments where `uvx` isn't available (or proofyloops isn't reachable).
+if command -v uvx >/dev/null 2>&1; then
+  proofyloops_from=""
+  if [[ -f "$repo_root/../proofyloops/pyproject.toml" ]]; then
+    proofyloops_from="$repo_root/../proofyloops"
+  else
+    proofyloops_from="git+https://github.com/arclabs561/proofyloops"
+  fi
+  mod_args=()
+  for m in "${modules[@]}"; do
+    mod_args+=(--module "$m")
+  done
+  exec uvx --from "$proofyloops_from" proofyloops lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
+fi
+
 exec "$LAKE" exe lint-style "${lint_args[@]+"${lint_args[@]}"}" "${modules[@]}"
 
