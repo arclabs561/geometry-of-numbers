@@ -213,13 +213,20 @@ case "$profile" in
       "Covolume/Cauchy/Main.lean"
     )
 
+    report_json="tmp/proofloops/report.json"
+    echo "[check:report] report json -> $report_json"
     if [[ "$pl_bin" == "cargo" ]]; then
       cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
         report --repo "$repo_root" --files "${files[@]}" --timeout-s 120 --max-sorries 50 --context-lines 2 \
-        --output-html "$out_html"
+        --output-html "$out_html" > "$report_json"
     else
       "$pl_bin" report --repo "$repo_root" --files "${files[@]}" --timeout-s 120 --max-sorries 50 --context-lines 2 \
-        --output-html "$out_html"
+        --output-html "$out_html" > "$report_json"
+    fi
+
+    if command -v jq >/dev/null 2>&1; then
+      echo "[check:report] frontier summary"
+      jq -r '"next_actions=" + (.next_actions|length|tostring) + " files=" + (.table|length|tostring)' "$report_json"
     fi
 
     # Optional: ingest raw web-search JSON blobs into a small deduped notes file.
@@ -251,6 +258,16 @@ case "$profile" in
           tmp/proofloops/research/research-notes.json
         jq -r '.sources[0:10][] | "- " + .url + " (" + (.origin // "unknown") + ")"' \
           tmp/proofloops/research/research-notes.json
+
+        echo "[check:report] attach research -> tmp/proofloops/report.enriched.json"
+        if [[ "$pl_bin" == "cargo" ]]; then
+          cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+            research-attach --report-json "$report_json" --research-notes "tmp/proofloops/research/research-notes.json" \
+            --top-k 3 --output-json "tmp/proofloops/report.enriched.json"
+        else
+          "$pl_bin" research-attach --report-json "$report_json" --research-notes "tmp/proofloops/research/research-notes.json" \
+            --top-k 3 --output-json "tmp/proofloops/report.enriched.json"
+        fi
       else
         echo "[check:report] jq not found; skipping research-notes summary" >&2
       fi
