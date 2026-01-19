@@ -24,6 +24,10 @@ lemma odd_of_mod8_eq3 {n : ℕ} (hn : n % 8 = 3) : Odd n := by
   have : n % 2 = 1 := by omega
   exact Nat.odd_iff.2 this
 
+lemma odd_of_mod8_eq1 {n : ℕ} (hn : n % 8 = 1) : Odd n := by
+  have : n % 2 = 1 := by omega
+  exact Nat.odd_iff.2 this
+
 /-! ## `ZMod` unit/coprime helpers -/
 
 lemma zmod_isUnit_two_of_odd (n : ℕ) (hn : Odd n) : IsUnit (2 : ZMod n) := by
@@ -31,6 +35,9 @@ lemma zmod_isUnit_two_of_odd (n : ℕ) (hn : Odd n) : IsUnit (2 : ZMod n) := by
 
 lemma zmod_isUnit_two_of_mod8_eq3 (n : ℕ) (hn : n % 8 = 3) : IsUnit (2 : ZMod n) :=
   zmod_isUnit_two_of_odd n (odd_of_mod8_eq3 hn)
+
+lemma zmod_isUnit_two_of_mod8_eq1 (n : ℕ) (hn : n % 8 = 1) : IsUnit (2 : ZMod n) :=
+  zmod_isUnit_two_of_odd n (odd_of_mod8_eq1 hn)
 
 /-- Cast bridge used repeatedly in the Ankeny pipeline:
 
