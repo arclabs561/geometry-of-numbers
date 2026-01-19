@@ -202,7 +202,7 @@ theorem not_exception_of_sum_three_squares (n : ℕ) (h : ∃ x y z : ℕ, x ^ 2
   -- descend `4^a` to get a representation of `8*k+7`
   have hdesc : ∃ x' y' z' : ℕ, x' ^ 2 + y' ^ 2 + z' ^ 2 = 8 * k + 7 := by
     refine descend_four_pow (a := a) (x := x) (y := y) (z := z) (t := 8 * k + 7) ?_
-    simpa [hn, hxyz, mul_assoc, mul_left_comm, mul_comm]
+    simp [hn, hxyz]
   rcases hdesc with ⟨x', y', z', h'⟩
   -- reduce mod 8 and contradict the finite check in `ZMod 8`
   have hcast := congrArg (fun n : ℕ => (n : ZMod 8)) h'
@@ -241,7 +241,7 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
         _ = 4 ^ a := by simp [pow_two]
     calc
       x ^ 2 + y ^ 2 + z ^ 2 = (2 ^ a) ^ 2 * t := hxyz
-      _ = 4 ^ a * t := by simpa [hpow]
+      _ = 4 ^ a * t := by simp [hpow]
       _ = n := hn.symm
   ·
     -- Now `t % 8 ≠ 3`. At this point we are in the “reduced” situation:
@@ -271,7 +271,7 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
         _ = 4 ^ a := by simp [pow_two]
     calc
       x ^ 2 + y ^ 2 + z ^ 2 = (2 ^ a) ^ 2 * t := hxyz
-      _ = 4 ^ a * t := by simpa [hpow]
+      _ = 4 ^ a * t := by simp [hpow]
       _ = n := hn.symm
 
 end Covolume
