@@ -46,6 +46,17 @@ case "$profile" in
   pre-commit)
     echo "[check:pre-commit] gon_checks"
     "$LAKE" exe gon_checks
+    # A small compilation smoke test: catch obvious breakage early without rebuilding everything.
+    #
+    # This is intentionally narrower than `lake build` (which is reserved for pre-push).
+    # Opt out with `GON_PRECOMMIT_BUILD=0` if you need a very fast inner loop.
+    precommit_build="${GON_PRECOMMIT_BUILD:-1}"
+    if [[ "$precommit_build" != "0" ]]; then
+      echo "[check:pre-commit] lake build (smoke: key entrypoints)"
+      "$LAKE" build GeometryOfNumbers Covolume.Legendre.Main Covolume.Cauchy.Main
+    else
+      echo "[check:pre-commit] lake build skipped (GON_PRECOMMIT_BUILD=0)" >&2
+    fi
     echo "[check:pre-commit] lint-style (fast)"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}" --fast
     llm_on="${GON_LLM_REVIEW:-${COVOLUME_LLM_REVIEW:-1}}"
@@ -147,7 +158,14 @@ case "$profile" in
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}"
     ;;
   ci)
-    # CI already runs `lean-action` + docgen; we keep this as a small, explicit check step.
+    # CI entrypoint: aim for “likely to pass CI”.
+    #
+    # In GitHub Actions, `lean-action` does the heavy setup, but we still want the same checks
+    # to be runnable locally with a single command.
+    echo "[check:ci] lake build"
+    "$LAKE" build
+    echo "[check:ci] lake lint"
+    "$LAKE" lint
     echo "[check:ci] lint-style"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}"
     ;;
