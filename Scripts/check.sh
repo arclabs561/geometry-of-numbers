@@ -222,6 +222,42 @@ case "$profile" in
         --output-html "$out_html"
     fi
 
+    # Optional: ingest raw web-search JSON blobs into a small deduped notes file.
+    #
+    # Workflow:
+    # - Put any MCP tool outputs you care about into:
+    #     tmp/proofloops/research/raw.json
+    # - Then run:
+    #     ./Scripts/check.sh report
+    # - This will emit:
+    #     tmp/proofloops/research/research-notes.json
+    #
+    # This keeps `proofloops` pure (it does not execute MCP calls), while making it easy to
+    # fold external search results back into the local proof loop.
+    raw_research="${GON_RESEARCH_RAW_JSON:-tmp/proofloops/research/raw.json}"
+    if [[ -f "$raw_research" ]]; then
+      echo "[check:report] research-ingest -> tmp/proofloops/research/research-notes.json"
+      mkdir -p tmp/proofloops/research
+      if [[ "$pl_bin" == "cargo" ]]; then
+        cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+          research-ingest --input "$raw_research" --output-json "tmp/proofloops/research/research-notes.json"
+      else
+        "$pl_bin" research-ingest --input "$raw_research" --output-json "tmp/proofloops/research/research-notes.json"
+      fi
+
+      if command -v jq >/dev/null 2>&1; then
+        echo "[check:report] research summary"
+        jq -r '"raw_urls=" + (.raw_urls|tostring) + " deduped_urls=" + (.deduped_urls|tostring)' \
+          tmp/proofloops/research/research-notes.json
+        jq -r '.sources[0:10][] | "- " + .url + " (" + (.origin // "unknown") + ")"' \
+          tmp/proofloops/research/research-notes.json
+      else
+        echo "[check:report] jq not found; skipping research-notes summary" >&2
+      fi
+    else
+      echo "[check:report] no research JSON found at $raw_research (skipping)"
+    fi
+
     # Also write “rubberduck” planning prompts as JSON for the main blockers.
     # (These are inputs to an agent/human loop, not proofs.)
     out_dir="$(dirname "$out_html")"
