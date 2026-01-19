@@ -1,0 +1,18 @@
+name = "docbuild"
+version = "0.1.0"
+reservoir = false
+
+# Reuse the parent project's dependency downloads.
+packagesDir = "../.lake/packages"
+
+[[require]]
+# This is the *package* name from the parent `lakefile.lean`.
+name = "geometry_of_numbers"
+path = "../"
+
+[[require]]
+scope = "leanprover"
+name = "doc-gen4"
+# NOTE: pinned later if needed for toolchain compatibility.
+rev = "main"
+
