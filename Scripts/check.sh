@@ -149,6 +149,91 @@ case "$profile" in
       fi
     fi
     ;;
+  report)
+    # Human-facing status snapshot (HTML artifact under tmp/).
+    #
+    # This is intentionally not part of CI: it writes a local artifact and is primarily for
+    # interactive iteration.
+    out_html="${GON_REPORT_HTML:-tmp/proofloops/status.html}"
+    mkdir -p "$(dirname "$out_html")"
+
+    echo "[check:report] building status report -> $out_html"
+
+    # Prefer a sibling checkout (../proofloops). Fall back to PATH; last resort is `cargo run`.
+    pl_bin=""
+    pl_root=""
+    if [[ -d "$repo_root/../proofloops" ]]; then
+      pl_root="$repo_root/../proofloops"
+    fi
+
+    if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
+      pl_bin="$pl_root/target/release/proofloops"
+    elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
+      pl_bin="$pl_root/target/debug/proofloops"
+    elif command -v proofloops >/dev/null 2>&1; then
+      pl_bin="proofloops"
+    elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
+      pl_bin="cargo"
+    fi
+
+    if [[ -z "$pl_bin" ]]; then
+      echo "[check:report] proofloops not available (need ../proofloops or proofloops on PATH)" >&2
+      exit 2
+    fi
+
+    # Curated list: high-signal proof frontiers.
+    files=(
+      "Covolume/Legendre/Main.lean"
+      "Covolume/Legendre/Ankeny.lean"
+      "Covolume/Cauchy/Main.lean"
+    )
+
+    if [[ "$pl_bin" == "cargo" ]]; then
+      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+        report --repo "$repo_root" --files "${files[@]}" --timeout-s 120 --max-sorries 50 --context-lines 2 \
+        --output-html "$out_html"
+    else
+      "$pl_bin" report --repo "$repo_root" --files "${files[@]}" --timeout-s 120 --max-sorries 50 --context-lines 2 \
+        --output-html "$out_html"
+    fi
+
+    # Also write “rubberduck” planning prompts as JSON for the main blockers.
+    # (These are inputs to an agent/human loop, not proofs.)
+    out_dir="$(dirname "$out_html")"
+    set +e
+    echo "[check:report] rubberduck prompts -> $out_dir"
+    if [[ "$pl_bin" == "cargo" ]]; then
+      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+        rubberduck-prompt --repo "$repo_root" --file "Covolume/Legendre/Main.lean" \
+        --lemma "sum_three_squares_of_not_exception" \
+        --output-json "$out_dir/rubberduck-legendre.json"
+      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+        rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
+        --lemma "nathanson_parameters" \
+        --output-json "$out_dir/rubberduck-nathanson.json"
+      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+        rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
+        --lemma "cauchy_lemma" \
+        --output-json "$out_dir/rubberduck-cauchy_lemma.json"
+    else
+      "$pl_bin" rubberduck-prompt --repo "$repo_root" --file "Covolume/Legendre/Main.lean" \
+        --lemma "sum_three_squares_of_not_exception" \
+        --output-json "$out_dir/rubberduck-legendre.json"
+      "$pl_bin" rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
+        --lemma "nathanson_parameters" \
+        --output-json "$out_dir/rubberduck-nathanson.json"
+      "$pl_bin" rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
+        --lemma "cauchy_lemma" \
+        --output-json "$out_dir/rubberduck-cauchy_lemma.json"
+    fi
+    rc=$?
+    set -e
+    if [[ $rc -ne 0 ]]; then
+      echo "[check:report] warning: rubberduck prompt generation failed (non-blocking)" >&2
+    fi
+
+    echo "[check:report] wrote $out_html"
+    ;;
   pre-push)
     echo "[check:pre-push] lake build"
     "$LAKE" build
@@ -170,7 +255,7 @@ case "$profile" in
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}"
     ;;
   *)
-    echo "usage: ./Scripts/check.sh {pre-commit|pre-push|ci} [--github]" >&2
+    echo "usage: ./Scripts/check.sh {pre-commit|pre-push|ci|report} [--github]" >&2
     exit 2
     ;;
 esac
