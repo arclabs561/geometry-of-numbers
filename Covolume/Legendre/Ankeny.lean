@@ -28,6 +28,11 @@ import Covolume.Legendre.AnkenyLemmas
 import Covolume.Core.MinkowskiHelpers
 import Covolume.NumberTheory.Utils
 
+-- This file is long and currently has a number of `simpa` calls that the linter considers
+-- replaceable by `simp`. That warning is low-signal during active development, so we disable it
+-- to keep `lake lint` output actionable.
+set_option linter.unnecessarySimpa false
+
 namespace Covolume
 
 open MeasureTheory MeasureTheory.Measure Set Module Matrix
@@ -190,7 +195,7 @@ lemma volume_ankenyEllipsoidL2_eq (n q : ℝ) (hn : 0 < n) (hq : 0 < q) :
             left
             have hs : (Real.sqrt (2 : ℝ)) ^ 2 = (2 : ℝ) := by
               -- `2 ≥ 0`, so `sqrt(2)^2 = 2`.
-              simpa [pow_two] using (Real.sq_sqrt (by nlinarith : (0 : ℝ) ≤ 2))
+              simpa [pow_two] using (Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ (2 : ℝ)))
             -- `32 = 2 * 16 = sqrt(2)^2 * 16`
             nlinarith
           simpa [this]
@@ -1179,7 +1184,7 @@ lemma exists_ankeny_representation (n q : ℕ) (b : ℤ) (hn_pos : 0 < n) (hn_od
           Real.sqrt (2 * (q : ℝ)) * ((x : ℤ) : ℝ) =
             Real.sqrt (2 : ℝ) * Real.sqrt (q : ℝ) * ((x : ℤ) : ℝ) := by
         have : Real.sqrt (2 * (q : ℝ)) = Real.sqrt (2 : ℝ) * Real.sqrt (q : ℝ) := by
-          simpa using (Real.sqrt_mul (x := (2 : ℝ)) (y := (q : ℝ)) (by norm_num) hq_nonneg)
+          simpa using (Real.sqrt_mul (x := (2 : ℝ)) (y := (q : ℝ)) (zero_le_two : (0 : ℝ) ≤ (2 : ℝ)) hq_nonneg)
         simpa [this, mul_assoc, mul_left_comm, mul_comm]
 
       have hsum3_xyz' :
@@ -1559,7 +1564,7 @@ lemma ankeny_even_padicValNat_of_mem_primeFactors
     have h2q_eq_neg1 : (2 : ZMod p) * (q : ZMod p) = (-1 : ZMod p) := by
       -- Convert `2*q = -1` in `ZMod n` into an integer divisibility statement, then reduce mod `p`.
       have h2q_add1_n : (2 : ZMod n) * (q : ZMod n) + 1 = 0 := by
-        simpa [h2q_n, add_assoc] using (by simp : (-1 : ZMod n) + 1 = 0)
+        simp [h2q_n]
       have hn_dvd : (n : ℤ) ∣ (2 * (q : ℤ) + 1) := by
         -- cast the `ZMod n` equality to `ℤ`-divisibility
         have hZ : ((2 * (q : ℤ) + 1 : ℤ) : ZMod n) = 0 := by
@@ -1678,7 +1683,7 @@ lemma ankeny_even_padicValNat_of_mem_primeFactors
       ZMod.mod_four_ne_three_of_sq_eq_neg_sq' (p := p) (x := (1 : ZMod p)) (y := (z : ZMod p))
         hz_ne0 (by
           -- `1^2 = -(z^2)` since `z^2 = -1`
-          simpa [pow_two, hz_sq_neg1] using (show (1 : ZMod p) = -((z : ZMod p) ^ 2) by ring))
+          simp [hz_sq_neg1])
     exact hp_ne hp4
 
   -- Now we are in the main case `p ∤ n`. We can apply the mod-`p` contradiction lemma already proven.
@@ -1785,7 +1790,7 @@ lemma ankeny_even_padicValNat_of_mem_primeFactors
               congr 1
               omega
             _ = (p : ℤ) ^ 2 * (p : ℤ) ^ (2 * t + 1) := by
-              simp [pow_add, mul_assoc]
+              simp [pow_add]
         have hdiv' :
             (p : ℤ) ^ (2 * t + 1) ∣ (y1 ^ 2 + (n : ℤ) * z1 ^ 2) := by
           have ht : 2 * (t + 1) + 1 = 2 * t + 3 := by omega
