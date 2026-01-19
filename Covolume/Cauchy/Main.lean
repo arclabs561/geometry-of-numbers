@@ -218,6 +218,30 @@ lemma int_three_mul_ofNat_lt_int_poly {b q : ℕ} :
       3 * (2 * q + b) < b ^ 2 + 2 * b + 4 := by
   norm_cast
 
+/-- Division-algorithm unpacking for `n = m*q + b + r` with `m = s-2`.
+
+This isolates the purely algebraic part of the Nathanson parameter choice from the
+interval/modular argument used to ensure `r ≤ s-4`. -/
+lemma sub_mod_add_div (s n b : ℕ) (hb : b ≤ n) :
+    let m : ℕ := s - 2
+    let x : ℕ := n - b
+    n = m * (x / m) + b + x % m := by
+  intro m x
+  -- Start from the division algorithm for `x`.
+  have hx : x = m * (x / m) + x % m := by
+    -- `Nat.mod_add_div` is `x % m + m * (x / m) = x`; rewrite.
+    simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using (Nat.mod_add_div x m).symm
+  -- Rebuild `n` from `x = n - b`.
+  have hn : n = x + b := by
+    exact (Nat.sub_add_cancel hb).symm
+  -- Substitute and rearrange.
+  calc
+    n = x + b := hn
+    _ = (m * (x / m) + x % m) + b := by
+          -- Avoid `simp [hx]`: rewriting `x` using `hx` would loop because the RHS still contains `x`.
+          simpa [Nat.add_assoc] using congrArg (fun t => t + b) hx
+    _ = m * (x / m) + b + x % m := by ac_rfl
+
 lemma nathanson_parameters (s : ℕ) (hs : 5 ≤ s) (n : ℕ) (hn : 0 < n) :
     ∃ b q r : ℕ,
       r ≤ s - 4 ∧ Odd b ∧
@@ -257,7 +281,7 @@ theorem cauchy_decomposition (s : ℕ) (hs : 5 ≤ s) (n : ℕ) :
   by_cases hn0 : n = 0
   · subst hn0
     refine ⟨0, 0, 0, 0, 0, ?_, ?_⟩
-    · simpa using (Nat.zero_le (s - 4))
+    · exact Nat.zero_le (s - 4)
     · simp
 
   /-
