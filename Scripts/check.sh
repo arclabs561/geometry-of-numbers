@@ -54,6 +54,50 @@ case "$profile" in
     if [[ "$precommit_build" != "0" ]]; then
       echo "[check:pre-commit] lake build (smoke: key entrypoints)"
       "$LAKE" build GeometryOfNumbers Covolume.Legendre.Main Covolume.Cauchy.Main
+
+      # After a successful smoke build, emit a compact, structured summary of the current proof
+      # frontier. This is primarily for humans/agents (so they don’t have to parse raw warnings).
+      #
+      # Opt out with `GON_PRECOMMIT_SUMMARY=0`.
+      precommit_summary="${GON_PRECOMMIT_SUMMARY:-1}"
+      if [[ "$precommit_summary" != "0" ]]; then
+        echo "[check:pre-commit] proof frontier summary (proofloops report)"
+
+        pl_bin=""
+        pl_root=""
+        if [[ -d "$repo_root/../proofloops" ]]; then
+          pl_root="$repo_root/../proofloops"
+        fi
+
+        if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
+          pl_bin="$pl_root/target/release/proofloops"
+        elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
+          pl_bin="$pl_root/target/debug/proofloops"
+        elif command -v proofloops >/dev/null 2>&1; then
+          pl_bin="proofloops"
+        elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
+          pl_bin="cargo"
+        fi
+
+        if [[ -z "$pl_bin" ]]; then
+          echo "[check:pre-commit] proofloops not available; skipping summary" >&2
+        else
+          mkdir -p tmp/proofloops
+          out_html="${GON_PRECOMMIT_REPORT_HTML:-tmp/proofloops/status.html}"
+          files=(
+            "Covolume/Legendre/Main.lean"
+            "Covolume/Cauchy/Main.lean"
+          )
+          if [[ "$pl_bin" == "cargo" ]]; then
+            cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
+              report --repo "$repo_root" --files "${files[@]}" --timeout-s 60 --max-sorries 50 --context-lines 1 \
+              --output-html "$out_html"
+          else
+            "$pl_bin" report --repo "$repo_root" --files "${files[@]}" --timeout-s 60 --max-sorries 50 --context-lines 1 \
+              --output-html "$out_html"
+          fi
+        fi
+      fi
     else
       echo "[check:pre-commit] lake build skipped (GON_PRECOMMIT_BUILD=0)" >&2
     fi
