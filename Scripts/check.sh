@@ -60,6 +60,28 @@ case "$profile" in
       fi
 
       # Project-agnostic LLM diff review lives in the helper repo `proofloops` (Rust CLI).
+      # If no provider is configured, skip (or fail in strict mode) early to avoid
+      # doing a `cargo run` that can stall on locks.
+      has_provider=0
+      if [[ -n "${OLLAMA_MODEL:-}" ]] || [[ -n "${GROQ_API_KEY:-}" ]] || [[ -n "${OPENAI_API_KEY:-}" ]] || [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
+        has_provider=1
+      fi
+      do_llm=1
+      if [[ "$has_provider" -eq 0 ]]; then
+        if [[ "$strict" != "0" ]]; then
+          echo "[check:pre-commit] llm-review enabled but no provider configured" >&2
+          echo "Set one of: OLLAMA_MODEL | GROQ_API_KEY | OPENAI_API_KEY | OPENROUTER_API_KEY" >&2
+          exit 1
+        else
+          echo "[check:pre-commit] llm-review skipped (no provider configured)" >&2
+          do_llm=0
+        fi
+      fi
+
+      if [[ "$do_llm" -eq 0 ]]; then
+        set -e
+        true
+      else
       pl_bin=""
       # Prefer a sibling checkout (../proofloops). Fall back to PATH.
       pl_root=""
@@ -69,9 +91,14 @@ case "$profile" in
 
       if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
         pl_bin="$pl_root/target/release/proofloops"
+      elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
+        pl_bin="$pl_root/target/debug/proofloops"
       elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofloops" ]]; then
         # Legacy-ish path.
         pl_bin="$pl_root/proofloops-core/target/release/proofloops"
+      elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/debug/proofloops" ]]; then
+        # Legacy-ish path.
+        pl_bin="$pl_root/proofloops-core/target/debug/proofloops"
       elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
         pl_bin="cargo"
       elif command -v proofloops >/dev/null 2>&1; then
@@ -107,6 +134,7 @@ case "$profile" in
             echo "[check:pre-commit] llm-review failed (non-blocking); set GON_LLM_REVIEW_STRICT=1 to fail" >&2
           fi
         fi
+      fi
       fi
     fi
     ;;

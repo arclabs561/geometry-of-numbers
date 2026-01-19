@@ -83,7 +83,6 @@ Scripts/
 Experiments/
   CheckZMod.lean             -- Congruence bridge validation.
   AnkenyCheck.lean           -- Ankeny prime existence probes.
-  ankeny_check.py            -- Numeric validation for Ankeny reduction.
   LLLBasic.lean              -- LLL step and Gram-Schmidt probing.
   SuccessiveMinimaBasic.lean -- Spectral theory validation on Z2.
   BhargavaCubes.lean         -- Discriminant invariant checks.

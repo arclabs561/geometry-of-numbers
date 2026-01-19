@@ -71,9 +71,14 @@ fi
 
 if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
   pl_bin="$pl_root/target/release/proofloops"
+elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
+  pl_bin="$pl_root/target/debug/proofloops"
 elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofloops" ]]; then
   # Legacy-ish path.
   pl_bin="$pl_root/proofloops-core/target/release/proofloops"
+elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/debug/proofloops" ]]; then
+  # Legacy-ish path.
+  pl_bin="$pl_root/proofloops-core/target/debug/proofloops"
 elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
   pl_bin="cargo"
 elif command -v proofloops >/dev/null 2>&1; then

@@ -29,7 +29,7 @@ The project maintains a suite of experiments to validate algebraic invariants an
   minimal statement that records intent.
 
 *   **Congruence Bridges (`Experiments/CheckZMod.lean`)**: Validates the mapping between `ZMod` equalities and `Int.ModEq` congruences, including CRT-style combinations.
-*   **Numeric Validation (`Experiments/ankeny_check.py`)**: Performs exhaustive searches for small instances of the Ankeny quadratic form setup.
+*   **Numeric Validation**: keep numeric sanity checks as Lean `Experiments/*` modules (so they compile under `lake build`).
 *   **Valuation Logic (`Experiments/DescentValuation.lean`)**: Sketch scaffold for the p-adic contradiction logic for the descent step (currently uses placeholders).
 *   **LLL Probing (`Experiments/LLLRational.lean`)**: Validates rational-arithmetic steps for the lattice reduction algorithm.
 *   **Successive Minima (`Experiments/SuccessiveMinimaBasic.lean`)**: Type-level experiment for the spectral theory definition on a standard lattice (currently uses placeholders).

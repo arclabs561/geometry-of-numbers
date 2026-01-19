@@ -64,5 +64,5 @@ obtain exactly `s` terms.
 ## Auxiliary Evidence
 
 - **Congruence Bridges**: `Experiments/CheckZMod.lean` provides validated patterns for mapping `ZMod` operations to `Int.ModEq`.
-- **Numeric Validation**: `Experiments/ankeny_check.py` performs exhaustive searches for small cases to verify the intended algebraic invariants of the Ankeny setup.
+- **Numeric Validation**: keep numeric sanity checks in Lean (`Experiments/*`) so `lake build` remains the single source of truth.
 - **LLL Probing**: `Experiments/LLLRational.lean` verifies rational LLL steps on simple bases.

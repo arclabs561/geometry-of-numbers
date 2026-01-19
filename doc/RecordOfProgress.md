@@ -26,4 +26,4 @@
     - `Covolume/Legendre/AnkenyLemmas.lean`: Proved foundational components.
     - `Covolume/Legendre/Ankeny.lean`: Primary descent proof structure.
     - `Covolume/Cauchy/Main.lean`: Top-level theorem reduction.
-*   Numeric Validation: The `Experiments/ankeny_check.py` script continues to validate the Ankeny reduction hypothesis across a range of small inputs.
+*   Numeric Validation: keep sanity checks as Lean `Experiments/*` modules (so they compile under `lake build`).
