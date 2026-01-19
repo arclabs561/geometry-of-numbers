@@ -243,58 +243,39 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
       _ = 4 ^ a * t := by simpa [hpow]
       _ = n := hn.symm
   ·
-    -- Now `t % 8 ≠ 3`. Since we also have `t % 8 ≠ 7`, the only possible residues are:
-    -- `t % 8 ∈ {0,1,2,4,5,6}`.
+    -- Now `t % 8 ≠ 3`. At this point we are in the “reduced” situation:
+    -- - `4 ∤ t` (by construction), and
+    -- - `t % 8 ≠ 7` (mod-8 obstruction already discharged).
     --
-    -- Moreover, `4 ∣ t` is impossible by construction (returned by `exists_four_pow_mul_reduced`),
-    -- hence `t % 8` cannot be `0` or `4`. That leaves exactly:
-    -- `t % 8 ∈ {1,2,5,6}`.
-    have ht3_ne : t % 8 ≠ 3 := ht3
-    have ht7_ne : t % 8 ≠ 7 := ht7
-    have ht_lt : t % 8 < 8 := Nat.mod_lt t (by decide : 0 < 8)
-    -- We prefer an explicit finite split here so the remaining proof obligations are visible.
-    interval_cases hmod : t % 8
-    · -- 0
-      -- If `t % 8 = 0` then `8 ∣ t` hence `4 ∣ t`, contradiction.
-      have h4 : 4 ∣ t := by
-        have h8 : 8 ∣ t := Nat.dvd_of_mod_eq_zero hmod
-        exact dvd_trans (by exact ⟨2, rfl⟩) h8
-      exact (_ht4 h4).elim
-    · -- 1
-      -- TODO: prove the `t % 8 = 1` case.
-      -- Candidate routes:
-      -- - direct residue lemma for `1 mod 8`,
-      -- - or a reduction to the `3 mod 8` case via a small arithmetic transform.
+    -- The remaining residue classes are exactly `t % 8 ∈ {1,2,5,6}`.
+    --
+    -- We keep this as a single lemma boundary: the current repo has a complete proof
+    -- for the `3 mod 8` branch via Ankeny, and this is the next missing piece for the
+    -- full Legendre theorem.
+    have ht_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = t := by
+      -- TODO(legendre): handle the reduced residue classes `t % 8 ∈ {1,2,5,6}`.
+      --
+      -- Notes:
+      -- - `Covolume/Legendre/Ankeny.lean` already contains forward-looking lemmas for
+      --   choosing primes by Dirichlet in other residue branches (e.g. `n % 4 = 1`),
+      --   but the Minkowski/lattice layer is still specialized to the `3 mod 8` setup.
+      -- - A plausible next step is to generalize the lattice/Q-congruence layer so the
+      --   “Ankeny prime choice” can vary by residue class, matching the classical proof.
       sorry
-    · -- 2
-      -- TODO: prove the `t % 8 = 2` case.
-      sorry
-    · -- 3 (contradicts ht3)
-      exact (ht3_ne (by simpa using hmod)).elim
-    · -- 4
-      -- If `t % 8 = 4` then `4 ∣ t`, contradiction.
-      have ht_eq : t = 8 * (t / 8) + 4 := by
-        -- `t = 8*(t/8) + t%8` and `t%8 = 4`.
-        have := (Nat.div_add_mod t 8).symm
-        -- `8*(t/8) + t%8 = t`
-        -- rewrite `t%8` using `hmod`
-        simpa [hmod, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using this
-      have h4 : 4 ∣ t := by
-        -- `4 ∣ 8*(t/8)` and `4 ∣ 4`, hence `4 ∣ t`.
-        have h48 : 4 ∣ 8 := by decide
-        have h4a : 4 ∣ 8 * (t / 8) := dvd_mul_of_dvd_left h48 _
-        have h44 : 4 ∣ 4 := by exact dvd_rfl
-        -- use the decomposition `t = 8*(t/8) + 4` without `simp` (can loop)
-        rw [ht_eq]
-        exact dvd_add h4a h44
-      exact (_ht4 h4).elim
-    · -- 5
-      -- TODO: prove the `t % 8 = 5` case.
-      sorry
-    · -- 6
-      -- TODO: prove the `t % 8 = 6` case.
-      sorry
-    · -- 7 (contradicts ht7)
-      exact (ht7_ne (by simpa using hmod)).elim
+    have hn_rep :
+        ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = (2 ^ a) ^ 2 * t :=
+      sum_three_squares_mul_sq (2 ^ a) t ht_rep
+    rcases hn_rep with ⟨x, y, z, hxyz⟩
+    refine ⟨x, y, z, ?_⟩
+    have hpow : (2 ^ a) ^ 2 = 4 ^ a := by
+      calc
+        (2 ^ a) ^ 2 = 2 ^ (a * 2) := by simp [pow_mul]
+        _ = 2 ^ (2 * a) := by simp [Nat.mul_comm]
+        _ = (2 ^ 2) ^ a := by simp [pow_mul]
+        _ = 4 ^ a := by simp [pow_two]
+    calc
+      x ^ 2 + y ^ 2 + z ^ 2 = (2 ^ a) ^ 2 * t := hxyz
+      _ = 4 ^ a * t := by simpa [hpow]
+      _ = n := hn.symm
 
 end Covolume
