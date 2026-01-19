@@ -242,6 +242,95 @@ lemma sub_mod_add_div (s n b : ℕ) (hb : b ≤ n) :
           simpa [Nat.add_assoc] using congrArg (fun t => t + b) hx
     _ = m * (x / m) + b + x % m := by ac_rfl
 
+/-- If `x % m = m - 1` and `m ≥ 3`, then `(x - 2) % m = m - 3`.
+
+This is the tiny modular arithmetic step used in the Nathanson parameter selection:
+if one odd choice of `b` makes `(n-b) % m` land on the “bad” last residue class `m-1`,
+then shifting to `b+2` moves the remainder down by `2`. -/
+lemma mod_sub_two_of_mod_eq_pred {m x : ℕ} (hm : 3 ≤ m) (hx : x % m = m - 1) :
+    (x - 2) % m = m - 3 := by
+  have hm_pos : 0 < m := lt_of_lt_of_le (by decide : (0 : ℕ) < 3) hm
+  let q : ℕ := x / m
+  have hxrep : x = (m - 1) + m * q := by
+    -- `x = x % m + m * (x / m)` and `x % m = m-1`.
+    have h := (Nat.mod_add_div x m).symm
+    -- `Nat.mod_add_div` is phrased as `x % m + m * (x / m) = x`.
+    -- We only need a rearranged version.
+    -- (Also, `m` may be `0` in general, so keep `hm_pos` in scope.)
+    simpa [q, hx, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+  have h2 : 2 ≤ m - 1 := by
+    -- since `m ≥ 3`, we have `m-1 ≥ 2`.
+    omega
+  have hxsub : x - 2 = m * q + (m - 3) := by
+    -- subtract `2` from the explicit remainder form.
+    calc
+      x - 2 = ((m - 1) + m * q) - 2 := by simp [hxrep]
+      _ = (m * q + (m - 1)) - 2 := by ac_rfl
+      _ = m * q + ((m - 1) - 2) := by
+            -- push subtraction into the second addend (since `2 ≤ m-1`)
+            simpa using (Nat.add_sub_assoc h2 (m * q))
+      _ = m * q + (m - 3) := by omega
+  calc
+    (x - 2) % m = (m * q + (m - 3)) % m := by simpa [hxsub]
+    _ = ((m - 3) + m * q) % m := by ac_rfl
+    _ = (m - 3) % m := by simp [Nat.add_mul_mod_self_left]
+    _ = m - 3 := by
+          apply Nat.mod_eq_of_lt
+          -- `m-3 < m` for `m ≥ 1`, in particular for `m ≥ 3`.
+          omega
+
+/-- Given a candidate `b` with room to shift to `b+2`, we can always choose `b' ∈ {b, b+2}`
+so that the remainder `r` in `n = (s-2)q + b' + r` satisfies `r ≤ s-4`.
+
+This is the purely modular “avoid the last residue class” step in the Nathanson parameter
+selection. -/
+lemma exists_qr_with_remainder_le {s n b : ℕ} (hs : 5 ≤ s) (hb2 : b + 2 ≤ n) :
+    ∃ b' q r : ℕ,
+      (b' = b ∨ b' = b + 2) ∧
+        r ≤ s - 4 ∧
+          n = (s - 2) * q + b' + r := by
+  let m : ℕ := s - 2
+  have hm : 3 ≤ m := by
+    -- `s ≥ 5` ⇒ `s-2 ≥ 3`.
+    omega
+  have hb : b ≤ n := le_trans (Nat.le_add_right b 2) hb2
+  let x : ℕ := n - b
+  have hn_b : n = m * (x / m) + b + x % m := by
+    simpa [m, x] using sub_mod_add_div s n b hb
+
+  by_cases hlast : x % m = m - 1
+  · -- Bad remainder: shift `b` to `b+2`, which shifts `x` down by `2`.
+    let b' : ℕ := b + 2
+    have hb' : b' ≤ n := hb2
+    let x' : ℕ := n - b'
+    have hx' : x' = x - 2 := by
+      -- `n - (b+2) = (n-b) - 2` under `b+2 ≤ n`.
+      omega
+    have hr' : x' % m = m - 3 := by
+      -- `x % m = m-1` ⇒ `(x-2) % m = m-3`.
+      simpa [x', hx'] using mod_sub_two_of_mod_eq_pred (m := m) (x := x) hm hlast
+    have hn_b' : n = m * (x' / m) + b' + x' % m := by
+      simpa [m, b', x'] using sub_mod_add_div s n b' hb'
+    refine ⟨b', x' / m, x' % m, ?_, ?_, ?_⟩
+    · right; rfl
+    · -- `m-3 ≤ m-2 = s-4`
+      -- (rewrite `s-4` as `m-2` via `m = s-2`)
+      have hmbound : m - 3 ≤ m - 2 := by omega
+      have : x' % m ≤ m - 2 := by simpa [hr'] using hmbound
+      simpa [m] using this
+    · -- normalize into the target `n = (s-2)*q + b' + r`
+      simpa [m, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hn_b'
+  · -- Good remainder already: `x % m ≤ m-2 = s-4`.
+    have hx_lt : x % m < m := Nat.mod_lt x (lt_of_lt_of_le (by decide : (0 : ℕ) < 3) hm)
+    have hx_le : x % m ≤ m - 2 := by
+      -- If `x % m < m` and `x % m ≠ m-1`, then `x % m ≤ m-2`.
+      omega
+    refine ⟨b, x / m, x % m, ?_, ?_, ?_⟩
+    · left; rfl
+    · -- `m-2 = s-4`
+      simpa [m] using hx_le
+    · simpa [m, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hn_b
+
 lemma nathanson_parameters (s : ℕ) (hs : 5 ≤ s) (n : ℕ) (hn : 0 < n) :
     ∃ b q r : ℕ,
       r ≤ s - 4 ∧ Odd b ∧
