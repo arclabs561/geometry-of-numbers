@@ -60,26 +60,22 @@ if [[ "$fast" -eq 0 ]]; then
   )
 fi
 
-# Prefer `proofyloops lint-style` (project-agnostic Rust CLI), but keep a self-contained fallback
-# for environments where proofyloops isn't available.
+# Prefer `proofloops lint-style` (project-agnostic Rust CLI), but keep a self-contained fallback
+# for environments where proofloops isn't available.
 pl_bin=""
-# Prefer a sibling checkout (../proofloops or ../proofyloops). Fall back to PATH.
+# Prefer a sibling checkout (../proofloops). Fall back to PATH.
 pl_root=""
 if [[ -d "$repo_root/../proofloops" ]]; then
   pl_root="$repo_root/../proofloops"
-elif [[ -d "$repo_root/../proofyloops" ]]; then
-  pl_root="$repo_root/../proofyloops"
 fi
 
-if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofyloops" ]]; then
-  pl_bin="$pl_root/target/release/proofyloops"
-elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofyloops" ]]; then
+if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
+  pl_bin="$pl_root/target/release/proofloops"
+elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofloops" ]]; then
   # Legacy-ish path.
-  pl_bin="$pl_root/proofloops-core/target/release/proofyloops"
+  pl_bin="$pl_root/proofloops-core/target/release/proofloops"
 elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
   pl_bin="cargo"
-elif command -v proofyloops >/dev/null 2>&1; then
-  pl_bin="proofyloops"
 elif command -v proofloops >/dev/null 2>&1; then
   pl_bin="proofloops"
 fi
@@ -90,7 +86,7 @@ if [[ -n "$pl_bin" ]]; then
     mod_args+=(--module "$m")
   done
   if [[ "$pl_bin" == "cargo" ]]; then
-    exec cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofyloops -- \
+    exec cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
       lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"
   fi
   exec "$pl_bin" lint-style --repo "$repo_root" "${lint_args[@]+"${lint_args[@]}"}" "${mod_args[@]}"

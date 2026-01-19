@@ -89,19 +89,18 @@ lemma sum_three_squares_mul_sq (s m : ℕ)
   -- Expand squares and factor `s^2`.
   have hxy :
       s ^ 2 * x ^ 2 + s ^ 2 * y ^ 2 = s ^ 2 * (x ^ 2 + y ^ 2) := by
-    simpa [Nat.mul_add] using (Nat.mul_add (s ^ 2) (x ^ 2) (y ^ 2)).symm
+    simp [Nat.mul_add]
   have hxyz' :
       s ^ 2 * (x ^ 2 + y ^ 2) + s ^ 2 * z ^ 2 = s ^ 2 * (x ^ 2 + y ^ 2 + z ^ 2) := by
-    simpa [Nat.add_assoc, Nat.mul_add] using
-      (Nat.mul_add (s ^ 2) (x ^ 2 + y ^ 2) (z ^ 2)).symm
+    simp [Nat.add_assoc, Nat.mul_add]
   calc
     (s * x) ^ 2 + (s * y) ^ 2 + (s * z) ^ 2
         = s ^ 2 * x ^ 2 + s ^ 2 * y ^ 2 + s ^ 2 * z ^ 2 := by
-            simp [mul_pow, pow_two, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
+            simp [pow_two, Nat.mul_left_comm, Nat.mul_comm]
     _ = s ^ 2 * (x ^ 2 + y ^ 2) + s ^ 2 * z ^ 2 := by
             -- fold the first two terms into `s^2 * (x^2 + y^2)`
-            simp [hxy, Nat.add_assoc]
+            simp [hxy]
     _ = s ^ 2 * (x ^ 2 + y ^ 2 + z ^ 2) := hxyz'
-    _ = s ^ 2 * m := by simpa [hxyz]
+    _ = s ^ 2 * m := by simp [hxyz]
 
 end Covolume
