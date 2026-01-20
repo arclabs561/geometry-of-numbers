@@ -29,15 +29,15 @@ lake build
 
 Three-square “exception” numbers have the form:
 
-\[
+$$
 n = 4^a(8k+7).
-\]
+$$
 
 Ankeny’s descent is organized around the ternary quadratic form:
 
-\[
+$$
 Q(x,y,z) = 2qx^2 + y^2 + nz^2.
-\]
+$$
 
 ## What’s here (roughly)
 
@@ -50,10 +50,15 @@ Q(x,y,z) = 2qx^2 + y^2 + nz^2.
 
 ### Tooling
 
-`./Scripts/check.sh pre-commit` runs `lake exe gon_checks` + lint-style. If a sibling checkout of `../proofloops`
-exists, it also runs a bounded “review-diff” step via the Rust helper CLI (non-blocking unless strict).
+`./Scripts/check.sh pre-commit` runs `lake exe gon_checks` + lint-style.
+
+Optionally, if the `proofpatch` CLI is installed, it can also run bounded helper steps:
+
+- **HTML proof-frontier snapshot** (non-blocking by default)
+- **bounded `review-diff`** (non-blocking unless strict)
 
 Controls:
+
 - `GON_LLM_REVIEW=0` disables the review step
 - `GON_LLM_REVIEW_STRICT=1` makes “no reviewer available” / “review failed” fail the check
 
@@ -92,26 +97,30 @@ Experiments/
 ## Entry points (some are scaffolds)
 
 **Legendre's Three-Square Theorem** (target):
+
 ```lean
 theorem sum_three_squares_iff (n : ℕ) :
     (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n
 ```
 
 **Gauss's Triangular Number Theorem** (target):
+
 ```lean
 theorem gauss_triangular (n : ℕ) :
     ∃ a b c : ℕ, triangular a + triangular b + triangular c = n
 ```
 
 **Fermat's Polygonal Number Theorem** (target):
+
 ```lean
 theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
     ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n
 ```
 
 ## Note: Nathanson (1987)
+
 For the `s ≥ 5` case, we target the Cauchy/Nathanson reduction in the “four terms + residue” form
-\(n = \sum_{i=1}^4 P(s,x_i) + r\) with \(0 \le r \le s-4\), then pad with `0/1` polygonals.
+$ n = \sum_{i=1}^4 P(s,x_i) + r $ with $0 \le r \le s-4$, then pad with `0/1` polygonals.
 
 There is a known residue-class gap in some short presentations; we are following the modern
 streamlined route (e.g. Nathanson’s book treatment / the Whitty talk notes) rather than relying on
@@ -124,3 +133,7 @@ an unverified modulo argument.
 - Ankeny, N. C. (1957). *Sums of three squares*. Proceedings of the American Mathematical Society.
 - Nathanson, M. B. (1987). *A short proof of Cauchy's polygonal number theorem*.
 - Bhargava, M. (2004). *Higher composition laws*. Annals of Mathematics.
+
+## Further reading
+
+- PlanetMath subject index (helpful for browsing reference-grade topics): `https://planetmath.org/msc.html`

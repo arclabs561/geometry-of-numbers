@@ -42,10 +42,25 @@ if [[ "$github" -eq 1 ]]; then
   lint_style_args+=(--github)
 fi
 
+# Optional helper CLI (no local/sibling repo assumptions).
+#
+# If installed, `proofpatch` can:
+# - generate a bounded HTML proof-frontier snapshot
+# - run a bounded `review-diff`
+#
+# Override with PROOFPATCH_BIN=/path/to/proofpatch.
+PROOFPATCH_BIN="${PROOFPATCH_BIN:-}"
+if [[ -z "$PROOFPATCH_BIN" ]]; then
+  if command -v proofpatch >/dev/null 2>&1; then
+    PROOFPATCH_BIN="proofpatch"
+  fi
+fi
+
 case "$profile" in
   pre-commit)
     echo "[check:pre-commit] gon_checks"
     "$LAKE" exe gon_checks
+
     # A small compilation smoke test: catch obvious breakage early without rebuilding everything.
     #
     # This is intentionally narrower than `lake build` (which is reserved for pre-push).
@@ -56,134 +71,60 @@ case "$profile" in
       "$LAKE" build GeometryOfNumbers Covolume.Legendre.Main Covolume.Cauchy.Main
 
       # After a successful smoke build, emit a compact, structured summary of the current proof
-      # frontier. This is primarily for humans/agents (so they don’t have to parse raw warnings).
-      #
-      # Opt out with `GON_PRECOMMIT_SUMMARY=0`.
+      # frontier when `proofpatch` is available.
       precommit_summary="${GON_PRECOMMIT_SUMMARY:-1}"
       if [[ "$precommit_summary" != "0" ]]; then
-        echo "[check:pre-commit] proof frontier summary (proofloops report)"
-
-        pl_bin=""
-        pl_root=""
-        if [[ -d "$repo_root/../proofloops" ]]; then
-          pl_root="$repo_root/../proofloops"
-        fi
-
-        if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
-          pl_bin="$pl_root/target/release/proofloops"
-        elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
-          pl_bin="$pl_root/target/debug/proofloops"
-        elif command -v proofloops >/dev/null 2>&1; then
-          pl_bin="proofloops"
-        elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
-          pl_bin="cargo"
-        fi
-
-        if [[ -z "$pl_bin" ]]; then
-          echo "[check:pre-commit] proofloops not available; skipping summary" >&2
+        if [[ -z "$PROOFPATCH_BIN" ]]; then
+          echo "[check:pre-commit] proofpatch not available; skipping proof frontier summary" >&2
         else
-          mkdir -p tmp/proofloops
-          out_html="${GON_PRECOMMIT_REPORT_HTML:-tmp/proofloops/status.html}"
+          echo "[check:pre-commit] proof frontier summary (proofpatch report)"
+          mkdir -p tmp/proofpatch
+          out_html="${GON_PRECOMMIT_REPORT_HTML:-tmp/proofpatch/status.html}"
           files=(
             "Covolume/Legendre/Main.lean"
             "Covolume/Cauchy/Main.lean"
           )
-          if [[ "$pl_bin" == "cargo" ]]; then
-            cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-              report --repo "$repo_root" --files "${files[@]}" --timeout-s 60 --max-sorries 50 --context-lines 1 \
-              --output-html "$out_html"
-          else
-            "$pl_bin" report --repo "$repo_root" --files "${files[@]}" --timeout-s 60 --max-sorries 50 --context-lines 1 \
-              --output-html "$out_html"
-          fi
+          "$PROOFPATCH_BIN" report --repo "$repo_root" --files "${files[@]}" \
+            --timeout-s 60 --max-sorries 50 --context-lines 1 \
+            --output-html "$out_html" || true
         fi
       fi
     else
       echo "[check:pre-commit] lake build skipped (GON_PRECOMMIT_BUILD=0)" >&2
     fi
+
     echo "[check:pre-commit] lint-style (fast)"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}" --fast
+
     llm_on="${GON_LLM_REVIEW:-${COVOLUME_LLM_REVIEW:-1}}"
     if [[ "$llm_on" != "0" ]]; then
       echo "[check:pre-commit] llm-review (default on; set GON_LLM_REVIEW=0 to disable)"
       set +e
-      # If strict, require an API key to be configured (so we don't silently skip).
-      req=()
+
       strict="${GON_LLM_REVIEW_STRICT:-${COVOLUME_LLM_REVIEW_STRICT:-0}}"
+      req=()
       if [[ "$strict" != "0" ]]; then
         req+=(--require-key)
       fi
 
-      # Project-agnostic LLM diff review lives in the helper repo `proofloops` (Rust CLI).
-      pl_bin=""
-      # Prefer a sibling checkout (../proofloops). Fall back to PATH.
-      pl_root=""
-      if [[ -d "$repo_root/../proofloops" ]]; then
-        pl_root="$repo_root/../proofloops"
-      fi
-
-      if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
-        pl_bin="$pl_root/target/release/proofloops"
-      elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
-        pl_bin="$pl_root/target/debug/proofloops"
-      elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/release/proofloops" ]]; then
-        # Legacy-ish path.
-        pl_bin="$pl_root/proofloops-core/target/release/proofloops"
-      elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/proofloops-core/target/debug/proofloops" ]]; then
-        # Legacy-ish path.
-        pl_bin="$pl_root/proofloops-core/target/debug/proofloops"
-      elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
-        pl_bin="cargo"
-      elif command -v proofloops >/dev/null 2>&1; then
-        pl_bin="proofloops"
-      fi
-
-      if [[ -z "$pl_bin" ]]; then
+      if [[ -z "$PROOFPATCH_BIN" ]]; then
         if [[ "$strict" != "0" ]]; then
-          echo "[check:pre-commit] proofloops not available (need ../proofloops or proofloops on PATH)" >&2
+          echo "[check:pre-commit] proofpatch not available (install proofpatch or set PROOFPATCH_BIN)" >&2
           exit 1
         else
-          echo "[check:pre-commit] proofloops not available; skipping llm-review" >&2
+          echo "[check:pre-commit] proofpatch not available; skipping llm-review" >&2
           set -e
-          # Skip (non-blocking). Keep going with the rest of the profile.
           true
         fi
       fi
 
-      if [[ -n "$pl_bin" ]]; then
-        # Keep pre-commit output readable: write full output to a local artifact and print a small JSON
-        # “written” record to stdout.
-        mkdir -p tmp/proofloops
-        out_json="${GON_LLM_REVIEW_JSON:-tmp/proofloops/review-diff.json}"
-        if [[ "$pl_bin" == "cargo" ]]; then
-          cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-            review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}" --output-json "$out_json"
-        else
-          "$pl_bin" review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}" --output-json "$out_json"
-        fi
+      if [[ -n "$PROOFPATCH_BIN" ]]; then
+        mkdir -p tmp/proofpatch
+        out_json="${GON_LLM_REVIEW_JSON:-tmp/proofpatch/review-diff.json}"
+        "$PROOFPATCH_BIN" review-diff --repo "$repo_root" --scope staged "${req[@]+"${req[@]}"}" --output-json "$out_json"
 
         rc=$?
         set -e
-        if [[ -f "$out_json" ]] && command -v jq >/dev/null 2>&1; then
-          echo "[check:pre-commit] llm-review summary"
-          if jq -e '.skipped == true' "$out_json" >/dev/null 2>&1; then
-            jq -r '"skipped=true\nreason=" + (.reason // "unknown")' "$out_json"
-          else
-            jq -r '"provider=" + (.provider // "unknown") + "\nmodel=" + (.model // "unknown")' "$out_json"
-            # Prefer structured output when available.
-            if jq -e '.review_struct != null' "$out_json" >/dev/null 2>&1; then
-              jq -r '"overall_score=" + (.review_struct.overall.score|tostring) + "\nverdict=" + (.review_struct.overall.verdict // "unknown") + "\nsummary=" + (.review_struct.overall.summary // "")' "$out_json"
-              echo "axes:"
-              jq -r '.review_struct.axes[0:6][]? | "- " + .name + " score=" + (.score|tostring) + " — " + (.summary // "")' "$out_json"
-              echo "top_issues:"
-              jq -r '.review_struct.top_issues[0:5][]? | "- [" + .severity + "] " + .title + (if (.files|length)>0 then " (" + (.files|join(", ")) + ")" else "" end)' "$out_json"
-              echo "quick_wins:"
-              jq -r '.review_struct.quick_wins[0:5][]? | "- " + .' "$out_json"
-            else
-              echo "review_text: see $out_json"
-            fi
-          fi
-        fi
         if [[ $rc -ne 0 ]]; then
           if [[ "$strict" != "0" ]]; then
             exit "$rc"
@@ -194,144 +135,31 @@ case "$profile" in
       fi
     fi
     ;;
+
   report)
-    # Human-facing status snapshot (HTML artifact under tmp/).
-    #
-    # This is intentionally not part of CI: it writes a local artifact and is primarily for
-    # interactive iteration.
-    out_html="${GON_REPORT_HTML:-tmp/proofloops/status.html}"
+    out_html="${GON_REPORT_HTML:-tmp/proofpatch/status.html}"
     mkdir -p "$(dirname "$out_html")"
 
     echo "[check:report] building status report -> $out_html"
 
-    # Prefer a sibling checkout (../proofloops). Fall back to PATH; last resort is `cargo run`.
-    pl_bin=""
-    pl_root=""
-    if [[ -d "$repo_root/../proofloops" ]]; then
-      pl_root="$repo_root/../proofloops"
-    fi
-
-    if [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/release/proofloops" ]]; then
-      pl_bin="$pl_root/target/release/proofloops"
-    elif [[ -n "$pl_root" ]] && [[ -x "$pl_root/target/debug/proofloops" ]]; then
-      pl_bin="$pl_root/target/debug/proofloops"
-    elif command -v proofloops >/dev/null 2>&1; then
-      pl_bin="proofloops"
-    elif [[ -n "$pl_root" ]] && [[ -f "$pl_root/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
-      pl_bin="cargo"
-    fi
-
-    if [[ -z "$pl_bin" ]]; then
-      echo "[check:report] proofloops not available (need ../proofloops or proofloops on PATH)" >&2
+    if [[ -z "$PROOFPATCH_BIN" ]]; then
+      echo "[check:report] proofpatch not available (install proofpatch or set PROOFPATCH_BIN)" >&2
       exit 2
     fi
 
-    # Curated list: high-signal proof frontiers.
     files=(
       "Covolume/Legendre/Main.lean"
       "Covolume/Legendre/Ankeny.lean"
       "Covolume/Cauchy/Main.lean"
     )
 
-    report_json="tmp/proofloops/report.json"
-    echo "[check:report] report json -> $report_json"
-    if [[ "$pl_bin" == "cargo" ]]; then
-      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-        report --repo "$repo_root" --files "${files[@]}" --timeout-s 120 --max-sorries 50 --context-lines 2 \
-        --output-html "$out_html" > "$report_json"
-    else
-      "$pl_bin" report --repo "$repo_root" --files "${files[@]}" --timeout-s 120 --max-sorries 50 --context-lines 2 \
-        --output-html "$out_html" > "$report_json"
-    fi
-
-    if command -v jq >/dev/null 2>&1; then
-      echo "[check:report] frontier summary"
-      jq -r '"next_actions=" + (.next_actions|length|tostring) + " files=" + (.table|length|tostring)' "$report_json"
-    fi
-
-    # Optional: ingest raw web-search JSON blobs into a small deduped notes file.
-    #
-    # Workflow:
-    # - Put any MCP tool outputs you care about into:
-    #     tmp/proofloops/research/raw.json
-    # - Then run:
-    #     ./Scripts/check.sh report
-    # - This will emit:
-    #     tmp/proofloops/research/research-notes.json
-    #
-    # This keeps `proofloops` pure (it does not execute MCP calls), while making it easy to
-    # fold external search results back into the local proof loop.
-    raw_research="${GON_RESEARCH_RAW_JSON:-tmp/proofloops/research/raw.json}"
-    if [[ -f "$raw_research" ]]; then
-      echo "[check:report] research-ingest -> tmp/proofloops/research/research-notes.json"
-      mkdir -p tmp/proofloops/research
-      if [[ "$pl_bin" == "cargo" ]]; then
-        cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-          research-ingest --input "$raw_research" --output-json "tmp/proofloops/research/research-notes.json"
-      else
-        "$pl_bin" research-ingest --input "$raw_research" --output-json "tmp/proofloops/research/research-notes.json"
-      fi
-
-      if command -v jq >/dev/null 2>&1; then
-        echo "[check:report] research summary"
-        jq -r '"raw_urls=" + (.raw_urls|tostring) + " deduped_urls=" + (.deduped_urls|tostring)' \
-          tmp/proofloops/research/research-notes.json
-        jq -r '.sources[0:10][] | "- " + .url + " (" + (.origin // "unknown") + ")"' \
-          tmp/proofloops/research/research-notes.json
-
-        echo "[check:report] attach research -> tmp/proofloops/report.enriched.json"
-        if [[ "$pl_bin" == "cargo" ]]; then
-          cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-            research-attach --report-json "$report_json" --research-notes "tmp/proofloops/research/research-notes.json" \
-            --top-k 3 --output-json "tmp/proofloops/report.enriched.json"
-        else
-          "$pl_bin" research-attach --report-json "$report_json" --research-notes "tmp/proofloops/research/research-notes.json" \
-            --top-k 3 --output-json "tmp/proofloops/report.enriched.json"
-        fi
-      else
-        echo "[check:report] jq not found; skipping research-notes summary" >&2
-      fi
-    else
-      echo "[check:report] no research JSON found at $raw_research (skipping)"
-    fi
-
-    # Also write “rubberduck” planning prompts as JSON for the main blockers.
-    # (These are inputs to an agent/human loop, not proofs.)
-    out_dir="$(dirname "$out_html")"
-    set +e
-    echo "[check:report] rubberduck prompts -> $out_dir"
-    if [[ "$pl_bin" == "cargo" ]]; then
-      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-        rubberduck-prompt --repo "$repo_root" --file "Covolume/Legendre/Main.lean" \
-        --lemma "sum_three_squares_of_not_exception" \
-        --output-json "$out_dir/rubberduck-legendre.json"
-      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-        rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
-        --lemma "nathanson_parameters" \
-        --output-json "$out_dir/rubberduck-nathanson.json"
-      cargo run --manifest-path "$pl_root/proofloops-core/Cargo.toml" --bin proofloops -- \
-        rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
-        --lemma "cauchy_lemma" \
-        --output-json "$out_dir/rubberduck-cauchy_lemma.json"
-    else
-      "$pl_bin" rubberduck-prompt --repo "$repo_root" --file "Covolume/Legendre/Main.lean" \
-        --lemma "sum_three_squares_of_not_exception" \
-        --output-json "$out_dir/rubberduck-legendre.json"
-      "$pl_bin" rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
-        --lemma "nathanson_parameters" \
-        --output-json "$out_dir/rubberduck-nathanson.json"
-      "$pl_bin" rubberduck-prompt --repo "$repo_root" --file "Covolume/Cauchy/Main.lean" \
-        --lemma "cauchy_lemma" \
-        --output-json "$out_dir/rubberduck-cauchy_lemma.json"
-    fi
-    rc=$?
-    set -e
-    if [[ $rc -ne 0 ]]; then
-      echo "[check:report] warning: rubberduck prompt generation failed (non-blocking)" >&2
-    fi
+    "$PROOFPATCH_BIN" report --repo "$repo_root" --files "${files[@]}" \
+      --timeout-s 120 --max-sorries 50 --context-lines 2 \
+      --output-html "$out_html" || true
 
     echo "[check:report] wrote $out_html"
     ;;
+
   pre-push)
     echo "[check:pre-push] lake build"
     "$LAKE" build
@@ -340,11 +168,8 @@ case "$profile" in
     echo "[check:pre-push] lint-style"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}"
     ;;
+
   ci)
-    # CI entrypoint: aim for “likely to pass CI”.
-    #
-    # In GitHub Actions, `lean-action` does the heavy setup, but we still want the same checks
-    # to be runnable locally with a single command.
     echo "[check:ci] lake build"
     "$LAKE" build
     echo "[check:ci] lake lint"
@@ -352,9 +177,9 @@ case "$profile" in
     echo "[check:ci] lint-style"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}"
     ;;
+
   *)
     echo "usage: ./Scripts/check.sh {pre-commit|pre-push|ci|report} [--github]" >&2
     exit 2
     ;;
 esac
-
