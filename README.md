@@ -1,5 +1,7 @@
 ## Geometry of Numbers (Lean)
 
+[![Lean Action CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
+
 Lean 4 formalization around a geometry-of-numbers route to:
 
 - **Legendre’s three-square theorem** (Ankeny 1957 + Minkowski)
@@ -40,7 +42,14 @@ Fast feedback loop (recommended during active work):
 just fast
 just status
 just ankeny
+just regen-check
 ```
+
+### Generated artifacts + safety
+
+- **Generated tables are audited**: `just regen-check` regenerates Cauchy medium-regime tables into `.generated/` and fails on drift.
+- **Artifacts are local-only**: `tmp/` and `.generated/` are gitignored.
+- **Secrets**: `.env` is gitignored. Don’t commit API keys; prefer env vars or a local `.env` file.
 
 ### Two formulas
 
