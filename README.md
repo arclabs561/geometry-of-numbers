@@ -1,6 +1,8 @@
 ## Geometry of Numbers (Lean)
 
 [![Lean Action CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](https://github.com/arclabs561/geometry-of-numbers)
+[![Lean](https://img.shields.io/badge/Lean-4.27.0--rc1-informational)](https://github.com/arclabs561/geometry-of-numbers/blob/main/lean-toolchain)
 
 Lean 4 formalization work around a geometry-of-numbers route to:
 
