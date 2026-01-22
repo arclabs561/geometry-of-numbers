@@ -61,7 +61,10 @@ just regen-check
 
 ### proofpatch integration (optional)
 
-This repo can optionally use the `proofpatch` CLI (if installed) during `pre-commit` to generate bounded reports and diff reviews.
+This repo can optionally use the `proofpatch` CLI during `pre-commit` to generate bounded reports and diff reviews:
+
+- `proofpatch`: `https://github.com/arclabs561/proofpatch`
+
 All outputs go under `tmp/proofpatch/` by default (gitignored).
 
 ### Two formulas
