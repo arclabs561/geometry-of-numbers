@@ -5,7 +5,8 @@ Lean 4 formalization around a geometry-of-numbers route to:
 - **Legendre’s three-square theorem** (Ankeny 1957 + Minkowski)
 - **Cauchy’s reduction** for Fermat’s polygonal number theorem
 
-This repo is a mix of proved lemmas and scaffolds that still contain `sorry`, but the whole project is expected to typecheck.
+This repo is intended to stay **buildable and `sorry`-free**; see `just status` / `lake exe status_report`.
+Some modules are still **scaffolds** in the sense of “compiles, but not the final story” (e.g. the LLL work).
 
 Dual-licensed under MIT or Apache-2.0.
 
@@ -17,9 +18,17 @@ Install Lean (one-time; pinned by `lean-toolchain`):
 curl -sSf https://elan.lean-lang.org/elan-init.sh | sh
 ```
 
+Or via Homebrew (macOS):
+
+```bash
+brew install elan-init
+elan-init -y
+```
+
 Build and run local checks:
 
 ```bash
+# If `lake` isn't on PATH, use `~/.elan/bin/lake` (or just use `just`, which defaults to it).
 lake build
 ./Scripts/check.sh pre-commit
 ./Scripts/check.sh pre-push

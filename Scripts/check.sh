@@ -391,6 +391,11 @@ case "$profile" in
   pre-push)
     echo "[check:pre-push] lake build"
     "$LAKE" build
+    echo "[check:pre-push] regen-check (generated tables audit)"
+    # This is intentionally not part of pre-commit (too slow).
+    # It MUST stay deterministic and should fail on drift.
+    "$LAKE" --version >/dev/null 2>&1 || true
+    uv run Scripts/regen_check_medium_tables.py
     echo "[check:pre-push] lake lint"
     "$LAKE" lint
     echo "[check:pre-push] lint-style"
@@ -403,6 +408,8 @@ case "$profile" in
     # to be runnable locally with a single command.
     echo "[check:ci] lake build"
     "$LAKE" build
+    echo "[check:ci] regen-check (generated tables audit)"
+    uv run Scripts/regen_check_medium_tables.py
     echo "[check:ci] lake lint"
     "$LAKE" lint
     echo "[check:ci] lint-style"

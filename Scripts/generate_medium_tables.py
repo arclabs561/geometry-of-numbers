@@ -194,12 +194,15 @@ def generate_mge22_data(base_dir: Path, *, t_max: int = 22) -> None:
     tri = [triangular_pred(t) for t in range(t_max + 1)]
 
     # Precompute all pairs of triangular numbers (with witnesses), to speed up sum-of-4 search.
-    pairs: Dict[int, Tuple[int, int]] = {}
+    #
+    # IMPORTANT: we must retain *all* witnesses for a given sum, not just the first witness.
+    # Some “special” cases (notably involving `q-1 = 0`) require a non-minimal (i,j) witness
+    # to satisfy the b-sum constraints.
+    pairs: Dict[int, List[Tuple[int, int]]] = {}
     for i in range(len(tri)):
         for j in range(len(tri)):
             s = tri[i] + tri[j]
-            if s not in pairs:
-                pairs[s] = (i, j)
+            pairs.setdefault(s, []).append((i, j))
     pair_keys = sorted(pairs.keys())
 
     def find_quad_for_q_with_b_range(q_target: int, b_lo: int, b_hi: int) -> Optional[Tuple[int, int, int, int]]:
@@ -208,11 +211,11 @@ def generate_mge22_data(base_dir: Path, *, t_max: int = 22) -> None:
             s_right = q_target - s_left
             if s_right not in pairs:
                 continue
-            t, u = pairs[s_left]
-            v, w = pairs[s_right]
-            b = t + u + v + w
-            if b_lo <= b <= b_hi:
-                return (t, u, v, w)
+            for (t, u) in pairs[s_left]:
+                for (v, w) in pairs[s_right]:
+                    b = t + u + v + w
+                    if b_lo <= b <= b_hi:
+                        return (t, u, v, w)
         return None
 
     default: Dict[int, Dict[str, int]] = {}

@@ -23,6 +23,10 @@ ankeny:
 checks:
     {{lake_bin}} exe gon_checks
 
+# Deterministic regen/audit check for generated tables.
+regen-check:
+    uv run Scripts/regen_check_medium_tables.py
+
 # Run the canonical repo check profiles (includes proofpatch integration when available).
 precommit:
     ./Scripts/check.sh pre-commit
