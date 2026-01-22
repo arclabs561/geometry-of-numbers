@@ -36,9 +36,9 @@ The “theorem layer” (monotonicity in `k`, etc.) lives in:
 
 Some ArXiv references we may lean on when choosing statement shapes:
 
-- Martin Henk, *Successive Minima and Lattice Points* (`https://arxiv.org/abs/math/0204158`)
-- Shvo Regavim, *Minkowski bases, Korkin-Zolotarev bases and successive minima* (`https://arxiv.org/abs/2106.03183`)
-- Aminata Dite Tanti Keita, *On a Conjecture of Schmidt for the Parametric Geometry of Numbers* (`https://arxiv.org/abs/1512.02939`)
+- Martin Henk, *Successive Minima and Lattice Points* (<https://arxiv.org/abs/math/0204158>)
+- Shvo Regavim, *Minkowski bases, Korkin-Zolotarev bases and successive minima* (<https://arxiv.org/abs/2106.03183>)
+- Aminata Dite Tanti Keita, *On a Conjecture of Schmidt for the Parametric Geometry of Numbers* (<https://arxiv.org/abs/1512.02939>)
 
 ## 3. Generated tables (Cauchy reduction “medium regime”)
 
@@ -116,7 +116,7 @@ As a result, it’s better to store **links + extracted key statements** than to
 
 ### Whitty talk notes (compact Nathanson proof outline)
 
-- `https://www.theoremoftheday.org/NumberTheory/Eureka/PolygonalNumberTalk/PolygonalNumberTheoremTalk.pdf`
+- <https://www.theoremoftheday.org/NumberTheory/Eureka/PolygonalNumberTalk/PolygonalNumberTheoremTalk.pdf>
 
 Key pieces we are encoding in `GeometryOfNumbers/Cauchy/Main.lean`:
 
@@ -129,7 +129,7 @@ Key pieces we are encoding in `GeometryOfNumbers/Cauchy/Main.lean`:
 
 ### Wikipedia statement of “Cauchy’s lemma”
 
-- `https://en.wikipedia.org/wiki/Fermat_polygonal_number_theorem`
+- <https://en.wikipedia.org/wiki/Fermat_polygonal_number_theorem>
 
 We treat this as a *signpost* for the lemma we need to formalize; we still need a proof-level
 reference suitable for Lean (likely via Nathanson’s book treatment).
