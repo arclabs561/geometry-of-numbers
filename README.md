@@ -2,7 +2,7 @@
 
 [![Lean Action CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
 
-Lean 4 formalization around a geometry-of-numbers route to:
+Lean 4 formalization work around a geometry-of-numbers route to:
 
 - **Legendre’s three-square theorem** (Ankeny 1957 + Minkowski)
 - **Cauchy’s reduction** for Fermat’s polygonal number theorem
@@ -10,7 +10,13 @@ Lean 4 formalization around a geometry-of-numbers route to:
 This repo is intended to stay **buildable and `sorry`-free**; see `just status` / `lake exe status_report`.
 Some modules are still **scaffolds** in the sense of “compiles, but not the final story” (e.g. the LLL work).
 
-Dual-licensed under MIT or Apache-2.0.
+Dual-licensed under MIT or Apache-2.0 (see `LICENSE-MIT` / `LICENSE-APACHE`).
+
+### Status (checkable)
+
+- `./Scripts/check.sh pre-commit` (fast lane)
+- `./Scripts/check.sh pre-push` (CI-ish lane; includes `regen-check`)
+- `just status` (`lake exe status_report`, should report 0 `sorry` tokens)
 
 ### Quickstart
 
@@ -51,6 +57,11 @@ just regen-check
 - **Artifacts are local-only**: `tmp/` and `.generated/` are gitignored.
 - **Secrets**: `.env` is gitignored. Don’t commit API keys; prefer env vars or a local `.env` file.
 
+### proofpatch integration (optional)
+
+This repo can optionally use the `proofpatch` CLI (if installed) during `pre-commit` to generate bounded reports and diff reviews.
+All outputs go under `tmp/proofpatch/` by default (gitignored).
+
 ### Two formulas
 
 Three-square “exception” numbers have the form:
@@ -70,7 +81,7 @@ $$
 - `GeometryOfNumbers.lean`: public import root
 - `GeometryOfNumbers/Core/`: reusable lemmas/definitions (some files are still scaffolds)
 - `GeometryOfNumbers/Legendre/`: the Ankeny proof path and the three-square theorem entry point
-- `GeometryOfNumbers/Cauchy/`: the polygonal-number reduction (currently scaffolded)
+- `GeometryOfNumbers/Cauchy/`: polygonal-number reduction (proved; uses generated medium-regime tables)
 - `GeometryOfNumbers/Computable/LLL.lean`: LLL scaffold; see also `Experiments/LLLRational.lean`
 - `Experiments/`: small probes and scratch files; these are allowed to use `sorry` but must compile
 
