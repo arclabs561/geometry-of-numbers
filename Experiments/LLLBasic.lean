@@ -9,7 +9,7 @@ Probing Mathlib's `gram_schmidt` and basis handling to prepare for
 the LLL algorithm implementation.
 -/
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 open Matrix
 
@@ -31,4 +31,4 @@ open InnerProductSpace
    u2 = v2 - proj_{u1}(v2) = [-1/2, 1/2]
 -/
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments

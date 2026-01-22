@@ -11,6 +11,69 @@
 *   **Obstacle**: This route requires significant infrastructure for quadratic form equivalence and mass formulas, which is currently underdeveloped or highly complex in Mathlib4.
 *   **Conclusion**: Shelved in favor of the more direct geometric descent method.
 
+## 2.5. Minkowski “engine lemma” (stable call-site)
+
+In practice, Minkowski arguments fail in Lean due to *interface friction* (exact hypothesis shapes,
+`ENNReal` normalization, and the `IsAddFundamentalDomain` packaging), not because the underlying mathematics
+is unclear.
+
+To reduce churn, this repo keeps a small wrapper module:
+
+- `GeometryOfNumbers/Core/MinkowskiEngine.lean`
+
+The goal is not to reprove Minkowski, but to keep a stable local interface so downstream proofs (e.g. Ankeny)
+don’t have to track Mathlib signature drift at every call-site.
+
+## 2.6. Successive minima: references + proof-shape notes
+
+The core definition is in:
+
+- `GeometryOfNumbers/Core/SuccessiveMinima.lean`
+
+The “theorem layer” (monotonicity in `k`, etc.) lives in:
+
+- `GeometryOfNumbers/Core/SuccessiveMinimaTheorems.lean`
+
+Some ArXiv references we may lean on when choosing statement shapes:
+
+- Martin Henk, *Successive Minima and Lattice Points* (`https://arxiv.org/abs/math/0204158`)
+- Shvo Regavim, *Minkowski bases, Korkin-Zolotarev bases and successive minima* (`https://arxiv.org/abs/2106.03183`)
+- Aminata Dite Tanti Keita, *On a Conjecture of Schmidt for the Parametric Geometry of Numbers* (`https://arxiv.org/abs/1512.02939`)
+
+## 3. Generated tables (Cauchy reduction “medium regime”)
+
+Some parts of the Cauchy/Nathanson reduction are most practical to validate by **bounded search + certification**
+(rather than hand-proving dozens of small inequality cases).
+
+In this repo, those results live in generated modules under:
+
+- `GeometryOfNumbers/Cauchy/MediumTablesSmall.lean`
+  - Aggregator for the finite band \(5 \le s \le 23\).
+  - Implementation detail: imports per-\(s\) shards under `GeometryOfNumbers/Cauchy/MediumTablesSmall/`.
+    - Shards are named `S05.lean` … `S23.lean` (zero-padded so lexicographic order matches numeric order).
+- `GeometryOfNumbers/Cauchy/MediumTablesMge22.lean`
+  - Generated tables + algebra for the asymptotic regime \(s-2 \ge 22\).
+
+### Why this structure exists
+
+- Lean compilation can time out on a single large `native_decide` proof blob.
+- Splitting into small shards keeps compilation **incremental** and keeps failures localized.
+
+### Editing / regeneration guidelines
+
+- Treat these files as **generated artifacts**: avoid manual proof edits unless you are fixing a stability issue
+  (e.g. a `simp` loop, heartbeats, or a definitional equality mismatch).
+- Do not merge shards back into a single monolithic file.
+- When changing the surrounding math, prefer adjusting the *consuming lemma* in `GeometryOfNumbers/Cauchy/Main.lean`
+  (and/or the aggregator lemma), not rewriting the entire table corpus.
+- If regeneration is needed, write a small generator (Lean or Python) that:
+  - enumerates bounded candidates for the relevant finite search,
+  - emits `def` + `lemma ..._spec := by native_decide`,
+  - writes one output file per shard (`S05`..`S23`), plus a stable aggregator import list.
+  Then validate with:
+  - `"$HOME/.elan/bin/lake" build GeometryOfNumbers.Cauchy.MediumTablesSmall`
+  - `"$HOME/.elan/bin/lake" build GeometryOfNumbers.Cauchy.MediumTablesMge22`
+
 ## Specialization: the Nathanson (1987) gap
 
 *   **Observation**: The expression $4a - b^2$ appearing in Cauchy's Lemma is always congruent to $3 \pmod 8$ when $a$ and $b$ are odd.
@@ -23,8 +86,8 @@ The project maintains a suite of experiments to validate algebraic invariants an
 ### Experiments policy (buildability first)
 
 - Every file under `Experiments/` must **compile under `lake build`** at all times.
-- Proofs may use `sorry` (with a short “TODO(sorry)” comment), but experiments should not contain
-  API-drifted proof attempts that break compilation.
+- If an experiment needs to record an unfinished direction, prefer **prose** + stable definitions.
+  Avoid `sorry` tokens (they confuse `status_report`), and avoid stale proof attempts that break compilation.
 - If an experiment becomes stale, prefer replacing the proof body with a stable placeholder and a
   minimal statement that records intent.
 
@@ -55,7 +118,7 @@ As a result, it’s better to store **links + extracted key statements** than to
 
 - `https://www.theoremoftheday.org/NumberTheory/Eureka/PolygonalNumberTalk/PolygonalNumberTheoremTalk.pdf`
 
-Key pieces we are encoding in `Covolume/Cauchy/Main.lean`:
+Key pieces we are encoding in `GeometryOfNumbers/Cauchy/Main.lean`:
 
 - Pick \(m = s-2\).
 - Choose odd \(b\) and \(r\) with \(0 \le r \le m-2\) and \(n \equiv b+r \pmod m\).

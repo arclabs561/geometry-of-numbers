@@ -13,7 +13,7 @@ This is meant to avoid “guessing by simp” in the Ankeny Minkowski step.
 
 noncomputable section
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 open MeasureTheory MeasureTheory.Measure
 open scoped NNReal ENNReal BigOperators
@@ -34,7 +34,7 @@ example : E3L2 = WithLp 2 E3 := rfl
 example (r : ℝ) :
     volume (Metric.ball (0 : E3L2) r) =
       (ENNReal.ofReal r) ^ 3 * ENNReal.ofReal (Real.pi * 4 / 3) := by
-  simpa using (EuclideanSpace.volume_ball_fin_three (x := (0 : E3L2)) (r := r))
+  exact EuclideanSpace.volume_ball_fin_three (x := (0 : E3L2)) (r := r)
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments
 

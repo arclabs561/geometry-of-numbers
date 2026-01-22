@@ -14,7 +14,7 @@ This is not meant to replace mathlib tooling (`lint-style`, docgen, etc.).
 
 open Lean
 
-namespace Covolume.Scripts
+namespace GeometryOfNumbers.Scripts
 
 def forbiddenChars : List Char :=
   -- U+0335 COMBINING SHORT STROKE OVERLAY, seen in some linter-rendered outputs.
@@ -51,7 +51,7 @@ def checkNoStyleWaivers : IO Unit := do
     throw <| IO.userError s!"{p}: found non-comment waiver lines:\n{String.intercalate "\n" badLines}"
 
 def checkNoForbiddenCharsInLean : IO Unit := do
-  let roots : Array System.FilePath := #["Covolume", "Experiments", "Scripts"]
+  let roots : Array System.FilePath := #["GeometryOfNumbers", "Experiments", "Scripts"]
   for root in roots do
     if !(← root.pathExists) then
       continue
@@ -64,10 +64,10 @@ def checkNoForbiddenCharsInLean : IO Unit := do
 def run : IO Unit := do
   checkNoStyleWaivers
   checkNoForbiddenCharsInLean
-  IO.println "covolume_checks: ok"
+  IO.println "gon_checks: ok"
 
-end Covolume.Scripts
+end GeometryOfNumbers.Scripts
 
 def main : IO Unit :=
-  Covolume.Scripts.run
+  GeometryOfNumbers.Scripts.run
 

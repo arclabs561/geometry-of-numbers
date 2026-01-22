@@ -4,7 +4,7 @@ import Mathlib.Tactic.Positivity
 
 open Real
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 /-!
 This file used to carry a real-analysis monotonicity lemma for interval bounds in the Cauchy-style
@@ -19,4 +19,4 @@ f(x) = \sqrt{8x-8} - \sqrt{6x-3}\ \text{is monotone on}\ [1,\infty).
 \]
 -/
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments

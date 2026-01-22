@@ -20,7 +20,7 @@ and a handy algebraic identity:
 
 noncomputable section
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 open scoped BigOperators NNReal ENNReal
 
@@ -31,23 +31,21 @@ lemma one_lt_sqrt2_mul_pi_div_three : (1 : ℝ) < Real.sqrt 2 * Real.pi / 3 := b
 
 lemma eight_div_sqrt_two : (8 : ℝ) / Real.sqrt 2 = 4 * Real.sqrt 2 := by
   have hs2 : (Real.sqrt 2) ≠ 0 := by
-    exact ne_of_gt (Real.sqrt_pos.2 (by nlinarith))
-  -- Clear denominators.
+    exact ne_of_gt (Real.sqrt_pos.2 (by norm_num : (0 : ℝ) < 2))
+  have hsq : (Real.sqrt 2) ^ 2 = (2 : ℝ) := by
+    exact Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)
+  -- Clear denominators: it suffices to show `8 = (√2)^2 * 4`.
   field_simp [hs2]
-  -- `√2 * √2 = 2`.
-  have : Real.sqrt 2 * Real.sqrt 2 = (2 : ℝ) := by
-    simpa [pow_two] using (Real.sq_sqrt (by nlinarith : 0 ≤ (2 : ℝ)))
-  nlinarith [this]
+  simp [hsq]
+  norm_num
 
 lemma one_lt_sqrt2_mul_pi_div_three_ennreal :
     (1 : ℝ≥0∞) < ENNReal.ofReal (Real.sqrt 2 * Real.pi / 3) := by
   -- `ofReal` is strictly monotone on nonnegative reals.
-  have hpos : 0 ≤ (Real.sqrt 2 * Real.pi / 3) := by
-    have hs2 : 0 ≤ Real.sqrt 2 := Real.sqrt_nonneg 2
-    have hpi : 0 ≤ Real.pi := by have := Real.pi_pos; linarith
-    nlinarith
   -- Reduce to the real inequality.
   have h : (1 : ℝ) < Real.sqrt 2 * Real.pi / 3 := one_lt_sqrt2_mul_pi_div_three
+  have hpos : 0 < (Real.sqrt 2 * Real.pi / 3) := by
+    exact lt_trans (by norm_num : (0 : ℝ) < 1) h
   -- `ENNReal.ofReal_lt_ofReal_iff` expects nonneg; we supply it and rewrite `ofReal 1 = 1`.
   simpa using (ENNReal.ofReal_lt_ofReal_iff hpos).2 h
 
@@ -58,13 +56,13 @@ lemma mul_lt_mul_sqrt2_mul_pi_div_three_of_pos (a : ℝ) (ha : 0 < a) :
 
 lemma ofReal_mul_lt_ofReal_mul_sqrt2_mul_pi_div_three_of_pos (a : ℝ) (ha : 0 < a) :
     ENNReal.ofReal a < ENNReal.ofReal (a * (Real.sqrt 2 * Real.pi / 3)) := by
-  have hpos : 0 ≤ a * (Real.sqrt 2 * Real.pi / 3) := by
+  have hpos : 0 < a * (Real.sqrt 2 * Real.pi / 3) := by
     have hcpos : 0 < (Real.sqrt 2 * Real.pi / 3) := by
-      have hs2 : 0 < Real.sqrt 2 := Real.sqrt_pos.2 (by nlinarith)
+      have hs2 : 0 < Real.sqrt 2 := Real.sqrt_pos.2 (by norm_num : (0 : ℝ) < 2)
       have hpi : 0 < Real.pi := Real.pi_pos
       nlinarith
-    exact le_of_lt (mul_pos ha hcpos)
+    exact mul_pos ha hcpos
   exact (ENNReal.ofReal_lt_ofReal_iff hpos).2 (mul_lt_mul_sqrt2_mul_pi_div_three_of_pos a ha)
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments
 

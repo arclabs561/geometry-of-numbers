@@ -11,7 +11,7 @@ This is conservative (it counts `sorry` even in comments), but it stays truthful
 
 open Lean
 
-namespace Covolume.Scripts
+namespace GeometryOfNumbers.Scripts
 
 partial def collectLeanFiles (dir : System.FilePath) : IO (Array System.FilePath) := do
   let mut out : Array System.FilePath := #[]
@@ -67,11 +67,11 @@ def printTop (xs : Array (System.FilePath × Nat)) (limit : Nat) : IO Unit := do
     let (p, k) := xs[i]!
     IO.println s!"  - {p}: {k}"
 
-end Covolume.Scripts
+end GeometryOfNumbers.Scripts
 
 def main : IO Unit := do
-  IO.println "Covolume Project Status"
-  IO.println "======================="
+  IO.println "GeometryOfNumbers Project Status"
+  IO.println "==============================="
   IO.println ""
   IO.println "This is an automated status summary generated from the library source."
   IO.println "Verification state is defined by the success of the 'lake build' process."
@@ -80,10 +80,10 @@ def main : IO Unit := do
 
   IO.println "## Legendre's Three-Square Theorem"
   IO.println ""
-  IO.println "  - Entry point: `Covolume/Legendre/Main.lean`"
-  IO.println "  - Support: `Covolume/Legendre/Exceptions.lean`"
-  IO.println "  - Recommended: `Covolume/Legendre/Ankeny.lean` (Ankeny 1957)"
-  IO.println "  - Alternative: `Covolume/Legendre/Minkowski.lean` (descent scaffold)"
+  IO.println "  - Entry point: `GeometryOfNumbers/Legendre/Main.lean`"
+  IO.println "  - Support: `GeometryOfNumbers/Legendre/Exceptions.lean`"
+  IO.println "  - Recommended: `GeometryOfNumbers/Legendre/Ankeny.lean` (Ankeny 1957)"
+  IO.println "  - Alternative: `GeometryOfNumbers/Legendre/Minkowski.lean` (descent scaffold)"
   IO.println ""
   IO.println "  Notes:"
   IO.println "  - Easy direction is proved: sum of three squares ⇒ not a three-square exception."
@@ -91,23 +91,24 @@ def main : IO Unit := do
   IO.println ""
   IO.println "## Polygonal Number Theorem"
   IO.println ""
-  IO.println "  - Entry point: `Covolume/Cauchy/Main.lean`"
-  IO.println "  - Algebra spine: `Covolume/Core/Basic.lean`"
+  IO.println "  - Entry point: `GeometryOfNumbers/Cauchy/Main.lean`"
+  IO.println "  - Algebra spine: `GeometryOfNumbers/Core/Basic.lean`"
   IO.println ""
   IO.println "  Notes:"
-  IO.println "  - 'gauss_triangular' and 'fermat_polygonal' currently contain placeholders."
-  IO.println "  - Scripts under `Scripts/` and scratch under `Experiments/` are for checking intuition."
+  IO.println "  - `gauss_triangular` is proved (Gauss's triangular number theorem)."
+  IO.println "  - `fermat_polygonal` is proved (by cases on `s`: `s=3` Gauss, `s=4` Lagrange, `s≥5` Cauchy/Nathanson route)."
+  IO.println "  - The heavy lifting for `s≥5` is in the Cauchy decomposition + generated table lemmas."
   IO.println ""
 
   IO.println "## `sorry` summary (top files)"
   IO.println ""
-  let roots : Array System.FilePath := #["Covolume", "Experiments", "Scripts", "Archive"]
-  let counts ← Covolume.Scripts.collectSorryCounts roots
-  let counts := Covolume.Scripts.sortByCountDesc counts
+  let roots : Array System.FilePath := #["GeometryOfNumbers", "Experiments", "Scripts", "Archive"]
+  let counts ← GeometryOfNumbers.Scripts.collectSorryCounts roots
+  let counts := GeometryOfNumbers.Scripts.sortByCountDesc counts
   if counts.isEmpty then
     IO.println "  (no `sorry` tokens found)"
   else
-    Covolume.Scripts.printTop counts 15
+    GeometryOfNumbers.Scripts.printTop counts 15
   IO.println ""
 
   IO.println "## Dependencies (from Mathlib)"

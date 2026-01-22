@@ -71,21 +71,24 @@ def IsReduced (F : TernaryQF) : Prop :=
   0 ≤ 2 * F.a23 ∧ 2 * F.a23 ≤ F.a22 ∧
   F.a22 ≤ F.a33
 
-/-- Hermite's constant for ternary forms implies a11 * a22 * a33 ≤ 2 * det for reduced forms. -/
-lemma reduced_coeff_bound (F : TernaryQF) (_hpos : F.PosDef) (_hred : F.IsReduced) :
-    F.a11 * F.a22 * F.a33 ≤ 2 * F.det := by
-  sorry
+-- Hermite-type bounds and reduced-form classification theorems are archived below (not formalized yet).
+/-!
+## Archived theorems (not yet formalized)
 
-theorem reduced_det_one_is_sum_three_squares (F : TernaryQF) (hpos : F.PosDef) 
-    (hred : F.IsReduced) (hdet : F.det = 1) :
-    F = sumThreeSquares := by
-  sorry
+This file is an *archive* of a classical ternary-quadratic-form route to the three-squares theorem.
+We keep definitions here because they are occasionally useful as a reference, but we intentionally do
+**not** keep partially-formalized theorem statements with admitted placeholders in-tree.
 
-/-- Every positive definite ternary form of determinant 1 is equivalent 
-    to the sum of three squares. -/
-theorem equiv_sumThreeSquares_of_det_one (F : TernaryQF) (hpos : F.PosDef) (hdet : F.det = 1) :
-    F.Equiv sumThreeSquares := by
-  sorry
+The intended next theorems (once we decide to invest in this approach) are:
+
+- `reduced_coeff_bound`: for reduced positive definite forms, a bound of the shape
+  \(a_{11} a_{22} a_{33} \le 2 \det(F)\) (Hermite-type bound in dimension 3).
+- `reduced_det_one_is_sum_three_squares`: a classification result for reduced determinant-1 forms.
+- `equiv_sumThreeSquares_of_det_one`: every positive definite determinant-1 form is `Equiv` to `sumThreeSquares`.
+
+These likely require a substantial amount of infrastructure (reduction theory, minimal vectors,
+and/or a tight link to Mathlib’s existing quadratic form and lattice APIs), so they are deferred.
+-/
 
 /-- The discriminant of a ternary quadratic form. -/
 def disc (F : TernaryQF) : ℤ := F.det

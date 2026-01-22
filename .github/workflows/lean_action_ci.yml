@@ -41,5 +41,5 @@ jobs:
       - uses: codespell-project/actions-codespell@v2
         with:
           # Keep this narrow: docs + Lean sources, skip build artifacts.
-          path: "README.md,doc,docs,Covolume,Experiments,Scripts"
+          path: "README.md,doc,docs,GeometryOfNumbers,Experiments,Scripts"
           skip: ".lake,./.git"

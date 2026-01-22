@@ -11,7 +11,7 @@ import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.LinearAlgebra.Basis.Defs
 import Mathlib.Data.Set.Countable
 import Mathlib.Tactic
-import Covolume.Legendre.Ankeny
+import GeometryOfNumbers.Legendre.Ankeny
 
 noncomputable section
 
@@ -60,14 +60,14 @@ open MeasureTheory MeasureTheory.Measure
 #check MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_le_measure
 #check ZLattice.covolume_eq_det
 #check ZLattice.covolume_eq_measure_fundamentalDomain
-#check Covolume.exists_ankeny_prime
-#check Covolume.exists_ankeny_b
-#check Covolume.exists_ankeny_representation
+#check GeometryOfNumbers.exists_ankeny_prime
+#check GeometryOfNumbers.exists_ankeny_b
+#check GeometryOfNumbers.exists_ankeny_representation
 
 /-!
 ## Toy 1: ZSpan fundamental domain and volume for a simple ℤ-span lattice in `ℝ^3`
 
-This mirrors what we ended up doing in `Covolume/Legendre/Ankeny.lean`,
+This mirrors what we ended up doing in `GeometryOfNumbers/Legendre/Ankeny.lean`,
 but pared down to the minimum: pick a basis `B`, then `F := ZSpan.fundamentalDomain B`,
 then:
 
@@ -90,13 +90,13 @@ def toyBasis : Module.Basis (Fin 3) ℝ (Fin 3 → ℝ) :=
       toyA
       (by
         -- det = 2*3*5 ≠ 0
-        have : toyA.det = (30 : ℝ) := by
+        have hdet : toyA.det = (30 : ℝ) := by
           simp [toyA, Matrix.det_fin_three]
           norm_num
         -- over a field, det ≠ 0 ↔ IsUnit det
-        have : toyA.det ≠ 0 := by
-          simpa [this]
-        simpa [isUnit_iff_ne_zero, this]))
+        have hdet_ne : toyA.det ≠ 0 := by
+          simp [hdet]
+        simp [isUnit_iff_ne_zero, hdet_ne]))
 
 -- The ℤ-span lattice and its fundamental domain.
 def toyLattice : AddSubgroup (Fin 3 → ℝ) :=
@@ -119,7 +119,8 @@ example : IsAddFundamentalDomain toyLattice toyFD volume := by
 example :
     volume toyFD =
       ENNReal.ofReal |(Matrix.of (toyBasis)).det| := by
-  simpa [toyFD] using (ZSpan.volume_fundamentalDomain (toyBasis))
+  -- Rewrite the goal, then use the library lemma directly.
+  simp [toyFD]
 
 -- In this toy, the “basis matrix” is `toyAᵀ` (basis vectors are the columns of `toyA`).
 lemma toyBasis_matrixOf : Matrix.of (toyBasis) = (toyA)ᵀ := by
@@ -128,7 +129,7 @@ lemma toyBasis_matrixOf : Matrix.of (toyBasis) = (toyA)ᵀ := by
   -- `toyBasis i` is `toLin _ _ toyA (basisFun i)`, i.e. column `i` of `toyA`.
   -- `Matrix.of toyBasis` therefore has entries `(i,j) ↦ toyA j i`, i.e. `toyAᵀ`.
   simp [toyBasis, Module.Basis.map_apply, Matrix.toLinearEquiv, Matrix.of_apply,
-    Matrix.toLin_eq_toLin', Matrix.toLin'_apply, Pi.basisFun_apply, Matrix.mulVec_single_one,
+    Matrix.toLin_eq_toLin', Matrix.toLin'_apply, Pi.basisFun_apply,
     Matrix.transpose_apply, toyA]
 
 -- Therefore `det (Matrix.of toyBasis) = det toyA = 30`.
@@ -137,8 +138,9 @@ lemma toyBasis_det : (Matrix.of (toyBasis)).det = (30 : ℝ) := by
     simp [toyA, Matrix.det_fin_three]
     norm_num
   calc
-    (Matrix.of toyBasis).det = (toyAᵀ).det := by simpa [toyBasis_matrixOf]
-    _ = toyA.det := by simpa using (Matrix.det_transpose toyA)
+    (Matrix.of toyBasis).det = (toyAᵀ).det := by simp [toyBasis_matrixOf]
+    _ = toyA.det := by
+          exact Matrix.det_transpose toyA
     _ = 30 := hA
 
 end ToyZSpan
@@ -201,7 +203,7 @@ lemma diagLin_apply (a b c : ℝ) (x : E3) :
 lemma diagLin_apply_coord (a b c : ℝ) (x : E3) (i : Fin 3) :
     diagLin a b c x i = (![a, b, c] i) * x i := by
   -- `toLin'` is `mulVec`; `mulVec_diagonal` is the key simplifier.
-  simpa [diagLin, Matrix.toLin'_apply, Matrix.mulVec_diagonal]
+  simp [diagLin, Matrix.toLin'_apply, Matrix.mulVec_diagonal]
 
 lemma diagLin_eq_zero_of_ne_zero (a b c : ℝ) (ha : a ≠ 0) (hb : b ≠ 0) (hc : c ≠ 0)
     {x : E3} (hx : diagLin a b c x = 0) : x = 0 := by
@@ -344,7 +346,7 @@ example :
 
   have hFD : volume toyFD = ENNReal.ofReal (30 : ℝ) := by
     -- `volume toyFD = ofReal |det|`, and `det = 30` in this toy.
-    simpa [toyFD, toyBasis_det] using (ZSpan.volume_fundamentalDomain (toyBasis))
+    simp [toyFD, toyBasis_det]
 
   have hCube : volume (cube 4) = ENNReal.ofReal (512 : ℝ) := by
     have h := (volume_cube (R := (4 : ℝ)) (by norm_num : (0 : ℝ) ≤ 4))
@@ -358,12 +360,13 @@ example :
       calc
         volume toyFD * 2 ^ (Module.finrank ℝ E3)
             = ENNReal.ofReal (30 : ℝ) * (2 : ENNReal) ^ 3 := by
-                simpa [hFD, hrank]
+                simp [hFD, hrank]
         _ = ENNReal.ofReal (30 : ℝ) * (8 : ENNReal) := by norm_num
         _ = ENNReal.ofReal (30 : ℝ) * ENNReal.ofReal (8 : ℝ) := by simp
         _ = ENNReal.ofReal ((30 : ℝ) * 8) := by
               symm
-              simpa using (ENNReal.ofReal_mul (p := (30 : ℝ)) (q := (8 : ℝ)) (by positivity))
+              have h30 : (0 : ℝ) ≤ 30 := by norm_num
+              exact ENNReal.ofReal_mul (p := (30 : ℝ)) (q := (8 : ℝ)) h30
         _ = ENNReal.ofReal (240 : ℝ) := by norm_num
     -- convert to a real inequality under `ENNReal.ofReal`.
     have : ENNReal.ofReal (240 : ℝ) < ENNReal.ofReal (512 : ℝ) := by
@@ -400,7 +403,7 @@ instance : Countable (↥Z3_as_addSubgroup) := by
   -- `Fin 3 → ℤ` is countable, so the range of the “integer cast” map is a countable set in `E3`.
   have hEq : (Z3_as_addSubgroup : Set E3) = Set.range (fun z : Fin 3 → ℤ => intCastHom z) := by
     ext x
-    simp [Z3_as_addSubgroup, AddMonoidHom.mem_range]
+    simp [Z3_as_addSubgroup]
   have hset : (Z3_as_addSubgroup : Set E3).Countable := by
     simpa [hEq] using (Set.countable_range (fun z : Fin 3 → ℤ => intCastHom z))
   exact (Set.countable_coe_iff.2 hset)
@@ -504,7 +507,7 @@ lemma mem_ball_zero_iff_sum_sq (r : ℝ) (hr : 0 ≤ r) (x : E3L2) :
   -- Use the set equality `ball 0 r = {x | ∑ i, x i^2 < r^2}` and rewrite membership.
   have hset : Metric.ball (0 : E3L2) r = {x : E3L2 | (∑ i : Fin 3, (x i) ^ 2) < r ^ 2} := by
     simpa using (EuclideanSpace.ball_zero_eq (n := Fin 3) r hr)
-  simpa [hset]
+  simp [hset]
 
 /-!
 ### Ellipsoid-as-preimage-of-ball
@@ -533,7 +536,7 @@ Deprecated volume facts:
 Earlier versions of this scratchpad proved volume bounds for `ankenyEllipsoidAsPreimage` in the
 `Metric.ball` presentation. The stabilized, canonical proofs now live in:
 
-- `Covolume/Legendre/Ankeny.lean`:
+- `GeometryOfNumbers/Legendre/Ankeny.lean`:
   - `volume_ankenyEllipsoidL2_eq`
   - `volume_ankenyEllipsoidL2_gt`
 
@@ -551,7 +554,7 @@ a nonzero lattice point inside the Ankeny ellipsoid.
 Deprecated Minkowski call-site:
 
 The “find a nonzero lattice point in the ellipsoid” call-site is now implemented and used in
-`Covolume.exists_ankeny_representation` (see `Covolume/Legendre/Ankeny.lean`).
+`GeometryOfNumbers.exists_ankeny_representation` (see `GeometryOfNumbers/Legendre/Ankeny.lean`).
 -/
 
 -- Symmetry is automatic because the defining expression is a sum of squares.
@@ -565,7 +568,7 @@ lemma ankenyEllipsoid_symm (n q R : ℝ) : ∀ x ∈ ankenyEllipsoid n q R, -x �
 -- We leave this as a marker for the exact lemma we will use (so downstream work is guided).
 -- (The easiest route is: pick `T = diagLin (Real.sqrt (2q)) 1 (Real.sqrt n)` and rewrite.)
 -- TODO (next): prove `Convex ℝ (ankenyEllipsoid n q R)` once `T` is defined and `det T ≠ 0`.
-example (n q R : ℝ) : True := by
+example (_n _q _R : ℝ) : True := by
   trivial
 
 end AnkenyMinkowskiSkeleton

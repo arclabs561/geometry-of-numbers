@@ -6,7 +6,7 @@ import Mathlib.Algebra.Group.Nat.Even
 Brute-checks for the Nathanson/Cauchy inequality window.
 
 This file is **not** a proof. It's a small executable sanity check to guide the remaining
-`nathanson_parameters` lemma in `Covolume/Cauchy/Main.lean`.
+`nathanson_parameters` lemma in `GeometryOfNumbers/Cauchy/Main.lean`.
 
 Given `s ≥ 5` and `n`, we attempt to find `b q r` such that:
 
@@ -21,7 +21,7 @@ formal statement is missing a hypothesis (e.g. `n` large enough) or the choice s
 needs adjustment.
 -/
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 private def m (s : Nat) : Nat := s - 2
 
@@ -81,5 +81,5 @@ def find_window (s n : Nat) : Option (Nat × Nat × Nat) :=
 #eval (find_window 5 100)  -- some witness should usually exist for modest n
 #eval (find_window 6 200)
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments
 

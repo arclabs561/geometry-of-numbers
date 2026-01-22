@@ -8,7 +8,7 @@ import Mathlib.Tactic
 Experimental implementation of LLL steps using rational arithmetic.
 -/
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 open Matrix
 
@@ -26,6 +26,7 @@ def test_basis : Matrix (Fin 2) (Fin 2) ℚ := !![1, 1; 0, 1]
 
 example : size_reduce_step test_basis 0 1 (1 : ℚ) = !![1, 0; 0, 1] := by
   simp [size_reduce_step, test_basis, round_rat]
-  ext i j; fin_cases i <;> fin_cases j <;> simp <;> norm_num
+  ext i j
+  fin_cases i <;> fin_cases j <;> (simp; try norm_num)
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments

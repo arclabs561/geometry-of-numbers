@@ -1,4 +1,4 @@
-import Covolume.Legendre.Ankeny
+import GeometryOfNumbers.Legendre.Ankeny
 
 /-!
 # Ankeny L2 ellipsoid volume (archived experiment)
@@ -6,16 +6,16 @@ import Covolume.Legendre.Ankeny
 This file previously implemented the L2-ball / `WithLp` volume normalization needed for the Ankeny
 Minkowski step.
 
-That work is now fully implemented in `Covolume/Legendre/Ankeny.lean`:
+That work is now fully implemented in `GeometryOfNumbers/Legendre/Ankeny.lean`:
 
 - `volume_ankenyEllipsoidL2_eq`
 - `volume_ankenyEllipsoidL2_gt`
 
-We keep this module as a lightweight pointer (no duplicate proofs, no `sorry`).
+We keep this module as a lightweight pointer (no duplicate proofs, no admitted placeholders).
 -/
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
--- Intentionally no declarations: see `Covolume/Legendre/Ankeny.lean`.
+-- Intentionally no declarations: see `GeometryOfNumbers/Legendre/Ankeny.lean`.
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments

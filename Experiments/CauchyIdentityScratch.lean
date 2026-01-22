@@ -1,4 +1,4 @@
-import Covolume.Core.Basic
+import GeometryOfNumbers.Core.Basic
 import Mathlib.Data.Nat.ModEq
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -6,10 +6,10 @@ import Mathlib.Tactic.Ring
 /-!
 Scratch space for the Cauchy polygonal-number reduction.
 
-Goal: sanity-check the algebraic “spine” we intend to use in `Covolume/Cauchy/Main.lean`,
+Goal: sanity-check the algebraic “spine” we intend to use in `GeometryOfNumbers/Cauchy/Main.lean`,
 separately from any interval / inequality choices.
 
-The key identity already lives in `Covolume/Core/Basic.lean`:
+The key identity already lives in `GeometryOfNumbers/Core/Basic.lean`:
 
 \[
   2\cdot\sum_{i=1}^4 P(s, x_i)
@@ -26,7 +26,7 @@ What we actually need in the `cauchy_decomposition`-style proofs is the rearrang
 
 namespace Experiments
 
-open Covolume
+open GeometryOfNumbers
 
 theorem cauchy_polygonal_identity_rearranged
     (s : ℕ) (hs : 3 ≤ s) (t u v w : ℕ) :
@@ -35,7 +35,7 @@ theorem cauchy_polygonal_identity_rearranged
       (2 * (polygonal s t + polygonal s u + polygonal s v + polygonal s w) : ℤ)
         + ((m - 2) * ((t : ℤ) + (u : ℤ) + (v : ℤ) + (w : ℤ))) := by
   have h :=
-    Covolume.cauchy_polygonal_identity (s := s) hs t u v w
+    GeometryOfNumbers.cauchy_polygonal_identity (s := s) hs t u v w
   dsimp at h ⊢
   -- `h : 2*sumP = m*sumSq + (2-m)*sumLin`; rearrange via linear arithmetic in ℤ.
   linarith
@@ -50,10 +50,10 @@ theorem two_mul_sum_four_polygonal
     (s : ℕ) (t u v w : ℕ) :
     2 * (polygonal s t + polygonal s u + polygonal s v + polygonal s w)
       = 2 * (t + u + v + w) + (s - 2) * (t * (t - 1) + u * (u - 1) + v * (v - 1) + w * (w - 1)) := by
-  have ht := Covolume.two_mul_polygonal s t
-  have hu := Covolume.two_mul_polygonal s u
-  have hv := Covolume.two_mul_polygonal s v
-  have hw := Covolume.two_mul_polygonal s w
+  have ht := GeometryOfNumbers.two_mul_polygonal s t
+  have hu := GeometryOfNumbers.two_mul_polygonal s u
+  have hv := GeometryOfNumbers.two_mul_polygonal s v
+  have hw := GeometryOfNumbers.two_mul_polygonal s w
   -- Expand LHS and rewrite each `2 * polygonal` term.
   simp [Nat.mul_add, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] at *
   rw [ht, hu, hv, hw]

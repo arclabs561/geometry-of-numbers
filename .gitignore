@@ -6,5 +6,6 @@ lake-packages
 .env
 tmp/
 .tmp/
+.generated/
 *.pdf
 .cursor/

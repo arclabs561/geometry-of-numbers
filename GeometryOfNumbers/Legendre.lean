@@ -1,14 +1,7 @@
 /-!
-# Geometry of Numbers: Legendre three-square theorem (facade)
+# Geometry of Numbers: Legendre three-square theorem
 
-This is the primary “application” chapter of the geometry-of-numbers machinery in this repo.
+Aggregator import for the Legendre / Ankeny development.
 -/
 
-import Covolume.Legendre.Main
-
-namespace GeometryOfNumbers
-
-export Covolume
-
-end GeometryOfNumbers
-
+import GeometryOfNumbers.Legendre.Main

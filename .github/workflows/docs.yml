@@ -19,12 +19,11 @@ jobs:
         with:
           use-mathlib-cache: true
 
-      - name: build docs (GeometryOfNumbers, Covolume)
+      - name: build docs (GeometryOfNumbers)
         run: |
           cd docbuild
           MATHLIB_NO_CACHE_ON_UPDATE=1 "$HOME/.elan/bin/lake" update
           "$HOME/.elan/bin/lake" build GeometryOfNumbers:docs
-          "$HOME/.elan/bin/lake" build Covolume:docs
 
       - name: upload docs artifact
         uses: actions/upload-artifact@v4

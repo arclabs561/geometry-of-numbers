@@ -1,15 +1,14 @@
 /-!
-# Geometry of Numbers: Minkowski helpers (facade)
+# Geometry of Numbers: Minkowski helpers (module alias)
 
-Re-exports `Covolume.Minkowski` definitions that are used as the “definition layer” in
-Minkowski/ellipsoid arguments.
+This module keeps the historical module path `GeometryOfNumbers.Core.Minkowski` stable.
+It re-exports the definitions in `GeometryOfNumbers.Core.MinkowskiHelpers`.
 -/
 
-import Covolume.Core.MinkowskiHelpers
+import GeometryOfNumbers.Core.MinkowskiHelpers
 
 namespace GeometryOfNumbers.Core
 
-export Covolume.Minkowski
+export GeometryOfNumbers.Minkowski
 
 end GeometryOfNumbers.Core
-

@@ -1,7 +1,7 @@
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic
-import Covolume.Legendre.Ankeny
+import GeometryOfNumbers.Legendre.Ankeny
 
 /-!
 # Descent Valuation Argument
@@ -11,7 +11,7 @@ If p is a prime factor of n - x^2 with odd multiplicity and p ≡ 3 mod 4,
 then we derive a contradiction.
 -/
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 open Nat
 
@@ -50,7 +50,7 @@ lemma valuation_argument (n q : ℕ) (x y z : ℤ) (p : ℕ) [hp : Fact p.Prime]
   -- This experiment is now a thin wrapper around the canonical lemma proved in `Legendre/Ankeny.lean`.
   haveI : Fact p.Prime := hp
   simpa using
-    (Covolume.ankeny_p_dvd_yz_of_dvd_K (n := n) (q := q) (K := K) (p := p) (x := x) (y := y) (z := z)
+    (GeometryOfNumbers.ankeny_p_dvd_yz_of_dvd_K (n := n) (q := q) (K := K) (p := p) (x := x) (y := y) (z := z)
       (hp := hp.1) (hp4 := hp_mod3) (hpK := hpK) (hp_not_dvd_n := hp_not_dvd_n) (hK_eq := hK_eq) (h_eqK := h_eqK))
 
-end Covolume.Experiments
+end GeometryOfNumbers.Experiments

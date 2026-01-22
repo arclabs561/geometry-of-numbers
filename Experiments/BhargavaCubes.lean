@@ -1,13 +1,13 @@
-import Covolume.Core.Composition
+import GeometryOfNumbers.Core.Composition
 import Mathlib.Tactic
 
 /-!
 # Bhargava Cube Experiment
 
-Verifying that the three slice quadratic forms of a cube have the same discriminant.
+Verifying on a concrete example that the three slice quadratic forms of a cube have the same discriminant.
 -/
 
-namespace Covolume.Experiments
+namespace GeometryOfNumbers.Experiments
 
 open Composition
 
@@ -27,6 +27,11 @@ def test_cube : IntegerCube :=
 /-- Calculate the discriminant of a binary quadratic form directly. -/
 def bqf_disc (a b c : ℤ) : ℤ := b^2 - 4 * a * c
 
--- Further experiments will follow here once discriminant extraction is implemented.
+-- Concrete sanity check: for `test_cube`, all three slice discriminants agree.
+example : discriminant (slice_bqf test_cube 0) = discriminant (slice_bqf test_cube 1) := by
+  native_decide
 
-end Covolume.Experiments
+example : discriminant (slice_bqf test_cube 1) = discriminant (slice_bqf test_cube 2) := by
+  native_decide
+
+end GeometryOfNumbers.Experiments

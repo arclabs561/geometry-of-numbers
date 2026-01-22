@@ -10,19 +10,14 @@ require mathlib from git
   "https://github.com/leanprover-community/mathlib4" @ "cced109deab25b4322e1a12b877335e092322b74"
 
 @[default_target]
-lean_lib «Covolume» {
-  -- add library configuration options here
+lean_lib «GeometryOfNumbers» {
+  -- Public import root + public namespace.
 }
 
 /-!
-`GeometryOfNumbers` is the **public facade** namespace.
-
-Internally, most code still lives under `Covolume.*` (historical name), but new users should
-prefer `import GeometryOfNumbers` and the `GeometryOfNumbers.*` modules.
+`GeometryOfNumbers` is the public namespace and import root.
 -/
-lean_lib «GeometryOfNumbers» {
-  -- Facade: re-exports selected `Covolume` modules + curated API.
-}
+-- (No additional `lean_lib` needed; already declared above.)
 
 lean_lib «Experiments» {
   srcDir := "Experiments"
@@ -42,9 +37,12 @@ lean_lib «Experiments» {
     `FunBallToQ,
     `GramSchmidtCheck,
     `HenselLiftTwoSquares,
+    `LegendreRemainingResidues,
     `LLLBasic,
     `LLLRational,
-    `SuccessiveMinimaBasic
+    `SuccessiveMinimaBasic,
+    `SuccessiveMinimaZ2,
+    `PoissonTheta
   ]
 }
 
@@ -58,4 +56,8 @@ lean_exe «gon_checks» {
 
 lean_exe «gon_precommit» {
   root := `Scripts.PreCommit
+}
+
+lean_exe «ankeny_check» {
+  root := `Scripts.AnkenyCheck
 }
