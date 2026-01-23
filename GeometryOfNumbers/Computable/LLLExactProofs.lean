@@ -310,5 +310,125 @@ theorem dotQ_gsoVectorForKPrefix_mem_eq_zero {n : ℕ} (bk : Fin n → ℚ) (us 
   simpa [gsoVectorForKPrefix, gsoVectorForKPrefixFrom] using
     (dotQ_gsoVectorForKPrefixFrom_mem_eq_zero (n := n) bk bk us horth hnz hdot)
 
+/-!
+### Gram–Schmidt identity: `dot(b, u) = dot(u, u)`
+
+If `u` is the Gram–Schmidt vector obtained by subtracting projections of `bk` onto an already
+orthogonal list `us`, then:
+
+- `bk = u + (sum of projection components in span(us))`, and
+- `u ⟂ span(us)`,
+
+so `dot(bk, u) = dot(u, u)`.
+-/
+
+def projSumForKPrefix {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) : Fin n → ℚ :=
+  us.foldl (fun s u => s + (muQPrefix (n := n) bk u) • u) (0 : Fin n → ℚ)
+
+lemma dotQ_foldl_add_proj_preserve {n : ℕ} (bk uj : Fin n → ℚ) (us : List (Fin n → ℚ)) (s0 : Fin n → ℚ)
+    (h0 : ∀ u ∈ us, dotQ (n := n) u uj = 0) :
+    dotQ (n := n) (us.foldl (fun s u => s + (muQPrefix (n := n) bk u) • u) s0) uj = dotQ (n := n) s0 uj := by
+  induction us generalizing s0 with
+  | nil =>
+      simp
+  | cons u us ih =>
+      have hu0 : dotQ (n := n) u uj = 0 := h0 u (by simp)
+      have h0' : ∀ a ∈ us, dotQ (n := n) a uj = 0 := by
+        intro a ha
+        exact h0 a (by simp [ha])
+      -- one step: dot(s0 + μu, uj) = dot(s0,uj) + μ dot(u,uj) = dot(s0,uj)
+      simpa [List.foldl, dotQ_add_left, dotQ_smul_left, hu0] using (ih (s0 := s0 + (muQPrefix (n := n) bk u) • u) h0')
+
+theorem dotQ_projSumForKPrefix_right_eq_zero {n : ℕ} (bk uj : Fin n → ℚ) (us : List (Fin n → ℚ))
+    (h0 : ∀ u ∈ us, dotQ (n := n) u uj = 0) :
+    dotQ (n := n) (projSumForKPrefix (n := n) bk us) uj = 0 := by
+  -- reduce to the general fold lemma with `s0=0`
+  simpa [projSumForKPrefix, dotQ] using (dotQ_foldl_add_proj_preserve (n := n) bk uj us (0 : Fin n → ℚ) h0)
+
+def gsFoldPairFrom {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) (p0 : (Fin n → ℚ) × (Fin n → ℚ)) :
+    (Fin n → ℚ) × (Fin n → ℚ) :=
+  us.foldl
+    (fun p u =>
+      let μ := muQPrefix (n := n) bk u
+      (p.1 - μ • u, p.2 + μ • u))
+    p0
+
+def projSumForKPrefixFrom {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) (s0 : Fin n → ℚ) : Fin n → ℚ :=
+  us.foldl (fun s u => s + (muQPrefix (n := n) bk u) • u) s0
+
+lemma gsFoldPairFrom_invariant {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) (p0 : (Fin n → ℚ) × (Fin n → ℚ)) :
+    (gsFoldPairFrom (n := n) bk us p0).1 + (gsFoldPairFrom (n := n) bk us p0).2 = p0.1 + p0.2 := by
+  induction us generalizing p0 with
+  | nil =>
+      simp [gsFoldPairFrom]
+  | cons u us ih =>
+      -- unfold one `foldl` step
+      have := ih ((p0.1 - (muQPrefix (n := n) bk u) • u, p0.2 + (muQPrefix (n := n) bk u) • u))
+      -- rewrite `foldl` on cons
+      simpa [gsFoldPairFrom, List.foldl, sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using this
+
+lemma gsFoldPairFrom_fst_eq_gsoVectorForKPrefixFrom {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ))
+    (p0 : (Fin n → ℚ) × (Fin n → ℚ)) :
+    (gsFoldPairFrom (n := n) bk us p0).1 = gsoVectorForKPrefixFrom (n := n) bk p0.1 us := by
+  induction us generalizing p0 with
+  | nil =>
+      simp [gsFoldPairFrom, gsoVectorForKPrefixFrom]
+  | cons u us ih =>
+      -- unfold one `foldl` step and apply IH
+      have := ih ((p0.1 - (muQPrefix (n := n) bk u) • u, p0.2 + (muQPrefix (n := n) bk u) • u))
+      -- `gsoVectorForKPrefixFrom` on cons performs the same update to the first component
+      simpa [gsFoldPairFrom, gsoVectorForKPrefixFrom, gsUpdate, List.foldl] using this
+
+lemma gsFoldPairFrom_snd_eq_projSumForKPrefixFrom {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ))
+    (p0 : (Fin n → ℚ) × (Fin n → ℚ)) :
+    (gsFoldPairFrom (n := n) bk us p0).2 = projSumForKPrefixFrom (n := n) bk us p0.2 := by
+  induction us generalizing p0 with
+  | nil =>
+      simp [gsFoldPairFrom, projSumForKPrefixFrom]
+  | cons u us ih =>
+      have := ih ((p0.1 - (muQPrefix (n := n) bk u) • u, p0.2 + (muQPrefix (n := n) bk u) • u))
+      simpa [gsFoldPairFrom, projSumForKPrefixFrom, List.foldl] using this
+
+theorem gsoVectorForKPrefix_add_projSum_eq_bk {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) :
+    gsoVectorForKPrefix (n := n) bk us + projSumForKPrefix (n := n) bk us = bk := by
+  -- evaluate the pair fold invariant at `(bk,0)` and rewrite the components
+  have hinv :
+      (gsFoldPairFrom (n := n) bk us (bk, 0)).1 + (gsFoldPairFrom (n := n) bk us (bk, 0)).2 = bk := by
+    simpa using (gsFoldPairFrom_invariant (n := n) bk us (bk, (0 : Fin n → ℚ)))
+  have hfst : (gsFoldPairFrom (n := n) bk us (bk, 0)).1 = gsoVectorForKPrefix (n := n) bk us := by
+    -- `gsoVectorForKPrefix` is the `v0=bk` special case
+    simpa [gsoVectorForKPrefix] using (gsFoldPairFrom_fst_eq_gsoVectorForKPrefixFrom (n := n) bk us (bk, (0 : Fin n → ℚ)))
+  have hsnd : (gsFoldPairFrom (n := n) bk us (bk, 0)).2 = projSumForKPrefix (n := n) bk us := by
+    -- unfold projSumForKPrefix as the `s0=0` special case
+    simpa [projSumForKPrefix, projSumForKPrefixFrom] using
+      (gsFoldPairFrom_snd_eq_projSumForKPrefixFrom (n := n) bk us (bk, (0 : Fin n → ℚ)))
+  simpa [hfst, hsnd] using hinv
+
+theorem dotQ_bk_eq_dotQ_gsoVector_normSq {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ))
+    (horth : us.Pairwise (fun u w => dotQ (n := n) u w = 0))
+    (hnz : ∀ u ∈ us, dotQ (n := n) u u ≠ 0) :
+    let uj := gsoVectorForKPrefix (n := n) bk us
+    dotQ (n := n) bk uj = dotQ (n := n) uj uj := by
+  intro uj
+  have hsum : bk = uj + projSumForKPrefix (n := n) bk us := by
+    -- rearrange the decomposition lemma
+    simpa [uj, add_comm, add_left_comm, add_assoc] using
+      (gsoVectorForKPrefix_add_projSum_eq_bk (n := n) bk us).symm
+  have h0 : ∀ u ∈ us, dotQ (n := n) u uj = 0 := by
+    intro u hu
+    have : dotQ (n := n) uj u = 0 := dotQ_gsoVectorForKPrefix_mem_eq_zero (n := n) bk us horth hnz u hu
+    simpa [dotQ_comm] using this
+  have hproj0 : dotQ (n := n) (projSumForKPrefix (n := n) bk us) uj = 0 :=
+    dotQ_projSumForKPrefix_right_eq_zero (n := n) bk uj us h0
+  -- now expand dot(bk,uj)
+  calc
+    dotQ (n := n) bk uj
+        = dotQ (n := n) (uj + projSumForKPrefix (n := n) bk us) uj := by
+            exact congrArg (fun x => dotQ (n := n) x uj) hsum
+    _ = dotQ (n := n) uj uj + dotQ (n := n) (projSumForKPrefix (n := n) bk us) uj := by
+            simp [dotQ_add_left]
+    _ = dotQ (n := n) uj uj := by
+            simp [hproj0]
+
 end GeometryOfNumbers.Computable
 
