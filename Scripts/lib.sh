@@ -46,6 +46,8 @@ resolve_proof_cli() {
     for p in \
       "$PP_ROOT/target/release/proofpatch" \
       "$PP_ROOT/target/debug/proofpatch" \
+      "$PP_ROOT/proofpatch-cli/target/release/proofpatch" \
+      "$PP_ROOT/proofpatch-cli/target/debug/proofpatch" \
       "$PP_ROOT/proofpatch-core/target/release/proofpatch" \
       "$PP_ROOT/proofpatch-core/target/debug/proofpatch"
     do
@@ -63,11 +65,23 @@ resolve_proof_cli() {
     PP_BIN="proofpatch"
     return 0
   fi
-  if [[ -n "$PP_ROOT" ]] && [[ -f "$PP_ROOT/proofpatch-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
-    PP_KIND="cargo"
-    PP_EXE="proofpatch"
-    PP_MANIFEST="$PP_ROOT/proofpatch-core/Cargo.toml"
-    return 0
+  # Cargo fallback: pick the package manifest that actually defines the `proofpatch` binary.
+  #
+  # In newer `proofpatch` layouts, the binary lives in `proofpatch-cli/` (package `proofpatch-cli`,
+  # bin name `proofpatch`). Older layouts used `proofpatch-core/`.
+  if [[ -n "$PP_ROOT" ]] && command -v cargo >/dev/null 2>&1; then
+    if [[ -f "$PP_ROOT/proofpatch-cli/Cargo.toml" ]]; then
+      PP_KIND="cargo"
+      PP_EXE="proofpatch"
+      PP_MANIFEST="$PP_ROOT/proofpatch-cli/Cargo.toml"
+      return 0
+    fi
+    if [[ -f "$PP_ROOT/proofpatch-core/Cargo.toml" ]]; then
+      PP_KIND="cargo"
+      PP_EXE="proofpatch"
+      PP_MANIFEST="$PP_ROOT/proofpatch-core/Cargo.toml"
+      return 0
+    fi
   fi
 
   # Back-compat: `proofloops` (older name/layout).
@@ -126,9 +140,17 @@ pp_run() {
 pp_run_fresh() {
   local subcmd="${1:-}"
   shift || true
-  if [[ "$PP_EXE" == "proofpatch" ]] && [[ -n "$PP_ROOT" ]] && [[ -f "$PP_ROOT/proofpatch-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
-    cargo run --manifest-path "$PP_ROOT/proofpatch-core/Cargo.toml" --bin proofpatch -- "$subcmd" "$@"
-    return $?
+  # Prefer running from sources (fresh) when we have a sibling checkout.
+  # Use whichever crate manifest defines the `proofpatch` binary in this checkout.
+  if [[ "$PP_EXE" == "proofpatch" ]] && [[ -n "$PP_ROOT" ]] && command -v cargo >/dev/null 2>&1; then
+    if [[ -f "$PP_ROOT/proofpatch-cli/Cargo.toml" ]]; then
+      cargo run --manifest-path "$PP_ROOT/proofpatch-cli/Cargo.toml" --bin proofpatch -- "$subcmd" "$@"
+      return $?
+    fi
+    if [[ -f "$PP_ROOT/proofpatch-core/Cargo.toml" ]]; then
+      cargo run --manifest-path "$PP_ROOT/proofpatch-core/Cargo.toml" --bin proofpatch -- "$subcmd" "$@"
+      return $?
+    fi
   fi
   # Back-compat: older repo name/layout.
   if [[ "$PP_EXE" == "proofloops" ]] && [[ -n "$PP_ROOT" ]] && [[ -f "$PP_ROOT/proofloops-core/Cargo.toml" ]] && command -v cargo >/dev/null 2>&1; then
