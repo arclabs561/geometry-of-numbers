@@ -2,14 +2,15 @@ import Mathlib.Data.ZMod.Basic
 import Mathlib.Data.Int.ModEq
 import Mathlib.NumberTheory.SumTwoSquares
 
-#check ZMod.cast_natCast
-#check ZMod.castHom
-#check ZMod.castHom_apply
-#check ZMod.cast
-#check ZMod.intCast_zmod_eq_zero_iff_dvd
-#check Int.modEq_zero_iff_dvd
-#check Int.modEq_iff_dvd
-#check ZMod.exists_sq_eq_neg_one_iff
+-- Silent API probes (avoid `#check` noise during builds).
+private def _probe_cast_natCast := @ZMod.cast_natCast
+private def _probe_castHom := @ZMod.castHom
+private def _probe_castHom_apply := @ZMod.castHom_apply
+private def _probe_cast := @ZMod.cast
+private def _probe_intCast_zmod_eq_zero_iff_dvd := @ZMod.intCast_zmod_eq_zero_iff_dvd
+private def _probe_modEq_zero_iff_dvd := @Int.modEq_zero_iff_dvd
+private def _probe_modEq_iff_dvd := @Int.modEq_iff_dvd
+private def _probe_exists_sq_eq_neg_one_iff := @ZMod.exists_sq_eq_neg_one_iff
 
 /-!
 Small “bridge” experiments for what `Legendre/Ankeny.lean` needs next.

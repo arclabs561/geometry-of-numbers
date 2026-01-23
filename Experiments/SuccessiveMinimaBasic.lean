@@ -20,13 +20,13 @@ def unit_disk : Set (Fin 2 → ℝ) := { v | ‖v‖ ≤ 1 }
 
 -- The first successive minimum of ℤ² wrt unit disk should be 1.
 /-!
-This file used to include a placeholder lemma about `successive_minima` for the ℤ² lattice.
+This file used to include a “TODO lemma” attempt about `successive_minima` for the ℤ² lattice.
 
 The intended next step (when we return to successive minima infrastructure) is:
 - obtain a convenient `DiscreteTopology` / `ZLattice` instance for `lattice_z2`,
 - compute (or at least bound) `successive_minima lattice_z2 unit_disk 1`.
 
-We keep the definitions here, but avoid admitted placeholders so the experiments folder stays tidy.
+We keep the definitions here, but avoid admitted stubs so the experiments folder stays tidy.
 -/
 
 end GeometryOfNumbers.Experiments

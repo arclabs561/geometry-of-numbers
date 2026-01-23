@@ -84,11 +84,14 @@ $$
 ## What’s here (roughly)
 
 - `GeometryOfNumbers.lean`: public import root
-- `GeometryOfNumbers/Core/`: reusable lemmas/definitions (some files are still scaffolds)
+- `GeometryOfNumbers/Core/`: reusable lemmas/definitions
+  - note: `Core/QuadraticLattice.lean` is an interface stub (not used by the main proofs yet)
+  - note: `Core/Composition.lean` is exploratory (definitions only; proof work lives elsewhere)
 - `GeometryOfNumbers/Legendre/`: the Ankeny proof path and the three-square theorem entry point
 - `GeometryOfNumbers/Cauchy/`: polygonal-number reduction (proved; uses generated medium-regime tables)
 - `GeometryOfNumbers/Computable/LLL.lean`: LLL scaffold; see also `Experiments/LLLRational.lean`
-- `Experiments/`: small probes and scratch files; these are allowed to use `sorry` but must compile
+- `Experiments/`: small probes and scratch files; these must compile under `lake build` and should stay `sorry`-free
+  (use `Archive/` for dead ends / historical notes, and keep it `sorry`-free too so `lake exe status_report` stays meaningful)
 
 ### Tooling
 

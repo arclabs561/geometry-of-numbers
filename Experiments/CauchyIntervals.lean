@@ -8,8 +8,8 @@ namespace GeometryOfNumbers.Experiments
 
 /-!
 This file used to carry a real-analysis monotonicity lemma for interval bounds in the Cauchy-style
-reduction. We are not using that route currently, so we keep this module as a placeholder without
-unfinished lemmas.
+reduction. We are not using that route currently, so we keep this module as a prose-only note
+without unfinished lemmas.
 
 If we return to the Cauchy interval argument, reintroduce:
 

@@ -141,148 +141,8 @@ lemma sum_three_squares_of_two_mod_eight (t : ℕ) (ht : t % 8 = 2) :
   rcases hs_rep with ⟨x', y', z', ht_rep⟩
   refine ⟨x', y', z', ?_⟩
   simpa [hm_eq] using ht_rep
-  /-
-  obtain ⟨s, m, hm_eq, hm_sq⟩ := exists_squarefree_part t
-  have hm2 : m % 8 = 2 := _root_.GeometryOfNumbers.squarefree_part_mod_eight_two t s m hm_eq ht
-
-  -- Squarefree `2 mod 8` case: apply the Q₁ route with a prime `q ≡ -1 (mod m)` and `q % 8 = 1`.
-  have hm_pos : 0 < m := by omega
-  have hs_odd : Odd (m / 2) := by
-    -- `m % 8 = 2` ⇒ `m = 8k+2` ⇒ `m/2 = 4k+1` is odd.
-    have : (m / 2) % 2 = 1 := by omega
-    exact Nat.odd_iff.2 this
-  obtain ⟨q, hq_prime, hq8, hq_mods⟩ :=
-    _root_.GeometryOfNumbers.exists_prime_mod_eight_and_eq_neg_one (s := (m / 2)) hs_odd 1 (Or.inl rfl)
-  have hq1 : q % 4 = 1 := by omega
-
-  -- Convert `q ≡ -1 (mod m/2)` and `q % 8 = 1` into `q ≡ -1 (mod m)`.
-  have hm_eq2 : m = 2 * (m / 2) := by
-    have : Even m := by
-      have : m % 2 = 0 := by omega
-      exact Nat.even_iff.2 this
-    exact (Nat.two_mul_div_two_of_even this).symm
-  have hq_odd : Odd q := by
-    have : q % 2 = 1 := by omega
-    exact Nat.odd_iff.2 this
-  have h2 : 2 ∣ q + 1 := by
-    -- `q` odd ⇒ `q+1` even.
-    have : (q + 1) % 2 = 0 := by omega
-    exact Nat.dvd_iff_mod_eq_zero.mpr this
-  have hq1_dvd : (m / 2) ∣ q + 1 := by
-    -- `q = -1` in `ZMod (m/2)` implies `m/2 ∣ q+1`.
-    have : (q : ZMod (m / 2)) + 1 = 0 := by
-      -- avoid `simp` recursion: rewrite once, then close by a single `simp`.
-      rw [hq_mods]
-      simp
-    have : ((q + 1 : ℕ) : ZMod (m / 2)) = 0 := by
-      -- `(q+1 : ZMod s) = (q : ZMod s) + 1`
-      simpa [Nat.cast_add, Nat.cast_one] using this
-    exact (ZMod.natCast_eq_zero_iff (q + 1) (m / 2)).1 this
-  have hcop2 : Nat.Coprime 2 (m / 2) := Nat.coprime_two_left.2 hs_odd
-  have hm_dvd : m ∣ q + 1 := by
-    -- `m = 2*(m/2)` and `2` is coprime to `m/2`.
-    have hmul : 2 * (m / 2) ∣ q + 1 := hcop2.mul_dvd_of_dvd_of_dvd h2 hq1_dvd
-    simpa [hm_eq2] using hmul
-  have hq_modZ : (q : ℤ) ≡ (-1 : ℤ) [ZMOD (m : ℤ)] := by
-    rcases hm_dvd with ⟨k, hk⟩
-    refine (Int.modEq_iff_add_fac).2 ?_
-    refine ⟨-(k : ℤ), ?_⟩
-    -- `q + 1 = m*k` ⇒ `-1 = q - m*k`.
-    have hkZ : (q : ℤ) + 1 = (m : ℤ) * k := by exact_mod_cast hk
-    linarith
-
-  -- `Nat.Coprime m q` from `m ∣ q+1`.
-  have hmq : Nat.Coprime m q := by
-    -- `gcd m q` divides `q+1` and `q`, hence divides `1`.
-    have hm_dvd_q1 : m ∣ q + 1 := hm_dvd
-    have hd1 : Nat.gcd m q ∣ 1 := by
-      have hdq : Nat.gcd m q ∣ q := Nat.gcd_dvd_right m q
-      have hdm : Nat.gcd m q ∣ m := Nat.gcd_dvd_left m q
-      have hdq1 : Nat.gcd m q ∣ q + 1 := dvd_trans hdm hm_dvd_q1
-      -- If `d ∣ q` then `d ∣ q+1 ↔ d ∣ 1`.
-      exact (Nat.dvd_add_iff_left hdq).1 (by simpa using hdq1)
-    exact (Nat.coprime_iff_gcd_eq_one).2 (Nat.dvd_one.mp hd1)
-
-  -- Show `-m` is a square mod `q` via Jacobi-symbol bookkeeping.
-  have hb : ∃ b : ℤ, b ^ 2 ≡ - (m : ℤ) [ZMOD (q : ℤ)] := by
-    classical
-    haveI : Fact q.Prime := ⟨hq_prime⟩
-    have hJ2 : J(2 | q) = (1 : ℤ) := by
-      have hq_odd' : Odd q := hq_prime.odd_of_ne_two (by
-        intro hq2; subst hq2; simp at hq8)
-      calc
-        J(2 | q) = ZMod.χ₈ q := jacobiSym.at_two hq_odd'
-        _ = (1 : ℤ) := by
-          have hred : ZMod.χ₈ q = ZMod.χ₈ (q % 8 : ℕ) := by
-            simpa using (ZMod.χ₈_nat_mod_eight q)
-          have hval : ZMod.χ₈ (1 : ℕ) = (1 : ℤ) := by decide
-          simpa [hred, hq8] using hval
-    have hs4 : (m / 2) % 4 = 1 := by omega
-    have hJq_s : J((q : ℤ) | (m / 2)) = (1 : ℤ) := by
-      have hs_odd' : Odd (m / 2) := hs_odd
-      have hq_mod_sZ : (q : ℤ) ≡ (-1 : ℤ) [ZMOD (m / 2 : ℤ)] := by
-        -- from `(q : ZMod (m/2)) = -1`
-        have : ((q : ℤ) : ZMod (m / 2)) = (-1 : ZMod (m / 2)) := by
-          simpa [Int.cast_natCast] using hq_mods
-        exact (ZMod.intCast_eq_intCast_iff (q : ℤ) (-1 : ℤ) (m / 2)).1 this
-      have : J((q : ℤ) | (m / 2)) = J(-1 | (m / 2)) := by
-        refine jacobiSym.mod_left' (a₁ := (q : ℤ)) (a₂ := (-1 : ℤ)) (b := (m / 2)) ?_
-        simpa using hq_mod_sZ.eq
-      have hJ_neg_one : J(-1 | (m / 2)) = (1 : ℤ) := by
-        have : (m / 2) % 4 = 1 := hs4
-        calc
-          J(-1 | (m / 2)) = ZMod.χ₄ (m / 2) := jacobiSym.at_neg_one hs_odd'
-          _ = (1 : ℤ) := ZMod.χ₄_nat_one_mod_four this
-      simpa [hJ_neg_one] using this
-    have hJs_q : J((m / 2 : ℤ) | q) = (1 : ℤ) := by
-      have hs_odd' : Odd (m / 2) := hs_odd
-      have hq1' : q % 4 = 1 := hq1
-      have := jacobiSym.quadratic_reciprocity_one_mod_four (a := q) (b := (m / 2)) hq1' hs_odd'
-      -- `J(q|s) = J(s|q)`
-      simpa using (this ▸ hJq_s)
-    have hJm_q : J((m : ℤ) | q) = (1 : ℤ) := by
-      -- `m = 2*(m/2)` and both factors have Jacobi symbol `1`.
-      have hm2' : (m : ℤ) = (2 : ℤ) * (m / 2 : ℤ) := by
-        have hm2n : m = 2 * (m / 2) := by simpa [hm_eq2, Nat.mul_comm] using hm_eq2
-        exact_mod_cast hm2n
-      have hmul : J((2 : ℤ) * (m / 2 : ℤ) | q) = J(2 | q) * J((m / 2 : ℤ) | q) :=
-        jacobiSym.mul_left 2 (m / 2) q
-      simpa [hm2', hmul, hJ2, hJs_q]
-    have hJ_negm_q : J(-(m : ℤ) | q) = (1 : ℤ) := by
-      have hq_odd' : Odd q := hq_prime.odd_of_ne_two (by
-        intro hq2; subst hq2; simp at hq8)
-      have hχ4 : ZMod.χ₄ q = (1 : ℤ) := ZMod.χ₄_nat_one_mod_four (by omega : q % 4 = 1)
-      calc
-        J(-(m : ℤ) | q) = ZMod.χ₄ q * J((m : ℤ) | q) := jacobiSym.neg (a := (m : ℤ)) (hb := hq_odd')
-        _ = 1 := by simp [hχ4, hJm_q]
-    have hsq_q : IsSquare (-(m : ZMod q)) := by
-      simpa [Int.cast_neg, Int.cast_natCast] using
-        (ZMod.isSquare_of_jacobiSym_eq_one (p := q) (a := (-(m : ℤ))) hJ_negm_q)
-    rcases hsq_q with ⟨r, hr⟩
-    rcases ZMod.intCast_surjective r with ⟨b, hb⟩
-    refine ⟨b, ?_⟩
-    have : ((b : ZMod q) ^ 2) = (-(m : ℤ) : ZMod q) := by simpa [hb] using hr.symm
-    exact (ZMod.intCast_eq_intCast_iff (b ^ 2) (-(m : ℤ)) q).1 (by
-      simpa [Int.cast_pow, pow_two] using this)
-
-  obtain ⟨b, hbq⟩ := hb
-  obtain ⟨x, y, z, hQ, _hxyz_ne, hxy, hybz⟩ :=
-    exists_ankeny_representation_q1 m q b hm_pos hq_prime hmq hq1 (by simpa using hq_modZ) hbq
-  have hQ' : (q : ℤ) * x ^ 2 + y ^ 2 + (m : ℤ) * z ^ 2 = (m * q : ℤ) := by
-    simpa [ankeny_Q1, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using hQ
-  obtain ⟨u, v, hm_int⟩ :=
-    _root_.GeometryOfNumbers.reduction_to_sum_three_squares_q1 (n := m) (q := q) (x := x) (y := y) (z := z)
-      hQ' hq_prime hq1 (by simpa using hq_modZ) hm_sq b hxy hybz hbq
-  have hm_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = m := by
-    refine ⟨x.natAbs, u.natAbs, v.natAbs, ?_⟩
-    zify
-    simp [sq_abs, hm_int]
-  have hs_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = s ^ 2 * m :=
-    sum_three_squares_mul_sq s m hm_rep
-  rcases hs_rep with ⟨x', y', z', ht_rep⟩
-  refine ⟨x', y', z', ?_⟩
-  simpa [hm_eq] using ht_rep
-  -/
+  -- (The earlier development path for this case was kept as a long comment; it has been removed.
+  -- See git history if you need the explicit Jacobi-symbol bookkeeping derivation.)
 
 lemma sum_three_squares_of_five_mod_eight (t : ℕ) (ht : t % 8 = 5) :
     ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = t := by
@@ -319,125 +179,8 @@ lemma sum_three_squares_of_six_mod_eight (t : ℕ) (ht : t % 8 = 6) :
   rcases hs_rep with ⟨x', y', z', ht_rep⟩
   refine ⟨x', y', z', ?_⟩
   simpa [hm_eq] using ht_rep
-  /-
-  obtain ⟨s, m, hm_eq, hm_sq⟩ := exists_squarefree_part t
-  have hm6 : m % 8 = 6 := _root_.GeometryOfNumbers.squarefree_part_mod_eight_six t s m hm_eq ht
-  -- For `6 mod 8`, we use the same Q₁ route but choose `q % 8 = 5`.
-  -- (The Jacobi-symbol computation swaps `J(2|q)` to compensate for `m/2 % 4 = 3`.)
-  have hm_pos : 0 < m := by omega
-  have hs_odd : Odd (m / 2) := by
-    have : (m / 2) % 2 = 1 := by omega
-    exact Nat.odd_iff.2 this
-  obtain ⟨q, hq_prime, hq8, hq_mods⟩ :=
-    _root_.GeometryOfNumbers.exists_prime_mod_eight_and_eq_neg_one (s := (m / 2)) hs_odd 5 (Or.inr rfl)
-  have hq1 : q % 4 = 1 := by omega
-
-  have hm_eq2 : m = 2 * (m / 2) := by
-    have : Even m := by
-      have : m % 2 = 0 := by omega
-      exact Nat.even_iff.2 this
-    exact (Nat.two_mul_div_two_of_even this).symm
-  have h2 : 2 ∣ q + 1 := by
-    have : (q + 1) % 2 = 0 := by omega
-    exact Nat.dvd_iff_mod_eq_zero.mpr this
-  have hq1_dvd : (m / 2) ∣ q + 1 := by
-    have : (q : ZMod (m / 2)) + 1 = 0 := by
-      rw [hq_mods]
-      simp
-    have : ((q + 1 : ℕ) : ZMod (m / 2)) = 0 := by
-      simpa [Nat.cast_add, Nat.cast_one] using this
-    exact (ZMod.natCast_eq_zero_iff (q + 1) (m / 2)).1 this
-  have hcop2 : Nat.Coprime 2 (m / 2) := Nat.coprime_two_left.2 hs_odd
-  have hm_dvd : m ∣ q + 1 := by
-    rcases hcop2.mul_dvd_of_dvd_of_dvd h2 hq1_dvd with hmul
-    simpa [hm_eq2, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hmul
-  have hq_modZ : (q : ℤ) ≡ (-1 : ℤ) [ZMOD (m : ℤ)] := by
-    rcases hm_dvd with ⟨k, hk⟩
-    refine (Int.modEq_iff_add_fac).2 ?_
-    refine ⟨-(k : ℤ), ?_⟩
-    have hkZ : (q : ℤ) + 1 = (m : ℤ) * k := by exact_mod_cast hk
-    linarith
-
-  have hmq : Nat.Coprime m q := by
-    have hm_dvd_q1 : m ∣ q + 1 := hm_dvd
-    have hd1 : Nat.gcd m q ∣ 1 := by
-      have hdq : Nat.gcd m q ∣ q := Nat.gcd_dvd_right m q
-      have hdm : Nat.gcd m q ∣ m := Nat.gcd_dvd_left m q
-      have hdq1 : Nat.gcd m q ∣ q + 1 := dvd_trans hdm hm_dvd_q1
-      exact (Nat.dvd_add_iff_left hdq).1 (by simpa using hdq1)
-    exact (Nat.coprime_iff_gcd_eq_one).2 (Nat.dvd_one.mp hd1)
-
-  have hb : ∃ b : ℤ, b ^ 2 ≡ - (m : ℤ) [ZMOD (q : ℤ)] := by
-    classical
-    haveI : Fact q.Prime := ⟨hq_prime⟩
-    have hq_odd' : Odd q := hq_prime.odd_of_ne_two (by
-      intro hq2; subst hq2; simp at hq8)
-    have hJ2 : J(2 | q) = (-1 : ℤ) := by
-      calc
-        J(2 | q) = ZMod.χ₈ q := jacobiSym.at_two hq_odd'
-        _ = (-1 : ℤ) := by
-          have hred : ZMod.χ₈ q = ZMod.χ₈ (q % 8 : ℕ) := by
-            simpa using (ZMod.χ₈_nat_mod_eight q)
-          have hval : ZMod.χ₈ (5 : ℕ) = (-1 : ℤ) := by decide
-          simpa [hred, hq8] using hval
-    have hs4 : (m / 2) % 4 = 3 := by omega
-    have hJq_s : J((q : ℤ) | (m / 2)) = (-1 : ℤ) := by
-      have hq_mod_sZ : (q : ℤ) ≡ (-1 : ℤ) [ZMOD (m / 2 : ℤ)] := by
-        have : ((q : ℤ) : ZMod (m / 2)) = (-1 : ZMod (m / 2)) := by
-          simpa [Int.cast_natCast] using hq_mods
-        exact (ZMod.intCast_eq_intCast_iff (q : ℤ) (-1 : ℤ) (m / 2)).1 this
-      have : J((q : ℤ) | (m / 2)) = J(-1 | (m / 2)) := by
-        refine jacobiSym.mod_left' (a₁ := (q : ℤ)) (a₂ := (-1 : ℤ)) (b := (m / 2)) ?_
-        simpa using hq_mod_sZ.eq
-      have hJ_neg_one : J(-1 | (m / 2)) = (-1 : ℤ) := by
-        calc
-          J(-1 | (m / 2)) = ZMod.χ₄ (m / 2) := jacobiSym.at_neg_one hs_odd
-          _ = (-1 : ℤ) := ZMod.χ₄_nat_three_mod_four hs4
-      simpa [hJ_neg_one] using this
-    have hJs_q : J((m / 2 : ℤ) | q) = (-1 : ℤ) := by
-      have := jacobiSym.quadratic_reciprocity_one_mod_four (a := q) (b := (m / 2)) hq1 hs_odd
-      simpa using (this ▸ hJq_s)
-    have hJm_q : J((m : ℤ) | q) = (1 : ℤ) := by
-      have hm2' : (m : ℤ) = (2 : ℤ) * (m / 2 : ℤ) := by
-        have hm2n : m = 2 * (m / 2) := by simpa [hm_eq2, Nat.mul_comm] using hm_eq2
-        exact_mod_cast hm2n
-      have hmul : J((2 : ℤ) * (m / 2 : ℤ) | q) = J(2 | q) * J((m / 2 : ℤ) | q) :=
-        jacobiSym.mul_left 2 (m / 2) q
-      -- `(-1) * (-1) = 1`
-      simpa [hm2', hmul, hJ2, hJs_q]
-    have hJ_negm_q : J(-(m : ℤ) | q) = (1 : ℤ) := by
-      have hχ4 : ZMod.χ₄ q = (1 : ℤ) := ZMod.χ₄_nat_one_mod_four (by omega : q % 4 = 1)
-      calc
-        J(-(m : ℤ) | q) = ZMod.χ₄ q * J((m : ℤ) | q) := jacobiSym.neg (a := (m : ℤ)) (hb := hq_odd')
-        _ = 1 := by simp [hχ4, hJm_q]
-    have hsq_q : IsSquare (-(m : ZMod q)) := by
-      simpa [Int.cast_neg, Int.cast_natCast] using
-        (ZMod.isSquare_of_jacobiSym_eq_one (p := q) (a := (-(m : ℤ))) hJ_negm_q)
-    rcases hsq_q with ⟨r, hr⟩
-    rcases ZMod.intCast_surjective r with ⟨b, hb⟩
-    refine ⟨b, ?_⟩
-    have : ((b : ZMod q) ^ 2) = (-(m : ℤ) : ZMod q) := by simpa [hb] using hr.symm
-    exact (ZMod.intCast_eq_intCast_iff (b ^ 2) (-(m : ℤ)) q).1 (by
-      simpa [Int.cast_pow, pow_two] using this)
-
-  obtain ⟨b, hbq⟩ := hb
-  obtain ⟨x, y, z, hQ, _hxyz_ne, hxy, hybz⟩ :=
-    exists_ankeny_representation_q1 m q b hm_pos hq_prime hmq hq1 (by simpa using hq_modZ) hbq
-  have hQ' : (q : ℤ) * x ^ 2 + y ^ 2 + (m : ℤ) * z ^ 2 = (m * q : ℤ) := by
-    simpa [ankeny_Q1, add_assoc, add_left_comm, add_comm, mul_assoc, mul_left_comm, mul_comm] using hQ
-  obtain ⟨u, v, hm_int⟩ :=
-    _root_.GeometryOfNumbers.reduction_to_sum_three_squares_q1 (n := m) (q := q) (x := x) (y := y) (z := z)
-      hQ' hq_prime hq1 (by simpa using hq_modZ) hm_sq b hxy hybz hbq
-  have hm_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = m := by
-    refine ⟨x.natAbs, u.natAbs, v.natAbs, ?_⟩
-    zify
-    simp [sq_abs, hm_int]
-  have hs_rep : ∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = s ^ 2 * m :=
-    sum_three_squares_mul_sq s m hm_rep
-  rcases hs_rep with ⟨x', y', z', ht_rep⟩
-  refine ⟨x', y', z', ?_⟩
-  simpa [hm_eq] using ht_rep
-  -/
+  -- (The earlier development path for this case was kept as a long comment; it has been removed.
+  -- See git history if you need the explicit Jacobi-symbol bookkeeping derivation.)
 
 /-!
 ## Legendre “easy direction”
@@ -705,5 +448,14 @@ theorem sum_three_squares_of_not_exception (n : ℕ) (h : ¬ is_three_square_exc
       x ^ 2 + y ^ 2 + z ^ 2 = (2 ^ a) ^ 2 * t := hxyz
       _ = 4 ^ a * t := by simp [hpow]
       _ = n := hn.symm
+
+/-- Legendre's three-square theorem, in the repo's preferred “exception” formulation. -/
+theorem sum_three_squares_iff (n : ℕ) :
+    (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n := by
+  constructor
+  · intro h
+    exact not_exception_of_sum_three_squares n h
+  · intro h
+    exact sum_three_squares_of_not_exception n h
 
 end GeometryOfNumbers

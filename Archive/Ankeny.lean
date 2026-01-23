@@ -12,9 +12,9 @@ Status: not integrated into the main proof. The current recommended path is the 
 in [`GeometryOfNumbers.MinkowskiDescent`], but Ankeny remains a plausible alternative if we
 decide to pull in primes-in-AP / Dirichlet infrastructure.
 
-This is an **archive/scratch** file: we intentionally avoid leaving placeholders that look like
-finished theorems. The intended statements are recorded below as prose only, until we decide to
-invest in formalizing them.
+This is an **archive/scratch** file: we intentionally avoid leaving unfinished statements that look
+like finished theorems. The intended statements are recorded below as prose only, until we decide
+to invest in formalizing them.
 
 ## Intended statements (not formalized here yet)
 

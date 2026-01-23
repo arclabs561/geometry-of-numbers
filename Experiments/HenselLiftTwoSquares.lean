@@ -42,8 +42,5 @@ We keep the *idea* documented here, but remove the unstable proof attempt so `ju
 remains a reliable “everything compiles” gate.
 -/
 
-example : True := by
-  trivial
-
 end GeometryOfNumbers.Experiments
 

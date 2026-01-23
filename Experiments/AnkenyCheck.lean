@@ -34,19 +34,19 @@ open scoped NumberTheorySymbols
 namespace Experiments.AnkenyCheck
 
 -- Scratch “API probes” for the `exists_ankeny_b` step in `Legendre/Ankeny.lean`.
-#check jacobiSym.at_neg_two
-#check jacobiSym.quadratic_reciprocity_one_mod_four
-#check jacobiSym.mod_left'
-#check ZMod.isSquare_of_jacobiSym_eq_one
-#check ZMod.chineseRemainder
-#check Int.modEq_and_modEq_iff_modEq_mul
+private def _probe_jacobi_at_neg_two := @jacobiSym.at_neg_two
+private def _probe_jacobi_qr_one_mod_four := @jacobiSym.quadratic_reciprocity_one_mod_four
+private def _probe_jacobi_mod_left := @jacobiSym.mod_left'
+private def _probe_isSquare_of_jacobi := @ZMod.isSquare_of_jacobiSym_eq_one
+private def _probe_chinese_remainder := @ZMod.chineseRemainder
+private def _probe_modEq_and_iff_modEq_mul := @Int.modEq_and_modEq_iff_modEq_mul
 
 -- Scratch probes for the `reduction_to_sum_three_squares` step:
 -- (We want to reuse Fermat/SumTwoSquares results instead of re-proving them.)
-#check Nat.Prime.sq_add_sq
-#check Nat.eq_sq_add_sq_of_isSquare_mod_neg_one
-#check Nat.eq_sq_add_sq_iff
-#check Nat.eq_sq_add_sq_iff_eq_sq_mul
+private def _probe_prime_sq_add_sq := @Nat.Prime.sq_add_sq
+private def _probe_eq_sq_add_sq_of_isSquare := @Nat.eq_sq_add_sq_of_isSquare_mod_neg_one
+private def _probe_eq_sq_add_sq_iff := @Nat.eq_sq_add_sq_iff
+private def _probe_eq_sq_add_sq_iff_eq_sq_mul := @Nat.eq_sq_add_sq_iff_eq_sq_mul
 
 -- “Toy” application: if we can show `IsSquare (-1 : ZMod n)`, we get a sum-of-two-squares witness.
 example {n : ℕ} (h : IsSquare (-1 : ZMod n)) : ∃ x y : ℕ, n = x ^ 2 + y ^ 2 :=

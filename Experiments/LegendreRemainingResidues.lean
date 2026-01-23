@@ -67,9 +67,8 @@ def first_counterexamples (limit : Nat) : List Nat :=
     (!is_exception n) &&
     (find_three_squares n).isNone)
 
--- For small limits, this should evaluate to `[]`.
--- If it does not, the first counterexample(s) are printed.
-#eval first_counterexamples 200
+-- For small limits, this should be `[]`. Keep it as a definition (no evaluation during builds).
+def sample_counterexamples_200 : List Nat := first_counterexamples 200
 
 end GeometryOfNumbers.Experiments
 

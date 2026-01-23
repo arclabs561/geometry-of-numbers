@@ -76,10 +76,9 @@ private partial def search_b (s n b : Nat) : Option (Nat × Nat × Nat) :=
 def find_window (s n : Nat) : Option (Nat × Nat × Nat) :=
   search_b s n 1
 
--- Small spot checks (kept tiny; no heavy computation during builds).
--- `#eval` is acceptable in `Experiments/` as long as compilation remains fast.
-#eval (find_window 5 100)  -- some witness should usually exist for modest n
-#eval (find_window 6 200)
+-- Small spot checks (kept as *definitions*, not executed during builds).
+def sample_window_5_100 : Option (Nat × Nat × Nat) := find_window 5 100
+def sample_window_6_200 : Option (Nat × Nat × Nat) := find_window 6 200
 
 end GeometryOfNumbers.Experiments
 

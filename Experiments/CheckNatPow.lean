@@ -1,19 +1,20 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.NumberTheory.Padics.PadicVal.Basic
 
-#check Nat.pow_mod
+-- Silent API probes (avoid `#check` noise during builds).
+private def _probe_pow_mod := @Nat.pow_mod
 
 -- padic valuation / `padicValNat` spelunking
-#check padicValNat
-#check padicValNat_def
-#check padicValNat_def'
-#check padicValNat.zero
-#check padicValNat.one
-#check padicValNat.eq_zero_iff
-#check padicValNat.mul
-#check padicValNat.pow
-#check padicValNat.eq_zero_of_not_dvd
-#check padicValNat_self
-#check Nat.pow_dvd_pow_iff
-#check Nat.dvd_of_mem_primeFactors
-#check Nat.prime_of_mem_primeFactors
+private def _probe_padicValNat := @padicValNat
+private def _probe_padicValNat_def := @padicValNat_def
+private def _probe_padicValNat_def' := @padicValNat_def'
+private def _probe_padicValNat_zero := @padicValNat.zero
+private def _probe_padicValNat_one := @padicValNat.one
+private def _probe_padicValNat_eq_zero_iff := @padicValNat.eq_zero_iff
+private def _probe_padicValNat_mul := @padicValNat.mul
+private def _probe_padicValNat_pow := @padicValNat.pow
+private def _probe_padicValNat_eq_zero_of_not_dvd := @padicValNat.eq_zero_of_not_dvd
+private def _probe_padicValNat_self := @padicValNat_self
+private def _probe_pow_dvd_pow_iff := @Nat.pow_dvd_pow_iff
+private def _probe_dvd_of_mem_primeFactors := @Nat.dvd_of_mem_primeFactors
+private def _probe_prime_of_mem_primeFactors := @Nat.prime_of_mem_primeFactors

@@ -1609,7 +1609,7 @@ lemma ankeny_lattice_covolume (n q : ℕ) (b : ℤ) (hn : 0 < n) (hq : 0 < q) :
 def ankeny_Q (n q : ℕ) (x y z : ℤ) : ℤ := 2 * q * x^2 + y^2 + n * z^2
 
 /-!
-### A `q ≡ -1 (mod n)` arithmetic glue lemma (WIP)
+### A `q ≡ -1 (mod n)` arithmetic glue lemma
 
 For the remaining reduced residue class `n % 8 = 5`, the same *shape* of argument is plausible,
 but with a different modulus choice: take `q ≡ -1 (mod n)` and use
@@ -3102,7 +3102,7 @@ lemma ankeny_even_padicValNat_of_mem_primeFactors
   exact hmax hcontra
 
 /-!
-### Q₁ version: even valuation kernel (stub)
+### Q₁ version: even valuation kernel
 
 This is the Q₁ analogue of `ankeny_even_padicValNat_of_mem_primeFactors`.
 

@@ -13,6 +13,8 @@ namespace GeometryOfNumbers.Experiments
 
 open Matrix
 
+noncomputable section
+
 /-- A simple 2D basis to test Gram-Schmidt. -/
 def basis2d : Matrix (Fin 2) (Fin 2) ℝ := !![1, 1; 0, 1]
 
@@ -23,12 +25,14 @@ def basis2d : Matrix (Fin 2) (Fin 2) ℝ := !![1, 1; 0, 1]
 -- For now, keep this as a tiny “import + name lookup” experiment.
 open InnerProductSpace
 
-#check InnerProductSpace.gramSchmidt
+private def _probe_gramSchmidt := @InnerProductSpace.gramSchmidt
 
 /- In 2D with the standard inner product:
    v1 = [1, 1], v2 = [0, 1]
    u1 = v1
    u2 = v2 - proj_{u1}(v2) = [-1/2, 1/2]
 -/
+
+end
 
 end GeometryOfNumbers.Experiments

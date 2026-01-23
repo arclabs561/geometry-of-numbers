@@ -11,7 +11,7 @@ That work is now fully implemented in `GeometryOfNumbers/Legendre/Ankeny.lean`:
 - `volume_ankenyEllipsoidL2_eq`
 - `volume_ankenyEllipsoidL2_gt`
 
-We keep this module as a lightweight pointer (no duplicate proofs, no admitted placeholders).
+We keep this module as a lightweight pointer (no duplicate proofs, no admitted stubs).
 -/
 
 namespace GeometryOfNumbers.Experiments

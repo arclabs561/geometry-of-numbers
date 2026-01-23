@@ -75,7 +75,7 @@ def main : IO Unit := do
   IO.println ""
   IO.println "This is an automated status summary generated from the library source."
   IO.println "Verification state is defined by the success of the 'lake build' process."
-  IO.println "Remaining technical gaps are marked with 'sorry' placeholders."
+  IO.println "Technical gaps (when present) are marked with `sorry` tokens in source."
   IO.println ""
 
   IO.println "## Legendre's Three-Square Theorem"

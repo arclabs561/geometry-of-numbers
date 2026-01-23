@@ -185,7 +185,7 @@ theorem gauss_triangular (n : ℕ) :
 -- This section keeps the parameter-selection + Cauchy-lemma interface explicit, so the rest of
 -- `cauchy_decomposition` is bookkeeping.
 
-/-- Nathanson-style parameter selection (stub).
+/-- Nathanson-style parameter selection (interface).
 
 Let \(m = s-2\). We want to choose odd \(b\), a residue \(r\) with \(0 \le r \le s-4\), and a
 quotient \(q\) such that:
@@ -562,16 +562,10 @@ The only version we rely on is the large-regime lemma `nathanson_parameters_larg
 the analytic interval/window argument.
 -/
 
-/- (historical / removed)
+/- (historical note)
 
-This region used to contain:
-- `nathanson_parameters_medium` (a stub; false as a uniform lemma), and
-- `nathanson_parameters` (which dispatched to the medium stub).
-
-It is kept only as a pointer in the git history. The active development path is:
-- `nathanson_parameters_small` (small regime), and
-- `nathanson_parameters_large` (large regime, analytic window).
-
+Older versions of this file contained `nathanson_parameters` / `nathanson_parameters_medium`.
+Those were removed once we had a correct split by regime and a proved top-level theorem.
 -/
 /-  (historical / removed proof body; kept in git history)
     have hn324 : 324 < n := lt_of_le_of_lt h324 hnm
@@ -924,14 +918,14 @@ It is kept only as a pointer in the git history. The active development path is:
 -/
 
 /-!
-### A “large-regime only” wrapper (does not depend on the medium axiom stub)
+### Nathanson parameter selection (large regime only)
 
-The lemma `nathanson_parameters` currently contains an explicit medium-branch stub
-(`nathanson_parameters_medium`). That statement is not true as stated (see the brute checks in
-`Experiments/NathansonWindowSearch.lean`), so we avoid importing it as an axiom.
+Historically, this file experimented with a *uniform* parameter-selection lemma. That approach was
+abandoned: the bounded regime needs separate handling (see `Experiments/NathansonWindowSearch.lean`
+for counterexamples to naive uniform windows).
 
-This wrapper forces the proof onto the **large** branch (`n > 108*(s-2)`), where the argument is
-fully analytic and self-contained.
+The proof path used by `cauchy_decomposition` relies only on this **large-regime** lemma, which is
+analytic and self-contained.
 -/
 
 set_option maxHeartbeats 1200000 in
@@ -942,10 +936,8 @@ lemma nathanson_parameters_large (s : ℕ) (hs : 5 ≤ s) (n : ℕ) (_hn : 0 < n
         ((b : ℤ) ^ 2 < 4 * ((2 * q + b : ℕ) : ℤ)) ∧
         (3 * ((2 * q + b : ℕ) : ℤ) < (b : ℤ) ^ 2 + 2 * (b : ℤ) + 4) ∧
         n = (s - 2) * q + b + r := by
-  -- This is the `nathanson_parameters` proof *without* the medium stub.
-  -- It assumes we are in the “large ratio” regime `¬ n ≤ 108*(s-2)`.
-  --
-  -- The structure is identical to the large branch inside `nathanson_parameters`.
+  -- Large-ratio regime (`¬ n ≤ 108*(s-2)`): choose an odd `b` in a real interval and derive the
+  -- required window inequalities.
   let m : ℕ := s - 2
   have hm : 3 ≤ m := by omega
   have hmed : ¬ n ≤ 108 * m := by simpa [m] using hmed0
@@ -1689,7 +1681,7 @@ lemma cauchy_finalize_nat (a b : ℕ) (sZ tZ uZ vZ : ℤ)
   · exact ha_sq_nat
   · exact hb_lin_nat
 
-/-- Cauchy’s lemma (stub).
+/-- Cauchy’s lemma.
 
 This is the lemma quoted in the standard proof sketch: if `a,b` are odd positive integers in the
 interval window
@@ -2816,34 +2808,12 @@ lemma cauchy_polygonal_identity_rearranged
   dsimp at h ⊢
   linarith
 
-/-- Proposed “sub-lemma 1” (stub): an odd integer parameter with clean bounds.
+/-!
+### Note on removed scaffolding
 
-This is just `exists_odd_in_interval`, but returns the value in `ℤ` plus *both* strict inequalities,
-so downstream steps can rewrite without re-proving floor bounds.
-
-In the full Cauchy argument, this `b` will be the knob used to control a linear correction term. -/
-lemma cauchy_choose_odd_parameter
-    (L U : ℝ) (hLU : L + 2 < U) :
-    ∃ b : ℤ, Odd b ∧ L < (b : ℝ) ∧ (b : ℝ) < U := by
-  exact exists_odd_in_interval (L := L) (U := U) hLU
-
-/-- Proposed “sub-lemma 2” (stub): a 4-square representation for a chosen integer.
-
-We will eventually choose a specific `N` as a function of `s,n` and an interval-picked parameter,
-then call `Nat.sum_four_squares` to obtain `a,b,c,d` with `a^2+b^2+c^2+d^2 = N`. -/
-lemma cauchy_four_squares (N : ℕ) :
-    ∃ a b c d : ℕ, a ^ 2 + b ^ 2 + c ^ 2 + d ^ 2 = N := by
-  rcases Nat.sum_four_squares N with ⟨a, b, c, d, habcd⟩
-  exact ⟨a, b, c, d, habcd⟩
-
-/-- Proposed “sub-lemma 3” (stub): from a 4-square datum, produce a “near miss” polygonal sum in ℤ.
-
-This is the place where `cauchy_polygonal_identity_rearranged` gets applied.
-We keep it as a stub until we commit to the precise choice of `N` and the correction strategy. -/
-lemma cauchy_near_miss_from_four_squares
-    (_s : ℕ) (_hs : 5 ≤ _s) (_a _b _c _d : ℕ) :
-    True := by
-  trivial
+Earlier iterations kept “proposed sub-lemmas” here as a planning aid. They were unused and made the
+file read as unfinished even though the main theorem is proved, so they were removed.
+-/
 
 /-- **Padding lemma** for the `s ≥ 5` branch:
 

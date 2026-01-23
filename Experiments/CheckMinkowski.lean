@@ -55,14 +55,14 @@ So we keep a few small, compiling examples here that demonstrate:
 
 open MeasureTheory MeasureTheory.Measure
 
--- Probes for the exact lemma names/shapes we rely on downstream.
-#check MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
-#check MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_le_measure
-#check ZLattice.covolume_eq_det
-#check ZLattice.covolume_eq_measure_fundamentalDomain
-#check GeometryOfNumbers.exists_ankeny_prime
-#check GeometryOfNumbers.exists_ankeny_b
-#check GeometryOfNumbers.exists_ankeny_representation
+-- Silent API probes for the exact lemma names/shapes we rely on downstream.
+private def _probe_minkowski_lt := @MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
+private def _probe_minkowski_le := @MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_le_measure
+private def _probe_covolume_eq_det := @ZLattice.covolume_eq_det
+private def _probe_covolume_eq_measure_fundamentalDomain := @ZLattice.covolume_eq_measure_fundamentalDomain
+private def _probe_exists_ankeny_prime := @GeometryOfNumbers.exists_ankeny_prime
+private def _probe_exists_ankeny_b := @GeometryOfNumbers.exists_ankeny_b
+private def _probe_exists_ankeny_representation := @GeometryOfNumbers.exists_ankeny_representation
 
 /-!
 ## Toy 1: ZSpan fundamental domain and volume for a simple ℤ-span lattice in `ℝ^3`
@@ -272,7 +272,7 @@ section ToyMinkowski
 
 open MeasureTheory
 
-#check MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
+private def _probe_minkowski_lt_again := @MeasureTheory.exists_ne_zero_mem_lattice_of_measure_mul_two_pow_lt_measure
 
 /-!
 ### Concrete Minkowski toy: a nonzero lattice point in a big cube
@@ -459,13 +459,7 @@ end ToyEllipsoid
 -- The main missing work is turning `ankeny_lattice` (defined by congruences) into a `ZLattice`
 -- or an equivalent `Submodule ℤ (Fin 3 → ℝ)` with that basis, so we can plug into `covolume_eq_det`.
 
-def checkMinkowskiAvailable : IO Unit := do
-  IO.println "Checking Minkowski (GeometryOfNumbers) imports..."
-  IO.println "See `#check` outputs above for lemma names."
-
-def main : IO Unit := checkMinkowskiAvailable
-
-#eval main
+-- (intentionally no `#eval` / IO printing here; keep this file quiet during builds)
 
 /-!
 ## Ankeny: Minkowski “call-site” skeleton
@@ -568,8 +562,7 @@ lemma ankenyEllipsoid_symm (n q R : ℝ) : ∀ x ∈ ankenyEllipsoid n q R, -x �
 -- We leave this as a marker for the exact lemma we will use (so downstream work is guided).
 -- (The easiest route is: pick `T = diagLin (Real.sqrt (2q)) 1 (Real.sqrt n)` and rewrite.)
 -- TODO (next): prove `Convex ℝ (ankenyEllipsoid n q R)` once `T` is defined and `det T ≠ 0`.
-example (_n _q _R : ℝ) : True := by
-  trivial
+-- (intentionally no dummy lemma here; keep `Experiments/` buildable and signal-bearing)
 
 end AnkenyMinkowskiSkeleton
 

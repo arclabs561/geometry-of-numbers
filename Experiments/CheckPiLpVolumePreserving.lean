@@ -22,10 +22,10 @@ abbrev E3 := Fin 3 → ℝ
 abbrev E3L2 := EuclideanSpace ℝ (Fin 3)
 
 -- Sanity checks (names and types).
-#check PiLp.volume_preserving_toLp
-#check PiLp.volume_preserving_ofLp
-#check EuclideanSpace.volume_ball_fin_three
-#check MeasureTheory.Measure.addHaar_preimage_linearMap
+private def _probe_volume_preserving_toLp := @PiLp.volume_preserving_toLp
+private def _probe_volume_preserving_ofLp := @PiLp.volume_preserving_ofLp
+private def _probe_volume_ball_fin_three := @EuclideanSpace.volume_ball_fin_three
+private def _probe_addHaar_preimage_linearMap := @MeasureTheory.Measure.addHaar_preimage_linearMap
 
 -- `EuclideanSpace ℝ (Fin 3)` is (definitionally) `WithLp 2 (Fin 3 → ℝ)`.
 example : E3L2 = WithLp 2 E3 := rfl

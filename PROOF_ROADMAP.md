@@ -25,11 +25,13 @@ fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 ## Parallel Track: Computable LLL
 
 Independent of the primary proof, the library targets a *computable* LLL implementation in `GeometryOfNumbers/Computable/LLL.lean`.
-At the moment this is a scaffold (with placeholders), plus a small rational-arithmetic experiment in `Experiments/LLLRational.lean`.
+At the moment this is a scaffold (kept `sorry`-free), plus a small rational-arithmetic experiment in `Experiments/LLLRational.lean`.
 
 ## Ankeny's Proof (`GeometryOfNumbers/Legendre/Ankeny.lean`)
 
-The current implementation of `sum_three_squares_of_not_exception` follows the geometric descent method proposed by Ankeny (1957). The proof structure is formalized and typechecks, with specific technical lemmas awaiting completion.
+The current implementation follows the geometric descent method proposed by Ankeny (1957).
+As of the current repo state, the proof is **sorry-free** and `GeometryOfNumbers/Legendre/Main.lean`
+exports the clean interface `sum_three_squares_iff`.
 
 1.  **Ankeny Lemmas**: Squarefree decomposition and mod-8 congruence logic. Fully formalized in `GeometryOfNumbers/Legendre/AnkenyLemmas.lean`.
 2.  **Lattice Definition**: The `ankeny_lattice` is defined as an `AddSubgroup (Fin 3 → ℝ)` encoding the congruences $x \equiv y \pmod n$ and $y \equiv bz \pmod{2q}$.
@@ -37,7 +39,7 @@ The current implementation of `sum_three_squares_of_not_exception` follows the g
 4.  **Minkowski Application**:
     - The full geometric call-site (volume bound + Minkowski) is proved in `Experiments/CheckMinkowski.lean`.
     - `exists_ankeny_representation` in `GeometryOfNumbers/Legendre/Ankeny.lean` is the port target: extract the congruences + a strict bound $0 \lt Q(x,y,z) \lt 4nq$ from ellipsoid membership, then force $Q(x,y,z) = 2nq$ by divisibility.
-5.  **Descent Step**: `reduction_to_sum_three_squares` is the intended valuation-based descent step using primes $p \equiv 3 \pmod 4$ (currently a placeholder).
+5.  **Descent Step**: `reduction_to_sum_three_squares` (and the Q₁ analogue) implement the valuation-based descent step using primes $p \equiv 3 \pmod 4$.
 
 ## Cauchy's Lemma (`GeometryOfNumbers/Cauchy/Main.lean`)
 
@@ -55,11 +57,11 @@ obtain exactly `s` terms.
 
 | Task | Status | Location |
 |------|--------|----------|
-| **Core Algebra** | Mixed | `GeometryOfNumbers/Core/Basic.lean` (proved), `GeometryOfNumbers/Core/ModularSquares.lean` (WIP) |
+| **Core Algebra** | Mostly proved | `GeometryOfNumbers/Core/Basic.lean` (proved), `GeometryOfNumbers/Core/ModularSquares.lean` (proved; odd-modulus solvability) |
 | **Ankeny Lemmas** | Proved | `GeometryOfNumbers/Legendre/AnkenyLemmas.lean` |
-| **Ankeny Proof** | Active | `GeometryOfNumbers/Legendre/Ankeny.lean` |
-| **Cauchy Reduction** | Scaffold | `GeometryOfNumbers/Cauchy/Main.lean` |
-| **Gauss Triangular** | Scaffold | `GeometryOfNumbers/Cauchy/Main.lean` |
+| **Ankeny Proof** | Proved | `GeometryOfNumbers/Legendre/Ankeny.lean` |
+| **Cauchy Reduction** | Proved | `GeometryOfNumbers/Cauchy/Main.lean` |
+| **Gauss Triangular** | Proved | `GeometryOfNumbers/Cauchy/Main.lean` |
 
 ## Auxiliary Evidence
 

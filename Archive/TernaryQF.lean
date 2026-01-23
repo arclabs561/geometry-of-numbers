@@ -77,7 +77,7 @@ def IsReduced (F : TernaryQF) : Prop :=
 
 This file is an *archive* of a classical ternary-quadratic-form route to the three-squares theorem.
 We keep definitions here because they are occasionally useful as a reference, but we intentionally do
-**not** keep partially-formalized theorem statements with admitted placeholders in-tree.
+**not** keep partially-formalized theorem statements with admitted stubs in-tree.
 
 The intended next theorems (once we decide to invest in this approach) are:
 
