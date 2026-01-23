@@ -31,23 +31,6 @@ def rowQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (i : Fin n) : Fin n → ℚ 
 def roundQ (x : ℚ) : ℤ :=
   ⌊x + (1 / 2 : ℚ)⌋
 
-def gsoListQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : List (Fin n → ℚ) :=
-  let idxs : List (Fin n) := List.ofFn (fun i : Fin n => i)
-  let accRev : List (Fin n → ℚ) :=
-    idxs.foldl
-      (fun accRev i =>
-        let bi := rowQ B i
-        let bstar :=
-          accRev.foldl
-            (fun v u =>
-              let denom := dotQ u u
-              let μ : ℚ := if denom = 0 then 0 else dotQ bi u / denom
-              v - μ • u)
-            bi
-        bstar :: accRev)
-      []
-  accRev.reverse
-
 /-!
 ### Prefix Gram–Schmidt (optimization)
 
@@ -75,6 +58,10 @@ def gsoPrefixListQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k 
           bi
       us ++ [bstar]
 
+/-- Full Gram–Schmidt list is the full prefix list (`k = n`). -/
+def gsoListQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : List (Fin n → ℚ) :=
+  gsoPrefixListQ (n := n) B n (Nat.le_refl n)
+
 def muQPrefix {n : ℕ} (bk : Fin n → ℚ) (uj : Fin n → ℚ) : ℚ :=
   let denom := dotQ (n := n) uj uj
   if denom = 0 then 0 else dotQ (n := n) bk uj / denom
@@ -91,7 +78,11 @@ def gsoNormSqForKPrefix {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ
   dotQ (n := n) uk uk
 
 def gsoAtQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (j : Fin n) : Fin n → ℚ :=
-  (gsoListQ (n := n) B).getD j.val (zeroVecQ (n := n))
+  -- The `j`-th GS vector depends only on the prefix `0..j`.
+  -- Defining it via `gsoPrefixListQ (j+1)` makes many proofs (e.g. stability under updating later rows) local.
+  let us : List (Fin n → ℚ) :=
+    gsoPrefixListQ (n := n) B (j.1 + 1) (Nat.succ_le_of_lt j.2)
+  us.getD j.1 (zeroVecQ (n := n))
 
 def muQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (i j : Fin n) : ℚ :=
   let bi := rowQ B i
@@ -227,28 +218,36 @@ structure LLLRunResult (n : ℕ) where
   reason : LLLStopReason
   deriving Repr
 
-def lllRunExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat) : LLLRunResult n :=
-  let rec go (B : Matrix (Fin n) (Fin n) ℤ) (k steps fuel : Nat) : LLLRunResult n :=
-    match fuel with
-    | 0 => { basis := B, steps := steps, final_k := k, reason := .fuel_exhausted }
-    | fuel' + 1 =>
-        if hk : k < n then
-          if h0 : k = 0 then
-            go B 1 (steps + 1) fuel'
-          else
-            let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
-            let km1 : Nat := k - 1
-            have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
-            let k' : Fin n := ⟨k, hk⟩
-            let km1' : Fin n := ⟨km1, hkm1⟩
-            if lovaszQ (n := n) B1 k' km1' δ then
-              go B1 (k + 1) (steps + 1) fuel'
-            else
-              let B2 := swap_vectors (n := n) B1 k' km1'
-              go B2 km1 (steps + 1) fuel'
+/-!
+Internal helper for `lllRunExact`.
+
+We keep it as a named definition (instead of a local `let rec`) so proof files can do induction on
+`fuel` cleanly.
+-/
+def lllRunExactGo {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (k steps fuel : Nat) : LLLRunResult n :=
+  match fuel with
+  | 0 => { basis := B, steps := steps, final_k := k, reason := .fuel_exhausted }
+  | fuel' + 1 =>
+      if hk : k < n then
+        if h0 : k = 0 then
+          lllRunExactGo (n := n) B δ 1 (steps + 1) fuel'
         else
-          { basis := B, steps := steps, final_k := k, reason := .finished }
-  go B 1 0 limit
+          let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+          let km1 : Nat := k - 1
+          have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+          let k' : Fin n := ⟨k, hk⟩
+          let km1' : Fin n := ⟨km1, hkm1⟩
+          if lovaszQ (n := n) B1 k' km1' δ then
+            lllRunExactGo (n := n) B1 δ (k + 1) (steps + 1) fuel'
+          else
+            let B2 := swap_vectors (n := n) B1 k' km1'
+            lllRunExactGo (n := n) B2 δ km1 (steps + 1) fuel'
+      else
+        { basis := B, steps := steps, final_k := k, reason := .finished }
+
+def lllRunExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat) : LLLRunResult n :=
+  lllRunExactGo (n := n) B δ 1 0 limit
 
 theorem rowSpan_sizeReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (hkj : k ≠ j) :
     rowSpan (sizeReduceExact (n := n) B k j) = rowSpan B := by
