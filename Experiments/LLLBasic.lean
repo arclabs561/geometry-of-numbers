@@ -38,6 +38,15 @@ private def _probe_gramSchmidt := @InnerProductSpace.gramSchmidt
 noncomputable def lll2_smoke (B : Matrix (Fin 2) (Fin 2) ℤ) : Matrix (Fin 2) (Fin 2) ℤ :=
   GeometryOfNumbers.Computable.lll_reduce2 B
 
+-- Smoke: the general-n LLL loop is definable (noncomputable) and its span invariant is usable.
+noncomputable def lll_smoke3 (B : Matrix (Fin 3) (Fin 3) ℤ) : Matrix (Fin 3) (Fin 3) ℤ :=
+  GeometryOfNumbers.Computable.lll_reduce (n := 3) B (δ := (3 : ℚ) / 4)
+
+example (B : Matrix (Fin 3) (Fin 3) ℤ) :
+    GeometryOfNumbers.Computable.rowSpan (GeometryOfNumbers.Computable.lll_reduce (n := 3) B (δ := (3 : ℚ) / 4)) =
+      GeometryOfNumbers.Computable.rowSpan B := by
+  simpa using GeometryOfNumbers.Computable.rowSpan_lll_reduce (n := 3) B ((3 : ℚ) / 4)
+
 end
 
 end GeometryOfNumbers.Experiments
