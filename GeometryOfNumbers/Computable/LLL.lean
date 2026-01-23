@@ -2,6 +2,7 @@ import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import GeometryOfNumbers.Computable.LLLCore
 
 /-!
 # LLL Algorithm Implementation
@@ -27,25 +28,12 @@ inductive LLLStatus
   | size_reduced
   | swapped
 
-/-- The ℤ-span of the row vectors of `B`. -/
-def rowSpan {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : Submodule ℤ (Fin n → ℤ) :=
-  Submodule.span ℤ (Set.range B)
-
-lemma row_mem_rowSpan {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (i : Fin n) :
-    B i ∈ rowSpan B := by
-  exact Submodule.subset_span ⟨i, rfl⟩
-
 /-- Perform size reduction on vector k with respect to vector j.
     b_k := b_k - round(μ_{k,j}) * b_j -/
 noncomputable def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (μ : ℝ) :
     Matrix (Fin n) (Fin n) ℤ :=
   let q : ℤ := ⌊μ + 1/2⌋
-  B.updateRow k (B k - q • B j)
-
-/-- Perform a swap of two adjacent basis vectors. -/
-def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
-    Matrix (Fin n) (Fin n) ℤ :=
-  fun i => B (Equiv.swap k j i)
+  size_reduceZ B k j q
 
 /-- Gram-Schmidt orthogonalization coefficients μ_{i,j}.
     μ_{i,j} = (b_i, b*_j) / (b*_j, b*_j) -/
@@ -73,49 +61,10 @@ noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) 
 def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
   norm_k ≥ ((δ : ℝ) - μ^2) * norm_km1
 
-lemma rowSpan_swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
-    rowSpan (swap_vectors B k j) = rowSpan B := by
-  -- `swap_vectors` is just precomposition by a bijection on indices (`Equiv.swap`),
-  -- so `Set.range` is unchanged and therefore the span is unchanged.
-  have hrange : Set.range (swap_vectors B k j) = Set.range B := by
-    ext x
-    constructor
-    · rintro ⟨i, rfl⟩
-      exact ⟨Equiv.swap k j i, rfl⟩
-    · rintro ⟨i, rfl⟩
-      exact ⟨Equiv.swap k j i, by simp [swap_vectors]⟩
-  simp [rowSpan, hrange]
-
 lemma rowSpan_size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (hkj : k ≠ j)
     (q : ℤ) :
     rowSpan (B.updateRow k (B k - q • B j)) = rowSpan B := by
-  -- Replace the generator `B k` by `B k - q • B j` (with `B j` still present): span is unchanged.
-  let B' := B.updateRow k (B k - q • B j)
-  apply le_antisymm
-  · -- new span ≤ old span
-    refine Submodule.span_le.2 ?_
-    rintro _ ⟨i, rfl⟩
-    by_cases hiK : i = k
-    · cases hiK
-      have hk : B k ∈ rowSpan B := row_mem_rowSpan B k
-      have hj' : B j ∈ rowSpan B := row_mem_rowSpan B j
-      have : B k - q • B j ∈ rowSpan B := (rowSpan B).sub_mem hk ((rowSpan B).smul_mem q hj')
-      simpa [B', Matrix.updateRow_self] using this
-    · -- unchanged row
-      simpa [Matrix.updateRow_ne, hiK] using (row_mem_rowSpan B i)
-  · -- old span ≤ new span
-    refine Submodule.span_le.2 ?_
-    rintro _ ⟨i, rfl⟩
-    by_cases hiK : i = k
-    · cases hiK
-      have hk' : B' k ∈ rowSpan B' := row_mem_rowSpan B' k
-      have hj' : B' j ∈ rowSpan B' := row_mem_rowSpan B' j
-      have hsum : B' k + q • B' j ∈ rowSpan B' :=
-        (rowSpan B').add_mem hk' ((rowSpan B').smul_mem q hj')
-      -- simplify to `B k` using `sub_add_cancel`
-      have hjk : j ≠ k := Ne.symm hkj
-      simpa [B', Matrix.updateRow_self, Matrix.updateRow_ne, hjk, sub_add_cancel] using hsum
-    · exact Submodule.subset_span ⟨i, by simp [Matrix.updateRow_ne, hiK]⟩
+  simpa [size_reduceZ] using rowSpan_size_reduceZ (B := B) (k := k) (j := j) hkj q
 
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
