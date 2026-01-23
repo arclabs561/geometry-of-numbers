@@ -61,3 +61,7 @@ lean_exe «gon_precommit» {
 lean_exe «ankeny_check» {
   root := `Scripts.AnkenyCheck
 }
+
+lean_exe «lll_demo» {
+  root := `Scripts.LLLDemo
+}
