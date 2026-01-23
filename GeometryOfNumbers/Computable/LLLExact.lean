@@ -66,10 +66,12 @@ def lovaszQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k km1 : Fin n) (δ : ℚ
   let rhs : ℚ := (δ - (muQ (n := n) B k km1) ^ 2) * gsoNormSqQ (n := n) B km1
   decide (lhs ≥ rhs)
 
+/-- Check the usual size-reduction bound \(|\mu_{i,j}| \le 1/2\). -/
 def sizeReducedMuQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (i j : Fin n) : Bool :=
   let μ := muQ (n := n) B i j
   decide (|μ| ≤ (1 / 2 : ℚ))
 
+/-- Check size-reduction for all pairs `j<i`. -/
 def isSizeReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : Bool :=
   let idxs : List (Fin n) := List.ofFn (fun i : Fin n => i)
   let pairs : List (Fin n × Fin n) :=
@@ -82,6 +84,7 @@ def isSizeReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : Bool :=
     else
       true
 
+/-- Check the Lovász condition for all adjacent pairs `k,(k-1)` with `k>0`. -/
 def isLovaszReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Bool :=
   let idxs : List (Fin n) := List.ofFn (fun i : Fin n => i)
   idxs.all fun k =>
@@ -93,6 +96,7 @@ def isLovaszReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Boo
     else
       true
 
+/-- A computable “LLL-reduced” check: size-reduction + Lovász. -/
 def isLLLReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Bool :=
   isSizeReducedQ (n := n) B && isLovaszReducedQ (n := n) B δ
 
@@ -135,6 +139,51 @@ def lllReduceLoopExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k 
 def lllReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : ℕ := 200000) :
     Matrix (Fin n) (Fin n) ℤ :=
   lllReduceLoopExact (n := n) B δ 1 limit
+
+/-!
+## Instrumented runner
+
+The “exact” LLL loop is fuel-bounded. For debugging and evaluation it is useful to know whether we
+stopped due to:
+
+- **fuel exhaustion**, or
+- reaching `k ≥ n` (i.e. the main loop finished).
+-/
+
+inductive LLLStopReason
+  | finished
+  | fuel_exhausted
+  deriving Repr, DecidableEq
+
+structure LLLRunResult (n : ℕ) where
+  basis : Matrix (Fin n) (Fin n) ℤ
+  steps : Nat
+  final_k : Nat
+  reason : LLLStopReason
+  deriving Repr
+
+def lllRunExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat) : LLLRunResult n :=
+  let rec go (B : Matrix (Fin n) (Fin n) ℤ) (k steps fuel : Nat) : LLLRunResult n :=
+    match fuel with
+    | 0 => { basis := B, steps := steps, final_k := k, reason := .fuel_exhausted }
+    | fuel' + 1 =>
+        if hk : k < n then
+          if h0 : k = 0 then
+            go B 1 (steps + 1) fuel'
+          else
+            let B1 := sizeReduceAllExact (n := n) B k hk
+            let km1 : Nat := k - 1
+            have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+            let k' : Fin n := ⟨k, hk⟩
+            let km1' : Fin n := ⟨km1, hkm1⟩
+            if lovaszQ (n := n) B1 k' km1' δ then
+              go B1 (k + 1) (steps + 1) fuel'
+            else
+              let B2 := swap_vectors (n := n) B1 k' km1'
+              go B2 km1 (steps + 1) fuel'
+        else
+          { basis := B, steps := steps, final_k := k, reason := .finished }
+  go B 1 0 limit
 
 theorem rowSpan_sizeReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (hkj : k ≠ j) :
     rowSpan (sizeReduceExact (n := n) B k j) = rowSpan B := by
