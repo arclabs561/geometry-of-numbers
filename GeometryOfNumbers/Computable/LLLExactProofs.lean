@@ -64,6 +64,36 @@ lemma dotQ_proj_update_zero {n : ℕ} (u v : Fin n → ℚ) (hu : dotQ (n := n) 
   simp [μ, hlin, hu]
 
 /-!
+### Rounding lemma (used by size reduction)
+
+Our rounding is `roundQ x = ⌊x + 1/2⌋ : ℤ`. The standard bound is:
+\(|x - roundQ(x)| \le 1/2\).
+-/
+
+theorem abs_sub_roundQ_le_half (x : ℚ) :
+    |x - (roundQ x : ℚ)| ≤ (1 / 2 : ℚ) := by
+  -- Let q = floor(x + 1/2). Then q ≤ x+1/2 < q+1.
+  set q : ℤ := roundQ x
+  have hq_le : (q : ℚ) ≤ x + (1 / 2 : ℚ) := by
+    -- `Int.floor_le` / `Int.floor_le` via `q = ⌊x+1/2⌋`
+    simpa [q, roundQ] using (Int.floor_le (x + (1 / 2 : ℚ)))
+  have hlt : x + (1 / 2 : ℚ) < (q : ℚ) + 1 := by
+    have hlt0 : x + (1 / 2 : ℚ) < ((roundQ x : ℤ) : ℚ) + 1 := by
+      dsimp [roundQ]
+      exact Int.lt_floor_add_one (x + (1 / 2 : ℚ))
+    simpa [q] using hlt0
+  have hge : (- (1 / 2 : ℚ)) ≤ x - (q : ℚ) := by
+    -- from q ≤ x + 1/2
+    linarith
+  have hle : x - (q : ℚ) ≤ (1 / 2 : ℚ) := by
+    -- from x + 1/2 < q + 1  ⇒  x - q < 1/2
+    have : x - (q : ℚ) < (1 / 2 : ℚ) := by
+      linarith
+    exact le_of_lt this
+  -- turn into abs bound
+  simpa [abs_le] using And.intro hge hle
+
+/-!
 ### Gram–Schmidt fold lemma (meaty invariant)
 
 `gsoVectorForKPrefix` uses a fold that subtracts projections onto a list of already-orthogonal
