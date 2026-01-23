@@ -430,5 +430,100 @@ theorem dotQ_bk_eq_dotQ_gsoVector_normSq {n : ℕ} (bk : Fin n → ℚ) (us : Li
     _ = dotQ (n := n) uj uj := by
             simp [hproj0]
 
+/-!
+### Connecting `gsoPrefixListQ` to GS identities
+
+To lift size-reduction correctness from a single update to the full `foldr` loop used by
+`sizeReduceAllExactWithUs`, we need:
+
+- the `j`-th prefix GS vector is **orthogonal** to all earlier GS vectors, and
+- the GS identity `dot(row_j, u_j) = dot(u_j, u_j)` for that `u_j`.
+
+These lemmas are proved under a simple nondegeneracy hypothesis saying all prefix GS norms are
+nonzero (the intended “basis is independent” regime).
+-/
+
+lemma gsoPrefixListQ_length {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
+    (gsoPrefixListQ (n := n) B k hk).length = k := by
+  induction k with
+  | zero =>
+      simp [gsoPrefixListQ]
+  | succ k ih =>
+      simp [gsoPrefixListQ, ih]
+
+lemma gsoPrefixListQ_succ_eq_append {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k + 1 ≤ n) :
+    ∃ us bstar,
+      gsoPrefixListQ (n := n) B (k + 1) hk = us ++ [bstar] ∧
+      us = gsoPrefixListQ (n := n) B k (Nat.le_trans (Nat.le_succ k) hk) ∧
+      bstar = gsoVectorForKPrefix (n := n) (rowQ (n := n) B ⟨k, Nat.lt_of_lt_of_le (Nat.lt_succ_self k) hk⟩) us := by
+  -- just unfold the definition at `k+1`
+  let us : List (Fin n → ℚ) := gsoPrefixListQ (n := n) B k (Nat.le_trans (Nat.le_succ k) hk)
+  let bstar : Fin n → ℚ :=
+    gsoVectorForKPrefix (n := n) (rowQ (n := n) B ⟨k, Nat.lt_of_lt_of_le (Nat.lt_succ_self k) hk⟩) us
+  refine ⟨us, bstar, ?_, rfl, rfl⟩
+  -- unfold `gsoPrefixListQ` at `k+1` and identify its `bstar` with our definition
+  simp [gsoPrefixListQ, us, bstar, gsoVectorForKPrefix, muQPrefix]
+
+theorem gsoPrefixListQ_pairwise_orth {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n)
+    (hnz : ∀ u ∈ gsoPrefixListQ (n := n) B k hk, dotQ (n := n) u u ≠ 0) :
+    (gsoPrefixListQ (n := n) B k hk).Pairwise (fun u w => dotQ (n := n) u w = 0) := by
+  induction k with
+  | zero =>
+      simp [gsoPrefixListQ]
+  | succ k ih =>
+      -- unfold once
+      rcases gsoPrefixListQ_succ_eq_append (n := n) B k hk with ⟨us, bstar, hEq, hUs, hB⟩
+      -- rewrite goal into the append form
+      rw [hEq]
+      have hk0 : k ≤ n := Nat.le_trans (Nat.le_succ k) hk
+      have hnz_us : ∀ u ∈ us, dotQ (n := n) u u ≠ 0 := by
+        intro u hu
+        have : u ∈ us ++ [bstar] := List.mem_append_left _ hu
+        have : u ∈ gsoPrefixListQ (n := n) B (k + 1) hk := by simpa [hEq] using this
+        exact hnz u this
+      have hnz_prev : ∀ u ∈ gsoPrefixListQ (n := n) B k hk0, dotQ (n := n) u u ≠ 0 := by
+        intro u hu
+        have : u ∈ us := by simpa [hUs] using hu
+        exact hnz_us u this
+      have horth_us : us.Pairwise (fun u w => dotQ (n := n) u w = 0) := by
+        -- IH gives Pairwise for the previous prefix list; rewrite via `hUs`
+        have : (gsoPrefixListQ (n := n) B k hk0).Pairwise (fun u w => dotQ (n := n) u w = 0) :=
+          ih (hk := hk0) (hnz := hnz_prev)
+        simpa [hUs] using this
+      -- show every `u ∈ us` satisfies `dot(u,bstar)=0`
+      have hbstar0 : ∀ u ∈ us, dotQ (n := n) u bstar = 0 := by
+        intro u hu
+        -- use the general fold orthogonality lemma (and symmetry of dot)
+        have h0 : dotQ (n := n) bstar u = 0 := by
+          -- rewrite `bstar` using `hB`
+          rw [hB]
+          exact dotQ_gsoVectorForKPrefix_mem_eq_zero (n := n)
+            (rowQ (n := n) B ⟨k, Nat.lt_of_lt_of_le (Nat.lt_succ_self k) hk⟩)
+            us horth_us hnz_us u hu
+        simpa [dotQ_comm] using h0
+      -- assemble `Pairwise` for `us ++ [bstar]`
+      refine (List.pairwise_append.2 ?_)
+      refine ⟨horth_us, List.pairwise_singleton _ _, ?_⟩
+      intro a ha b hb
+      have hb' : b = bstar := by simpa using hb
+      subst hb'
+      exact hbstar0 a ha
+
+theorem dotQ_row_prefix_eq_normSq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (j : Nat) (hj : j < n)
+    (hnz : ∀ u ∈ gsoPrefixListQ (n := n) B (j + 1) (Nat.succ_le_of_lt hj), dotQ (n := n) u u ≠ 0) :
+    let us := gsoPrefixListQ (n := n) B j (Nat.le_of_lt hj)
+    let uj := gsoVectorForKPrefix (n := n) (rowQ (n := n) B ⟨j, hj⟩) us
+    dotQ (n := n) (rowQ (n := n) B ⟨j, hj⟩) uj = dotQ (n := n) uj uj := by
+  intro us uj
+  have hnz_us : ∀ u ∈ us, dotQ (n := n) u u ≠ 0 := by
+    intro u hu
+    exact hnz u (by
+      -- `us` is a prefix of the (j+1)-prefix list
+      simp [us, gsoPrefixListQ, hu])
+  have horth_us :
+      us.Pairwise (fun u w => dotQ (n := n) u w = 0) :=
+    gsoPrefixListQ_pairwise_orth (n := n) B j (Nat.le_of_lt hj) hnz_us
+  simpa [uj] using dotQ_bk_eq_dotQ_gsoVector_normSq (n := n) (rowQ (n := n) B ⟨j, hj⟩) us horth_us hnz_us
+
 end GeometryOfNumbers.Computable
 
