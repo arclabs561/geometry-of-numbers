@@ -1,6 +1,7 @@
 import Mathlib.Analysis.InnerProductSpace.GramSchmidtOrtho
 import Mathlib.Data.Matrix.Basic
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import GeometryOfNumbers.Computable.LLL
 
 /-!
 # LLL Basic Experiment
@@ -32,6 +33,10 @@ private def _probe_gramSchmidt := @InnerProductSpace.gramSchmidt
    u1 = v1
    u2 = v2 - proj_{u1}(v2) = [-1/2, 1/2]
 -/
+
+-- Smoke: the 2D reducer is definable and typechecks.
+noncomputable def lll2_smoke (B : Matrix (Fin 2) (Fin 2) ℤ) : Matrix (Fin 2) (Fin 2) ℤ :=
+  GeometryOfNumbers.Computable.lll_reduce2 B
 
 end
 

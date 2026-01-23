@@ -97,4 +97,49 @@ def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
   -- Start with an arbitrary fuel limit for computability
   lll_reduce_loop B δ 1 1000000
 
+/-!
+## A useful concrete reducer: 2D Gauss/LLL reduction
+
+Before we have a full, verified LLL implementation in all dimensions, it is still valuable to have
+an *actually-operational* reduction routine in the smallest nontrivial case \(n = 2\).
+
+This is essentially Gauss reduction for rank-2 lattices:
+- repeatedly size-reduce the second vector by the first using nearest-integer rounding, and
+- swap the vectors if that decreases the (Euclidean) norm.
+
+It is **noncomputable** (uses real inner products + `floor`), but it is not a no-op, and it is
+useful as an executable “reality check” for later LLL work.
+-/
+
+noncomputable def lll_reduce2_step (B : Matrix (Fin 2) (Fin 2) ℤ) :
+    Matrix (Fin 2) (Fin 2) ℤ :=
+  let i0 : Fin 2 := 0
+  let i1 : Fin 2 := 1
+  let B_real : Matrix (Fin 2) (Fin 2) ℝ := B.map Int.cast
+  let μ : ℝ := gram_schmidt_projections (n := 2) B_real i1 i0
+  let q : ℤ := ⌊μ + 1 / 2⌋
+  let B' : Matrix (Fin 2) (Fin 2) ℤ :=
+    if hq : q = 0 then
+      B
+    else
+      B.updateRow i1 (B i1 - q • B i0)
+  -- swap if the new second vector is shorter than the first
+  let v0 : EuclideanSpace ℝ (Fin 2) := toLp 2 ((B'.map Int.cast) i0)
+  let v1 : EuclideanSpace ℝ (Fin 2) := toLp 2 ((B'.map Int.cast) i1)
+  if ‖v1‖ < ‖v0‖ then
+    swap_vectors B' i0 i1
+  else
+    B'
+
+noncomputable def lll_reduce2 (B : Matrix (Fin 2) (Fin 2) ℤ) (limit : ℕ := 200) :
+    Matrix (Fin 2) (Fin 2) ℤ :=
+  match limit with
+  | 0 => B
+  | limit' + 1 =>
+      let B' := lll_reduce2_step B
+      if h : B' = B then
+        B
+      else
+        lll_reduce2 B' limit'
+
 end GeometryOfNumbers.Computable
