@@ -2644,6 +2644,16 @@ theorem lllRunExact_finished_isLLLReducedQ_of_RowLIQ
     simpa [r] using lllRunExact_finished_isLovaszReducedQ (n := n) (B := B) (δ := δ) (limit := limit) hfin
   simpa [isLLLReducedQ, r, hs, hl]
 
+theorem lllRunExact_finished_LLLReducedQ_of_RowLIQ
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat)
+    (hli : RowLIQ (n := n) B) :
+    (lllRunExact (n := n) B δ limit).reason = .finished →
+      LLLReducedQ (n := n) (lllRunExact (n := n) B δ limit).basis δ := by
+  intro hfin
+  -- Prop wrapper around the established boolean postcondition.
+  simpa [LLLReducedQ] using
+    (lllRunExact_finished_isLLLReducedQ_of_RowLIQ (n := n) (B := B) (δ := δ) (limit := limit) hli hfin)
+
 theorem dotQ_row_gsoAtQ_eq_normSq {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (j : Fin n)
     (hnz : ∀ u ∈ gsoPrefixListQ (n := n) B (j.1 + 1) (Nat.succ_le_of_lt j.2), dotQ (n := n) u u ≠ 0) :
     dotQ (n := n) (rowQ (n := n) B j) (gsoAtQ (n := n) B j) =

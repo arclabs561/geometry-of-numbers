@@ -133,6 +133,25 @@ def isLovaszReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Boo
 def isLLLReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Bool :=
   isSizeReducedQ (n := n) B && isLovaszReducedQ (n := n) B δ
 
+/-!
+## Prop-level wrappers (spec surface)
+
+These are lightweight “spec” predicates that let downstream theorems read as
+`finished → LLLReducedQ ...` while staying definitionally tied to the executable checks.
+
+We can later strengthen these to a more semantic formulation (\(|\mu_{i,j}| \le 1/2\), Lovász
+inequalities, etc.) while keeping a stable outward-facing interface.
+-/
+
+def SizeReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : Prop :=
+  isSizeReducedQ (n := n) B = true
+
+def LovaszReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Prop :=
+  isLovaszReducedQ (n := n) B δ = true
+
+def LLLReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Prop :=
+  isLLLReducedQ (n := n) B δ = true
+
 def sizeReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : Matrix (Fin n) (Fin n) ℤ :=
   let μ := muQ (n := n) B k j
   let q : ℤ := roundQ μ
