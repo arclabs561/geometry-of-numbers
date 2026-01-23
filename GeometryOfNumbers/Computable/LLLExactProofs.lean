@@ -17,6 +17,12 @@ costs more predictable.
 
 open scoped BigOperators
 
+lemma rowQ_size_reduceZ_self {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (q : ℤ) :
+    rowQ (n := n) (size_reduceZ (n := n) B k j q) k = rowQ (n := n) B k - (q : ℚ) • rowQ (n := n) B j := by
+  ext t
+  -- `updateRow` changes only row `k`.
+  simp [rowQ, size_reduceZ, Matrix.updateRow_self, Pi.sub_apply, Pi.smul_apply, sub_eq_add_neg]
+
 lemma dotQ_comm {n : ℕ} (v w : Fin n → ℚ) : dotQ (n := n) v w = dotQ (n := n) w v := by
   simp [dotQ, mul_comm]
 
@@ -92,6 +98,83 @@ theorem abs_sub_roundQ_le_half (x : ℚ) :
     exact le_of_lt this
   -- turn into abs bound
   simpa [abs_le] using And.intro hge hle
+
+/-!
+### Size reduction: how `μ` changes under `size_reduceZ`
+
+This is the core algebraic fact behind size reduction correctness. It is intentionally stated with
+one extra hypothesis:
+
+`dotQ (rowQ B j) uj = dotQ uj uj`
+
+which is the standard Gram–Schmidt identity for the `j`-th basis vector and its `j`-th GS vector.
+Once we prove that GS identity for `gsoPrefixListQ`, we can instantiate this lemma directly in the
+LLL loop.
+-/
+
+theorem muQPrefix_size_reduceZ_shift {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n)
+    (uj : Fin n → ℚ) (hden : dotQ (n := n) uj uj ≠ 0) (hgs : dotQ (n := n) (rowQ (n := n) B j) uj = dotQ (n := n) uj uj) :
+    let μ : ℚ := muQPrefix (n := n) (rowQ (n := n) B k) uj
+    let q : ℤ := roundQ μ
+    let B' : Matrix (Fin n) (Fin n) ℤ := size_reduceZ (n := n) B k j q
+    muQPrefix (n := n) (rowQ (n := n) B' k) uj = μ - (q : ℚ) := by
+  intro μ q B'
+  have hrow : rowQ (n := n) B' k = rowQ (n := n) B k - (q : ℚ) • rowQ (n := n) B j := by
+    simpa [B'] using rowQ_size_reduceZ_self (n := n) B k j q
+  let denom : ℚ := dotQ (n := n) uj uj
+  have hdot :
+      dotQ (n := n) (rowQ (n := n) B' k) uj = dotQ (n := n) (rowQ (n := n) B k) uj - denom * (q : ℚ) := by
+    -- compute dot after the row update and use the GS identity `dot(bj,uj)=dot(uj,uj)`
+    calc
+      dotQ (n := n) (rowQ (n := n) B' k) uj
+          = dotQ (n := n) (rowQ (n := n) B k - (q : ℚ) • rowQ (n := n) B j) uj := by
+              simp [hrow]
+      _ = dotQ (n := n) (rowQ (n := n) B k) uj - (q : ℚ) * dotQ (n := n) (rowQ (n := n) B j) uj := by
+              simp [dotQ_sub_left, dotQ_smul_left]
+      _ = dotQ (n := n) (rowQ (n := n) B k) uj - (q : ℚ) * denom := by
+              simp [denom, hgs]
+      _ = dotQ (n := n) (rowQ (n := n) B k) uj - denom * (q : ℚ) := by
+              ring_nf
+  have hμ : μ = dotQ (n := n) (rowQ (n := n) B k) uj / denom := by
+    simp [μ, muQPrefix, denom, hden]
+  -- unfold `muQPrefix` (denom ≠ 0) and use the shift formula
+  calc
+    muQPrefix (n := n) (rowQ (n := n) B' k) uj
+        = dotQ (n := n) (rowQ (n := n) B' k) uj / denom := by
+            simp [muQPrefix, denom, hden]
+    _ = (dotQ (n := n) (rowQ (n := n) B k) uj - denom * (q : ℚ)) / denom := by
+            simp [hdot]
+    _ = dotQ (n := n) (rowQ (n := n) B k) uj / denom - (q : ℚ) := by
+            -- (a - denom*q)/denom = a/denom - q  (field calculation)
+            set a : ℚ := dotQ (n := n) (rowQ (n := n) B k) uj
+            -- unfold `/` and reduce to cancelling `denom⁻¹ * denom`
+            simp [a, div_eq_mul_inv, sub_eq_add_neg, add_mul, mul_assoc]
+            -- remaining goal is the cancellation `denom * (denom⁻¹ * q) = q`
+            calc
+              denom * ((q : ℚ) * denom⁻¹) = (q : ℚ) * (denom * denom⁻¹) := by
+                simp [mul_assoc, mul_comm]
+              _ = (q : ℚ) * (1 : ℚ) := by
+                have : denom * denom⁻¹ = (1 : ℚ) := by
+                  exact mul_inv_cancel₀ hden
+                simp [this]
+              _ = (q : ℚ) := by
+                simp
+    _ = μ - (q : ℚ) := by
+            simp [hμ]
+
+theorem abs_muQPrefix_after_size_reduceZ_le_half {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n)
+    (uj : Fin n → ℚ) (hden : dotQ (n := n) uj uj ≠ 0)
+    (hgs : dotQ (n := n) (rowQ (n := n) B j) uj = dotQ (n := n) uj uj) :
+    let μ : ℚ := muQPrefix (n := n) (rowQ (n := n) B k) uj
+    let q : ℤ := roundQ μ
+    let B' : Matrix (Fin n) (Fin n) ℤ := size_reduceZ (n := n) B k j q
+    |muQPrefix (n := n) (rowQ (n := n) B' k) uj| ≤ (1 / 2 : ℚ) := by
+  intro μ q B'
+  have hshift :
+      muQPrefix (n := n) (rowQ (n := n) B' k) uj = μ - (q : ℚ) := by
+    simpa [μ, q, B'] using muQPrefix_size_reduceZ_shift (n := n) B k j uj hden hgs
+  -- Use the rounding bound: |μ - roundQ μ| ≤ 1/2.
+  simpa [hshift, q, sub_eq_add_neg, add_comm] using (abs_sub_roundQ_le_half μ)
 
 /-!
 ### Gram–Schmidt fold lemma (meaty invariant)
