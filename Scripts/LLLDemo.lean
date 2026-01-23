@@ -17,5 +17,8 @@ def demo3 : IO Unit := do
   let Bout := lllReduceExact (n := 2) B δ (limit := 50)
   showBasis "input" B
   showBasis "lll_exact output" Bout
+  IO.println s!"size_reduced={isSizeReducedQ (n := 2) Bout}"
+  IO.println s!"lovasz_reduced={isLovaszReducedQ (n := 2) Bout δ}"
+  IO.println s!"lll_reduced={isLLLReducedQ (n := 2) Bout δ}"
 
 def main : IO Unit := demo3

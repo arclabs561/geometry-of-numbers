@@ -66,6 +66,36 @@ def lovaszQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k km1 : Fin n) (δ : ℚ
   let rhs : ℚ := (δ - (muQ (n := n) B k km1) ^ 2) * gsoNormSqQ (n := n) B km1
   decide (lhs ≥ rhs)
 
+def sizeReducedMuQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (i j : Fin n) : Bool :=
+  let μ := muQ (n := n) B i j
+  decide (|μ| ≤ (1 / 2 : ℚ))
+
+def isSizeReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : Bool :=
+  let idxs : List (Fin n) := List.ofFn (fun i : Fin n => i)
+  let pairs : List (Fin n × Fin n) :=
+    idxs.foldl (fun acc i => acc ++ idxs.map (fun j => (i, j))) []
+  pairs.all fun ij =>
+    let i : Fin n := ij.1
+    let j : Fin n := ij.2
+    if _h : (j : ℕ) < (i : ℕ) then
+      sizeReducedMuQ (n := n) B i j
+    else
+      true
+
+def isLovaszReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Bool :=
+  let idxs : List (Fin n) := List.ofFn (fun i : Fin n => i)
+  idxs.all fun k =>
+    if hk0 : (0 : ℕ) < (k : ℕ) then
+      let km1Nat : ℕ := (k : ℕ) - 1
+      have hkm1 : km1Nat < n := Nat.lt_trans (Nat.pred_lt (Nat.ne_of_gt hk0)) k.2
+      let km1 : Fin n := ⟨km1Nat, hkm1⟩
+      lovaszQ (n := n) B k km1 δ
+    else
+      true
+
+def isLLLReducedQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) : Bool :=
+  isSizeReducedQ (n := n) B && isLovaszReducedQ (n := n) B δ
+
 def sizeReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : Matrix (Fin n) (Fin n) ℤ :=
   let μ := muQ (n := n) B k j
   let q : ℤ := roundQ μ
