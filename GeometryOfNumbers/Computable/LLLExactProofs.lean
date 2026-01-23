@@ -1997,7 +1997,8 @@ theorem lovaszQ_after_sizeReduceAllExactWithPrefix_of_lt
       gsoAtQ_foldr_size_reduceZ_of_lt (n := n) (B := B) (k := k) hk js qfun im1 (by simpa using him1_lt_k)
     simpa [hfold] using this
   -- unfold `lovaszQ` and rewrite `muQ` + norms using row/gso equalities
-  simp [lovaszQ, gsoNormSqQ, muQ, hrow_i, hrow_im1, hgso_i, hgso_im1]
+  -- Note: `hrow_im1` is unused here; only the GS identities matter.
+  simp [lovaszQ, gsoNormSqQ, muQ, hrow_i, hgso_i, hgso_im1]
 
 theorem LovaszBelow_after_sizeReduceAllExactWithPrefix
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : Nat) (hk : k < n)
@@ -2103,7 +2104,8 @@ theorem lllRunExactGo_preserves_LovaszBelow
                   intro hEq; exact (Nat.ne_of_lt (Nat.lt_trans (Nat.pred_lt (Nat.ne_of_gt hi0)) hi_lt_km1)) (congrArg Fin.val hEq)
                 exact rowQ_swap_vectors_other (n := n) (B := B1) (k := k') (j := km1') (i := im1) hik hij
               have : lovaszQ (n := n) B2 i im1 δ = lovaszQ (n := n) B1 i im1 δ := by
-                simp [lovaszQ, gsoNormSqQ, muQ, hgi, hgm1, hrow_i, hrow_im1]
+                -- Note: `hrow_im1` is unused here; only the GS identities matter.
+                simp [lovaszQ, gsoNormSqQ, muQ, hgi, hgm1, hrow_i]
               have hb : lovaszQ (n := n) B1 i im1 δ = true := by
                 simpa [LovaszBelow, im1] using hbelow_km1 i hi hi0
               have hb2 : lovaszQ (n := n) B2 i im1 δ = true := by
