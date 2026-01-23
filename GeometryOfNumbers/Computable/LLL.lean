@@ -18,14 +18,22 @@ namespace GeometryOfNumbers.Computable
 
 open InnerProductSpace WithLp
 
--- This module is a scaffold; keep lints actionable (avoid noise from unused proof terms).
-set_option linter.unusedVariables false
+-- NOTE: This file mixes (1) noncomputable algorithm code and (2) algebraic invariants about the
+-- underlying ℤ-module spanned by the basis rows. Keep lints actionable.
 
 /-- The status of an LLL reduction step. -/
 inductive LLLStatus
   | reduced
   | size_reduced
   | swapped
+
+/-- The ℤ-span of the row vectors of `B`. -/
+def rowSpan {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : Submodule ℤ (Fin n → ℤ) :=
+  Submodule.span ℤ (Set.range B)
+
+lemma row_mem_rowSpan {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (i : Fin n) :
+    B i ∈ rowSpan B := by
+  exact Submodule.subset_span ⟨i, rfl⟩
 
 /-- Perform size reduction on vector k with respect to vector j.
     b_k := b_k - round(μ_{k,j}) * b_j -/
@@ -37,9 +45,7 @@ noncomputable def size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : 
 /-- Perform a swap of two adjacent basis vectors. -/
 def swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
     Matrix (Fin n) (Fin n) ℤ :=
-  let row_k := B k
-  let row_j := B j
-  B.updateRow k row_j |>.updateRow j row_k
+  fun i => B (Equiv.swap k j i)
 
 /-- Gram-Schmidt orthogonalization coefficients μ_{i,j}.
     μ_{i,j} = (b_i, b*_j) / (b*_j, b*_j) -/
@@ -67,10 +73,126 @@ noncomputable def potential_function {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) 
 def lovasz_condition (norm_k norm_km1 μ : ℝ) (δ : ℚ) : Prop :=
   norm_k ≥ ((δ : ℝ) - μ^2) * norm_km1
 
+lemma rowSpan_swap_vectors {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) :
+    rowSpan (swap_vectors B k j) = rowSpan B := by
+  -- `swap_vectors` is just precomposition by a bijection on indices (`Equiv.swap`),
+  -- so `Set.range` is unchanged and therefore the span is unchanged.
+  have hrange : Set.range (swap_vectors B k j) = Set.range B := by
+    ext x
+    constructor
+    · rintro ⟨i, rfl⟩
+      exact ⟨Equiv.swap k j i, rfl⟩
+    · rintro ⟨i, rfl⟩
+      exact ⟨Equiv.swap k j i, by simp [swap_vectors]⟩
+  simp [rowSpan, hrange]
+
+lemma rowSpan_size_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (hkj : k ≠ j)
+    (q : ℤ) :
+    rowSpan (B.updateRow k (B k - q • B j)) = rowSpan B := by
+  -- Replace the generator `B k` by `B k - q • B j` (with `B j` still present): span is unchanged.
+  let B' := B.updateRow k (B k - q • B j)
+  apply le_antisymm
+  · -- new span ≤ old span
+    refine Submodule.span_le.2 ?_
+    rintro _ ⟨i, rfl⟩
+    by_cases hiK : i = k
+    · cases hiK
+      have hk : B k ∈ rowSpan B := row_mem_rowSpan B k
+      have hj' : B j ∈ rowSpan B := row_mem_rowSpan B j
+      have : B k - q • B j ∈ rowSpan B := (rowSpan B).sub_mem hk ((rowSpan B).smul_mem q hj')
+      simpa [B', Matrix.updateRow_self] using this
+    · -- unchanged row
+      simpa [Matrix.updateRow_ne, hiK] using (row_mem_rowSpan B i)
+  · -- old span ≤ new span
+    refine Submodule.span_le.2 ?_
+    rintro _ ⟨i, rfl⟩
+    by_cases hiK : i = k
+    · cases hiK
+      have hk' : B' k ∈ rowSpan B' := row_mem_rowSpan B' k
+      have hj' : B' j ∈ rowSpan B' := row_mem_rowSpan B' j
+      have hsum : B' k + q • B' j ∈ rowSpan B' :=
+        (rowSpan B').add_mem hk' ((rowSpan B').smul_mem q hj')
+      -- simplify to `B k` using `sub_add_cancel`
+      have hjk : j ≠ k := Ne.symm hkj
+      simpa [B', Matrix.updateRow_self, Matrix.updateRow_ne, hjk, sub_add_cancel] using hsum
+    · exact Submodule.subset_span ⟨i, by simp [Matrix.updateRow_ne, hiK]⟩
+
 /-- Skeleton for the LLL algorithm.
     This will eventually be a computable function that returns a reduced basis. -/
-def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ) (limit : ℕ) :
-    Matrix (Fin n) (Fin n) ℤ :=
+noncomputable def lll_mu_nat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : ℕ)
+    (hk : k < n) (hj : j < n) : ℝ :=
+  let B_real : Matrix (Fin n) (Fin n) ℝ := B.map Int.cast
+  gram_schmidt_projections (n := n) B_real ⟨k, hk⟩ ⟨j, hj⟩
+
+noncomputable def lll_size_reduce_nat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : ℕ)
+    (hk : k < n) (hj : j < n) : Matrix (Fin n) (Fin n) ℤ :=
+  let μ : ℝ := lll_mu_nat (n := n) B k j hk hj
+  size_reduce (n := n) B ⟨k, hk⟩ ⟨j, hj⟩ μ
+
+/-- Size-reduce row `k` against all earlier rows `0,1,...,k-1` (in increasing order). -/
+noncomputable def lll_size_reduce_all {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : ℕ)
+    (hk : k < n) : Matrix (Fin n) (Fin n) ℤ :=
+  let js : List (Fin k) := List.ofFn (fun j : Fin k => j)
+  js.foldl
+    (fun acc (j : Fin k) =>
+      have hj : (j : ℕ) < n := Nat.lt_trans j.2 hk
+      lll_size_reduce_nat (n := n) acc k (j : ℕ) hk hj)
+    B
+
+lemma rowSpan_lll_size_reduce_nat {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : ℕ)
+    (hk : k < n) (hj : j < n) (hkj : k ≠ j) :
+    rowSpan (lll_size_reduce_nat (n := n) B k j hk hj) = rowSpan B := by
+  classical
+  -- `lll_size_reduce_nat` is exactly the updateRow of `size_reduce`, so we can reuse `rowSpan_size_reduce`.
+  have hkj' : (⟨k, hk⟩ : Fin n) ≠ ⟨j, hj⟩ := by
+    intro h
+    apply hkj
+    exact congrArg Fin.val h
+  let μ : ℝ := lll_mu_nat (n := n) B k j hk hj
+  let q : ℤ := ⌊μ + 1 / 2⌋
+  have hspan : rowSpan (B.updateRow ⟨k, hk⟩ (B ⟨k, hk⟩ - q • B ⟨j, hj⟩)) = rowSpan B :=
+    rowSpan_size_reduce (B := B) (k := ⟨k, hk⟩) (j := ⟨j, hj⟩) hkj' q
+  -- now rewrite `lll_size_reduce_nat` into that shape
+  simpa [lll_size_reduce_nat, lll_mu_nat, μ, size_reduce, q] using hspan
+
+lemma rowSpan_lll_size_reduce_all {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : ℕ) (hk : k < n) :
+    rowSpan (lll_size_reduce_all (n := n) B k hk) = rowSpan B := by
+  classical
+  -- unfold and induct over the explicit list of indices `0..k-1`
+  unfold lll_size_reduce_all
+  set js : List (Fin k) := List.ofFn (fun j : Fin k => j)
+  -- the fold preserves rowSpan because each step is a `lll_size_reduce_nat` with `j < k`
+  -- (hence `k ≠ j`)
+  revert B
+  induction js with
+  | nil =>
+      intro B
+      simp
+  | cons a tl ih =>
+      intro B
+      have ha_lt : (a : ℕ) < k := a.2
+      have hkj : k ≠ (a : ℕ) := Nat.ne_of_gt ha_lt
+      have ha_n : (a : ℕ) < n := Nat.lt_trans ha_lt hk
+      -- step preserves rowSpan
+      have hstep :
+          rowSpan (lll_size_reduce_nat (n := n) B k (a : ℕ) hk ha_n) = rowSpan B :=
+        rowSpan_lll_size_reduce_nat (n := n) (B := B) (k := k) (j := (a : ℕ)) hk ha_n hkj
+      -- tail fold preserves rowSpan of its starting basis
+      have htail :
+          rowSpan
+              (List.foldl
+                (fun acc (j : Fin k) =>
+                  lll_size_reduce_nat (n := n) acc k (j : ℕ) hk (Nat.lt_trans j.2 hk))
+                (lll_size_reduce_nat (n := n) B k (a : ℕ) hk ha_n) tl) =
+            rowSpan (lll_size_reduce_nat (n := n) B k (a : ℕ) hk ha_n) := by
+        simpa using ih (B := lll_size_reduce_nat (n := n) B k (a : ℕ) hk ha_n)
+      -- combine
+      simpa [js, List.foldl, hstep] using htail
+
+noncomputable def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ)
+    (limit : ℕ) : Matrix (Fin n) (Fin n) ℤ := by
+  classical
+  exact
   match limit with
   | 0 => B -- Timeout
   | limit' + 1 =>
@@ -78,24 +200,71 @@ def lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : �
       if h0 : k = 0 then
         lll_reduce_loop B δ 1 limit'
       else
-        -- NOTE: This file is currently a scaffold. We intentionally do *not* pretend to implement
-        -- LLL steps until we have a correct story for:
-        -- - integer rounding for μ_{k,j}
-        -- - size-reduction invariants
-        -- - Lovász condition checks / swaps
-        --
-        -- For now, we take a conservative “no-op” step that is:
-        -- - terminating (fuel decreases),
-        -- - stable under refactors,
-        -- - honest about not being an LLL reducer yet.
-        lll_reduce_loop B δ (k + 1) limit'
+        let B1 : Matrix (Fin n) (Fin n) ℤ := lll_size_reduce_all (n := n) B k hk
+        let km1 : ℕ := k - 1
+        have hkm1 : km1 < n := by
+          -- `k-1 < k < n`
+          exact Nat.lt_trans (Nat.pred_lt h0) hk
+        let μ : ℝ := lll_mu_nat (n := n) B1 k km1 hk hkm1
+        let B1_real : Matrix (Fin n) (Fin n) ℝ := B1.map Int.cast
+        let norm_k : ℝ := gso_norm_sq (n := n) B1_real ⟨k, hk⟩
+        let norm_km1 : ℝ := gso_norm_sq (n := n) B1_real ⟨km1, hkm1⟩
+        if lovasz_condition norm_k norm_km1 μ δ then
+          lll_reduce_loop B1 δ (k + 1) limit'
+        else
+          let B2 := swap_vectors (n := n) B1 ⟨k, hk⟩ ⟨km1, hkm1⟩
+          lll_reduce_loop B2 δ km1 limit'
     else B
 
 /-- Main entry point for the LLL algorithm. -/
-def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
+noncomputable def lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
     Matrix (Fin n) (Fin n) ℤ :=
   -- Start with an arbitrary fuel limit for computability
   lll_reduce_loop B δ 1 1000000
+
+theorem rowSpan_lll_reduce_loop {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k : ℕ)
+    (limit : ℕ) :
+    rowSpan (lll_reduce_loop (n := n) B δ k limit) = rowSpan B := by
+  classical
+  induction limit generalizing B k with
+  | zero =>
+      simp [lll_reduce_loop]
+  | succ limit ih =>
+      by_cases hk : k < n
+      · by_cases h0 : k = 0
+        · cases h0
+          have hk0 : (0 : ℕ) < n := hk
+          have := ih (B := B) (k := 1)
+          simpa [lll_reduce_loop, hk0] using this
+        · let B1 : Matrix (Fin n) (Fin n) ℤ := lll_size_reduce_all (n := n) B k hk
+          have hB1 : rowSpan B1 = rowSpan B := by
+            simpa [B1] using rowSpan_lll_size_reduce_all (n := n) (B := B) (k := k) hk
+          let km1 : ℕ := k - 1
+          have hkm1 : km1 < n := by
+            exact Nat.lt_trans (Nat.pred_lt h0) hk
+          let μ : ℝ := lll_mu_nat (n := n) B1 k km1 hk hkm1
+          let B1_real : Matrix (Fin n) (Fin n) ℝ := B1.map Int.cast
+          let norm_k : ℝ := gso_norm_sq (n := n) B1_real ⟨k, hk⟩
+          let norm_km1 : ℝ := gso_norm_sq (n := n) B1_real ⟨km1, hkm1⟩
+          by_cases hL : lovasz_condition norm_k norm_km1 μ δ
+          · have := ih (B := B1) (k := k + 1)
+            simpa [lll_reduce_loop, hk, h0, B1, km1, hkm1, μ, B1_real, norm_k, norm_km1, hL, hB1] using this
+          · let B2 : Matrix (Fin n) (Fin n) ℤ := swap_vectors (n := n) B1 ⟨k, hk⟩ ⟨km1, hkm1⟩
+            have hB2 : rowSpan B2 = rowSpan B1 := by
+              simpa [B2] using rowSpan_swap_vectors (n := n) (B := B1) ⟨k, hk⟩ ⟨km1, hkm1⟩
+            have ih2 := ih (B := B2) (k := km1)
+            have : rowSpan (lll_reduce_loop (n := n) B2 δ km1 limit) = rowSpan B := by
+              calc
+                rowSpan (lll_reduce_loop (n := n) B2 δ km1 limit) = rowSpan B2 := by simpa using ih2
+                _ = rowSpan B1 := by simp [hB2]
+                _ = rowSpan B := by simp [hB1]
+            simpa [lll_reduce_loop, hk, h0, B1, km1, hkm1, μ, B1_real, norm_k, norm_km1, hL, B2] using this
+      · simp [lll_reduce_loop, hk]
+
+theorem rowSpan_lll_reduce {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
+    rowSpan (lll_reduce (n := n) B δ) = rowSpan B := by
+  simpa [lll_reduce] using
+    rowSpan_lll_reduce_loop (n := n) (B := B) (δ := δ) (k := 1) (limit := 1000000)
 
 /-!
 ## A useful concrete reducer: 2D Gauss/LLL reduction
@@ -139,7 +308,7 @@ noncomputable def lll_reduce2 (B : Matrix (Fin 2) (Fin 2) ℤ) (limit : ℕ := 2
   | 0 => B
   | limit' + 1 =>
       let B' := lll_reduce2_step B
-      if h : B' = B then
+      if B' = B then
         B
       else
         lll_reduce2 B' limit'
