@@ -133,3 +133,25 @@ Key pieces we are encoding in `GeometryOfNumbers/Cauchy/Main.lean`:
 
 We treat this as a *signpost* for the lemma we need to formalize; we still need a proof-level
 reference suitable for Lean (likely via Nathanson’s book treatment).
+
+## 7. Related formalizations / research to read next (curated)
+
+### Verified / formal LLL (for guidance)
+
+Even if we implement LLL in Lean from scratch, these are useful for:
+- invariants that actually work in a proof assistant,
+- a realistic decomposition of “algorithm step” lemmas vs “termination/complexity” lemmas.
+
+- Isabelle/HOL (AFP): *LLL Basis Reduction* (machine-checked development + overview PDF)  
+  <https://www.isa-afp.org/browser_info/current/AFP/LLL_Basis_Reduction/outline.pdf>
+- Journal of Automated Reasoning: *Formalizing the LLL Basis Reduction Algorithm and the LLL Factorization Algorithm in Isabelle/HOL*  
+  <https://link.springer.com/article/10.1007/s10817-020-09552-1>
+- Springer (chapter): *A Formalization of the LLL Basis Reduction Algorithm* (older, still useful for structure)  
+  <https://link.springer.com/chapter/10.1007/978-3-319-94821-8_10>
+
+### Mathlib geometry-of-numbers infrastructure (what we build on)
+
+- Minkowski / Blichfeldt engine in Mathlib:  
+  <https://leanprover-community.github.io/mathlib4_docs/Mathlib/MeasureTheory/Group/GeometryOfNumbers.html>
+- `ZLattice` covolume facts (determinant and fundamental domain):  
+  <https://leanprover-community.github.io/mathlib4_docs/Mathlib/Algebra/Module/ZLattice/Covolume.html>
