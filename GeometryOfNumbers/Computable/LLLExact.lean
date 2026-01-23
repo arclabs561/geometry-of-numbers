@@ -48,6 +48,48 @@ def gsoListQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : List (Fin n → ℚ) :
       []
   accRev.reverse
 
+/-!
+### Prefix Gram–Schmidt (optimization)
+
+In LLL we repeatedly reduce row `k` against rows `0..k-1`. The Gram–Schmidt vectors for indices
+`j < k` depend only on the **prefix** rows `0..k-1`, and remain unchanged while we update row `k`.
+
+So we can compute a prefix GSO list once per `k`-step and reuse it throughout size reduction.
+-/
+
+def gsoPrefixListQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
+    List (Fin n → ℚ) :=
+  match k with
+  | 0 => []
+  | k' + 1 =>
+      have hk' : k' < n := Nat.lt_of_lt_of_le (Nat.lt_succ_self k') hk
+      let us : List (Fin n → ℚ) := gsoPrefixListQ (n := n) B k' (Nat.le_trans (Nat.le_succ k') hk)
+      let i' : Fin n := ⟨k', hk'⟩
+      let bi := rowQ (n := n) B i'
+      let bstar :=
+        us.foldl
+          (fun v u =>
+            let denom := dotQ (n := n) u u
+            let μ : ℚ := if denom = 0 then 0 else dotQ (n := n) bi u / denom
+            v - μ • u)
+          bi
+      us ++ [bstar]
+
+def muQPrefix {n : ℕ} (bk : Fin n → ℚ) (uj : Fin n → ℚ) : ℚ :=
+  let denom := dotQ (n := n) uj uj
+  if denom = 0 then 0 else dotQ (n := n) bk uj / denom
+
+def gsoVectorForKPrefix {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) : Fin n → ℚ :=
+  us.foldl
+    (fun v uj =>
+      let μ := muQPrefix (n := n) bk uj
+      v - μ • uj)
+    bk
+
+def gsoNormSqForKPrefix {n : ℕ} (bk : Fin n → ℚ) (us : List (Fin n → ℚ)) : ℚ :=
+  let uk := gsoVectorForKPrefix (n := n) bk us
+  dotQ (n := n) uk uk
+
 def gsoAtQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (j : Fin n) : Fin n → ℚ :=
   (gsoListQ (n := n) B).getD j.val (zeroVecQ (n := n))
 
@@ -105,9 +147,31 @@ def sizeReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : M
   let q : ℤ := roundQ μ
   size_reduceZ B k j q
 
+/-- Internal helper: size-reduce row `k` using a *fixed* prefix GSO list `us` (indices `< k`). -/
+def sizeReduceAllExactWithUs {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k < n)
+    (us : List (Fin n → ℚ)) : Matrix (Fin n) (Fin n) ℤ :=
+  let k' : Fin n := ⟨k, hk⟩
+  -- Reduce row k against all j<k (order doesn't matter: earlier rows are orthogonal to later prefix GSO vectors)
+  let js : List (Fin k) := List.ofFn (α := Fin k) (fun j : Fin k => j)
+  js.foldl
+    (fun acc (j : Fin k) =>
+      let j' : Fin n := ⟨(j : Nat), Nat.lt_trans j.2 hk⟩
+      let uj : Fin n → ℚ :=
+        us.getD j.val (zeroVecQ (n := n))
+      let bk : Fin n → ℚ := rowQ (n := n) acc k'
+      let μ : ℚ := muQPrefix (n := n) bk uj
+      let q : ℤ := roundQ μ
+      size_reduceZ acc k' j' q)
+    B
+
+def sizeReduceAllExactWithPrefix {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k < n) :
+    Matrix (Fin n) (Fin n) ℤ :=
+  let us : List (Fin n → ℚ) := gsoPrefixListQ (n := n) B k (Nat.le_of_lt hk)
+  sizeReduceAllExactWithUs (n := n) B k hk us
+
 def sizeReduceAllExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : ℕ) (hk : k < n) :
     Matrix (Fin n) (Fin n) ℤ :=
-  let js : List (Fin k) := List.ofFn (fun j : Fin k => j)
+  let js : List (Fin k) := List.ofFn (α := Fin k) (fun j : Fin k => j)
   js.foldl
     (fun acc (j : Fin k) =>
       have hj : (j : ℕ) < n := Nat.lt_trans j.2 hk
@@ -123,7 +187,7 @@ def lllReduceLoopExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k 
         if h0 : k = 0 then
           lllReduceLoopExact (n := n) B δ 1 limit'
         else
-          let B1 := sizeReduceAllExact (n := n) B k hk
+          let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
           let km1 : ℕ := k - 1
           have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
           let k' : Fin n := ⟨k, hk⟩
@@ -171,7 +235,7 @@ def lllRunExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : N
           if h0 : k = 0 then
             go B 1 (steps + 1) fuel'
           else
-            let B1 := sizeReduceAllExact (n := n) B k hk
+            let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
             let km1 : Nat := k - 1
             have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
             let k' : Fin n := ⟨k, hk⟩
@@ -196,7 +260,7 @@ theorem rowSpan_sizeReduceAllExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k
   classical
   -- unfold and induct over the explicit list of indices `0..k-1`
   unfold sizeReduceAllExact
-  set js : List (Fin k) := List.ofFn (fun j : Fin k => j)
+  set js : List (Fin k) := List.ofFn (α := Fin k) (fun j : Fin k => j)
   revert B
   induction js with
   | nil =>
@@ -215,6 +279,57 @@ theorem rowSpan_sizeReduceAllExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k
       have htail :=
         ih (B := sizeReduceExact (n := n) B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩)
       simpa [js, List.foldl, hstep] using htail
+
+theorem rowSpan_sizeReduceAllExactWithUs {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ)
+    (k : ℕ) (hk : k < n) (us : List (Fin n → ℚ)) :
+    rowSpan (sizeReduceAllExactWithUs (n := n) B k hk us) = rowSpan B := by
+  classical
+  unfold sizeReduceAllExactWithUs
+  set js : List (Fin k) := List.ofFn (α := Fin k) (fun j : Fin k => j)
+  revert B
+  induction js with
+  | nil =>
+      intro B
+      simp
+  | cons a tl ih =>
+      intro B
+      have ha_lt : (a : ℕ) < k := a.2
+      have hj : (a : ℕ) < n := Nat.lt_trans ha_lt hk
+      have hkj : (⟨k, hk⟩ : Fin n) ≠ ⟨(a : ℕ), hj⟩ := by
+        intro h
+        exact (Nat.ne_of_gt ha_lt) (congrArg Fin.val h)
+      let q : ℤ :=
+        roundQ (muQPrefix (n := n) (rowQ (n := n) B ⟨k, hk⟩) (us.getD a.val (zeroVecQ (n := n))))
+      have hstep :
+          rowSpan (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q) = rowSpan B := by
+        simpa [q, size_reduceZ] using
+          rowSpan_size_reduceZ (B := B) (k := ⟨k, hk⟩) (j := ⟨(a : ℕ), hj⟩) hkj q
+      have htail := ih (B := size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q)
+      -- IH gives span(fold tail) = span(start); then rewrite start to span(B) via hstep.
+      have : rowSpan
+          (List.foldl
+            (fun acc (j : Fin k) =>
+              size_reduceZ acc ⟨k, hk⟩ ⟨↑j, Nat.lt_trans j.2 hk⟩
+                (roundQ (muQPrefix (n := n) (rowQ (n := n) acc ⟨k, hk⟩) (us.getD j.val (zeroVecQ (n := n))))))
+            (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q)
+            tl) = rowSpan (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q) := by
+        simpa [js, List.foldl, q] using htail
+      calc
+        rowSpan
+            (List.foldl
+              (fun acc (j : Fin k) =>
+                size_reduceZ acc ⟨k, hk⟩ ⟨↑j, Nat.lt_trans j.2 hk⟩
+                  (roundQ (muQPrefix (n := n) (rowQ (n := n) acc ⟨k, hk⟩) (us.getD j.val (zeroVecQ (n := n))))))
+              (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q)
+              tl) = rowSpan (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q) := this
+        _ = rowSpan B := by simp [hstep]
+
+theorem rowSpan_sizeReduceAllExactWithPrefix {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ)
+    (k : ℕ) (hk : k < n) :
+    rowSpan (sizeReduceAllExactWithPrefix (n := n) B k hk) = rowSpan B := by
+  classical
+  let us : List (Fin n → ℚ) := gsoPrefixListQ (n := n) B k (Nat.le_of_lt hk)
+  simpa [sizeReduceAllExactWithPrefix] using rowSpan_sizeReduceAllExactWithUs (n := n) (B := B) (k := k) hk us
 
 theorem rowSpan_lllReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : ℕ) :
     rowSpan (lllReduceExact (n := n) B δ limit) = rowSpan B := by
@@ -236,9 +351,9 @@ theorem rowSpan_lllReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : 
             have := ih (B := B) (k := 1)
             have hk0 : (0 : ℕ) < n := hk
             simpa [lllReduceLoopExact, hk0] using this
-          · let B1 := sizeReduceAllExact (n := n) B k hk
+          · let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
             have hB1 : rowSpan B1 = rowSpan B := by
-              simpa [B1] using rowSpan_sizeReduceAllExact (n := n) (B := B) (k := k) hk
+              simpa [B1] using rowSpan_sizeReduceAllExactWithPrefix (n := n) (B := B) (k := k) hk
             let km1 : ℕ := k - 1
             have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
             let k' : Fin n := ⟨k, hk⟩
