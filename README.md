@@ -20,6 +20,21 @@ Dual-licensed under MIT or Apache-2.0 (see `LICENSE-MIT` / `LICENSE-APACHE`).
 - `./Scripts/check.sh pre-push` (CI-ish lane; includes `regen-check`)
 - `just status` (`lake exe status_report`, should report 0 `sorry` tokens)
 
+### Progress map (rough; January 2026)
+
+Approximate “how far along are we” by chapter. Percentages are **best-effort** and reflect:
+- **proof completeness** (not just compilation),
+- **API stability** (how likely we are to rewrite interfaces),
+- and whether the chapter has a clean “top theorem” statement with a trustworthy proof story.
+
+| Chapter / track | Estimate | Why we think that | Next milestone (what “progress” means) | Uncertainty / forks |
+|---|---:|---|---|---|
+| **Legendre / Ankeny (three squares)** | **95%** | `sum_three_squares_iff` is proved and `sorry`-free; proof is coherent and exported from `GeometryOfNumbers/Legendre/Main.lean`. | Make the “Minkowski call-site” story more legible (optional), and tighten docs around the descent pipeline. | Low. Mostly packaging / exposition. |
+| **Cauchy/Nathanson (polygonal numbers)** | **95%** | `gauss_triangular` and `fermat_polygonal` are proved; medium-regime evidence is regenerated + checked (`regen-check`). | Improve the surrounding explanation of the generated-table boundary and how the regimes partition (optional). | Low. Mostly “why these cases” exposition. |
+| **Core (shared infrastructure)** | **80%** | The pieces needed by Legendre + Cauchy are stable; some “Core” files are intentionally exploratory/scaffolded. | Decide which core stubs become real shared APIs vs stay as local scaffolds. | Medium. Depends on future theorems (successive minima / reduction theory). |
+| **Computable LLL (exact, ℚ GS)** | **70%** | Executable loop exists (`LLLExact.lean` + demo). Span invariants are proved. Proofs now cover GS fold orthogonality, rounding bound, and the key GS dot-identity + prefix linkage. | Prove the main postcondition: `lllRunExact.reason = finished → isLLLReducedQ = true` (and then a Prop-level version). | Medium-high. Proof shape is clear, but lifting single-step lemmas through the full loop has a few plausible approaches. |
+| **LLL termination / complexity** | **0–10%** | Not yet targeted; current focus is semantic correctness of steps + postcondition. | Add a termination measure / bound (classic LLL uses a potential function). | High. Likely multiple formalization strategies; may depend on how we represent norms/potential. |
+
 ### Quickstart
 
 Install Lean (one-time; pinned by `lean-toolchain`):
@@ -89,7 +104,9 @@ $$
   - note: `Core/Composition.lean` is exploratory (definitions only; proof work lives elsewhere)
 - `GeometryOfNumbers/Legendre/`: the Ankeny proof path and the three-square theorem entry point
 - `GeometryOfNumbers/Cauchy/`: polygonal-number reduction (proved; uses generated medium-regime tables)
-- `GeometryOfNumbers/Computable/LLL.lean`: LLL scaffold; see also `Experiments/LLLRational.lean`
+- `GeometryOfNumbers/Computable/LLL.lean`: noncomputable (ℝ) loop scaffold
+- `GeometryOfNumbers/Computable/LLLExact.lean`: computable (ℚ) exact LLL loop + `lllRunExact` runner
+- `GeometryOfNumbers/Computable/LLLExactProofs.lean`: correctness lemmas supporting the LLL postcondition proof
 - `Experiments/`: small probes and scratch files; these must compile under `lake build` and should stay `sorry`-free
   (use `Archive/` for dead ends / historical notes, and keep it `sorry`-free too so `lake exe status_report` stays meaningful)
 

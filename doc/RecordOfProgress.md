@@ -30,3 +30,26 @@
     - `GeometryOfNumbers/Legendre/Main.lean`: `sum_three_squares_iff` and its directional lemmas.
     - `GeometryOfNumbers/Cauchy/Main.lean`: `gauss_triangular` and `fermat_polygonal`.
 *   Numeric Validation: keep sanity checks as Lean `Experiments/*` modules (so they compile under `lake build`).
+
+## Phase 4: Computable LLL (exact, ℚ-based)
+
+This is a parallel “algorithmic correctness” track, independent of the Legendre/Cauchy proofs.
+
+**Where we are now (rough):**
+
+- **Executable core (≈ 70%)**:
+  - `GeometryOfNumbers/Computable/LLLExact.lean` contains a fully computable LLL loop (fuel-bounded) with an
+    instrumented runner `lllRunExact` and reducedness checkers `isSizeReducedQ` / `isLovaszReducedQ` / `isLLLReducedQ`.
+- **Invariants + step correctness (≈ 50%)**:
+  - `GeometryOfNumbers/Computable/LLLCore.lean`: integer row operations + `rowSpan` preservation (proved).
+  - `GeometryOfNumbers/Computable/LLLExactProofs.lean`: dot-product algebra, rounding bound, GS fold orthogonality,
+    GS identity `dot(b,u)=dot(u,u)`, and prefix linkage lemmas for `gsoPrefixListQ`.
+- **Main postcondition (≈ 0–20%)**:
+  - Next target is a theorem of the form:
+    - if `lllRunExact.reason = finished`, then the output basis satisfies `isLLLReducedQ = true`
+    - and then a Prop-level “LLLReduced” specification mirroring the boolean checks.
+- **Termination / complexity (≈ 0–10%)**:
+  - Not yet formalized; expected to require a potential-function argument and careful bookkeeping choices.
+
+**Why the uncertainty:** there are multiple plausible proof routes for the postcondition and for termination
+(boolean-level vs Prop-level first; how much “GS structure” we expose as lemmas; what potential function we commit to).

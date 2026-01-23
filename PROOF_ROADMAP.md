@@ -24,8 +24,14 @@ fermat_polygonal (s ≥ 5)    fermat_polygonal (s = 3)
 
 ## Parallel Track: Computable LLL
 
-Independent of the primary proof, the library targets a *computable* LLL implementation in `GeometryOfNumbers/Computable/LLL.lean`.
-At the moment this is a scaffold (kept `sorry`-free), plus a small rational-arithmetic experiment in `Experiments/LLLRational.lean`.
+Independent of the primary proof tracks, the library targets a **computable** LLL implementation:
+
+- `GeometryOfNumbers/Computable/LLLExact.lean`: executable, exact loop (ℚ Gram–Schmidt) + instrumented runner `lllRunExact`
+- `GeometryOfNumbers/Computable/LLLExactProofs.lean`: correctness lemmas supporting the eventual postcondition
+- `GeometryOfNumbers/Computable/LLL.lean`: noncomputable (ℝ) loop scaffold
+
+Current emphasis is on **step correctness** + a falsifiable postcondition (`finished → reduced`), before attempting
+termination/complexity proofs.
 
 ## Ankeny's Proof (`GeometryOfNumbers/Legendre/Ankeny.lean`)
 
