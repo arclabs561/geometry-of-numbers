@@ -177,6 +177,35 @@ theorem abs_muQPrefix_after_size_reduceZ_le_half {n : ℕ} (B : Matrix (Fin n) (
   simpa [hshift, q, sub_eq_add_neg, add_comm] using (abs_sub_roundQ_le_half μ)
 
 /-!
+### Size reduction: invariance for “unrelated” GS vectors
+
+If we update row `k` by subtracting an integer multiple of row `j`, then the coefficient
+`muQPrefix(b_k, u)` is unchanged for any `u` orthogonal to row `j`.
+
+This is the core reason descending order matters: later reductions using `j' < j` do not re-break
+the already-reduced coefficient at `j` because `row_{j'}` lies in the span of earlier GS vectors,
+which are orthogonal to `u_j`.
+-/
+
+theorem muQPrefix_size_reduceZ_invariant_of_dot_zero {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ)
+    (k j : Fin n) (q : ℤ) (u : Fin n → ℚ) (hden : dotQ (n := n) u u ≠ 0)
+    (hz : dotQ (n := n) (rowQ (n := n) B j) u = 0) :
+    muQPrefix (n := n) (rowQ (n := n) (size_reduceZ (n := n) B k j q) k) u =
+      muQPrefix (n := n) (rowQ (n := n) B k) u := by
+  have hrow : rowQ (n := n) (size_reduceZ (n := n) B k j q) k =
+      rowQ (n := n) B k - (q : ℚ) • rowQ (n := n) B j := by
+    simpa using rowQ_size_reduceZ_self (n := n) B k j q
+  -- unfold muQPrefix (denom ≠ 0) and simplify the dot-product
+  simp [muQPrefix, hden, hrow]
+  -- reduce numerator using hz
+  calc
+    dotQ (n := n) (rowQ (n := n) B k - (q : ℚ) • rowQ (n := n) B j) u
+        = dotQ (n := n) (rowQ (n := n) B k) u - (q : ℚ) * dotQ (n := n) (rowQ (n := n) B j) u := by
+            simp [dotQ_sub_left, dotQ_smul_left]
+    _ = dotQ (n := n) (rowQ (n := n) B k) u := by
+            simp [hz]
+
+/-!
 ### Gram–Schmidt fold lemma (meaty invariant)
 
 `gsoVectorForKPrefix` uses a fold that subtracts projections onto a list of already-orthogonal
