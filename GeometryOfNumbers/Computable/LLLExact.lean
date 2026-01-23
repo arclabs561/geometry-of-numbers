@@ -151,10 +151,11 @@ def sizeReduceExact {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) : M
 def sizeReduceAllExactWithUs {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k < n)
     (us : List (Fin n → ℚ)) : Matrix (Fin n) (Fin n) ℤ :=
   let k' : Fin n := ⟨k, hk⟩
-  -- Reduce row k against all j<k (order doesn't matter: earlier rows are orthogonal to later prefix GSO vectors)
+  -- Standard LLL uses descending order `j = k-1, ..., 0` so once `μ_{k,j}` is reduced it stays reduced.
+  -- Implement this by folding from the right over the increasing list `0,1,...,k-1`.
   let js : List (Fin k) := List.ofFn (α := Fin k) (fun j : Fin k => j)
-  js.foldl
-    (fun acc (j : Fin k) =>
+  js.foldr
+    (fun (j : Fin k) acc =>
       let j' : Fin n := ⟨(j : Nat), Nat.lt_trans j.2 hk⟩
       let uj : Fin n → ℚ :=
         us.getD j.val (zeroVecQ (n := n))
@@ -298,31 +299,39 @@ theorem rowSpan_sizeReduceAllExactWithUs {n : ℕ} (B : Matrix (Fin n) (Fin n) �
       have hkj : (⟨k, hk⟩ : Fin n) ≠ ⟨(a : ℕ), hj⟩ := by
         intro h
         exact (Nat.ne_of_gt ha_lt) (congrArg Fin.val h)
-      let q : ℤ :=
-        roundQ (muQPrefix (n := n) (rowQ (n := n) B ⟨k, hk⟩) (us.getD a.val (zeroVecQ (n := n))))
-      have hstep :
-          rowSpan (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q) = rowSpan B := by
-        simpa [q, size_reduceZ] using
-          rowSpan_size_reduceZ (B := B) (k := ⟨k, hk⟩) (j := ⟨(a : ℕ), hj⟩) hkj q
-      have htail := ih (B := size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q)
-      -- IH gives span(fold tail) = span(start); then rewrite start to span(B) via hstep.
-      have : rowSpan
-          (List.foldl
-            (fun acc (j : Fin k) =>
-              size_reduceZ acc ⟨k, hk⟩ ⟨↑j, Nat.lt_trans j.2 hk⟩
-                (roundQ (muQPrefix (n := n) (rowQ (n := n) acc ⟨k, hk⟩) (us.getD j.val (zeroVecQ (n := n))))))
-            (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q)
-            tl) = rowSpan (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q) := by
-        simpa [js, List.foldl, q] using htail
+      -- fold the tail first
+      let f : Fin k → Matrix (Fin n) (Fin n) ℤ → Matrix (Fin n) (Fin n) ℤ :=
+        fun (j : Fin k) acc =>
+          let j' : Fin n := ⟨(j : Nat), Nat.lt_trans j.2 hk⟩
+          let uj : Fin n → ℚ := us.getD j.val (zeroVecQ (n := n))
+          let bk : Fin n → ℚ := rowQ (n := n) acc ⟨k, hk⟩
+          let μ : ℚ := muQPrefix (n := n) bk uj
+          let q : ℤ := roundQ μ
+          size_reduceZ acc ⟨k, hk⟩ j' q
+      let Btail := tl.foldr f B
+      have htail : rowSpan Btail = rowSpan B := by
+        simpa [Btail, f, js] using ih (B := B)
+      -- one more step preserves rowSpan
+      have hstep : rowSpan (f a Btail) = rowSpan Btail := by
+        -- `size_reduceZ` preserves row-span regardless of coefficient
+        -- (note: `f a Btail` is a `size_reduceZ` update at row `k` with column `a`)
+        dsimp [f]
+        -- reduce to the core lemma
+        have : rowSpan
+            (size_reduceZ Btail ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ (roundQ (muQPrefix (n := n) (rowQ (n := n) Btail ⟨k, hk⟩)
+              (us.getD a.val (zeroVecQ (n := n)))))) =
+              rowSpan Btail := by
+          simpa [size_reduceZ] using
+            rowSpan_size_reduceZ (B := Btail) (k := ⟨k, hk⟩) (j := ⟨(a : ℕ), hj⟩) hkj
+              (roundQ (muQPrefix (n := n) (rowQ (n := n) Btail ⟨k, hk⟩) (us.getD a.val (zeroVecQ (n := n)))))
+        simpa using this
+      -- combine
+      have : (a :: tl).foldr f B = f a Btail := by
+        simp [Btail, List.foldr]
       calc
-        rowSpan
-            (List.foldl
-              (fun acc (j : Fin k) =>
-                size_reduceZ acc ⟨k, hk⟩ ⟨↑j, Nat.lt_trans j.2 hk⟩
-                  (roundQ (muQPrefix (n := n) (rowQ (n := n) acc ⟨k, hk⟩) (us.getD j.val (zeroVecQ (n := n))))))
-              (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q)
-              tl) = rowSpan (size_reduceZ B ⟨k, hk⟩ ⟨(a : ℕ), hj⟩ q) := this
-        _ = rowSpan B := by simp [hstep]
+        rowSpan ((a :: tl).foldr f B) = rowSpan (f a Btail) := by simp [this]
+        _ = rowSpan Btail := hstep
+        _ = rowSpan B := by simp [htail]
 
 theorem rowSpan_sizeReduceAllExactWithPrefix {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ)
     (k : ℕ) (hk : k < n) :
