@@ -119,7 +119,7 @@ noncomputable def lll_reduce2_step (B : Matrix (Fin 2) (Fin 2) ℤ) :
   let μ : ℝ := gram_schmidt_projections (n := 2) B_real i1 i0
   let q : ℤ := ⌊μ + 1 / 2⌋
   let B' : Matrix (Fin 2) (Fin 2) ℤ :=
-    if hq : q = 0 then
+    if q = 0 then
       B
     else
       B.updateRow i1 (B i1 - q • B i0)
@@ -133,6 +133,8 @@ noncomputable def lll_reduce2_step (B : Matrix (Fin 2) (Fin 2) ℤ) :
 
 noncomputable def lll_reduce2 (B : Matrix (Fin 2) (Fin 2) ℤ) (limit : ℕ := 200) :
     Matrix (Fin 2) (Fin 2) ℤ :=
+  -- Default fuel is intentionally small: this is meant as a quick reducer / smoke tool, not a
+  -- fully verified termination story for all inputs.
   match limit with
   | 0 => B
   | limit' + 1 =>
