@@ -1,5 +1,6 @@
 import GeometryOfNumbers.Computable.LLLExact
 import GeometryOfNumbers.Computable.LLLExactProofs
+import Mathlib.LinearAlgebra.Matrix.Transvection
 
 namespace GeometryOfNumbers.Computable
 
@@ -151,6 +152,98 @@ def gramPrefixZ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤
     dotZ (n := n)
       (B (Fin.castLE hk i))
       (B (Fin.castLE hk j))
+
+/-!
+For determinant arguments it is useful to view the prefix Gram matrix as
+`prefixRowsZ * prefixRowsZᵀ`.
+-/
+
+def prefixRowsZ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
+    Matrix (Fin k) (Fin n) ℤ :=
+  fun i j => B (Fin.castLE hk i) j
+
+@[simp] lemma prefixRowsZ_apply {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n)
+    (i : Fin k) (j : Fin n) :
+    prefixRowsZ (n := n) B k hk i j = B (Fin.castLE hk i) j := by
+  rfl
+
+lemma gramPrefixZ_eq_prefixRowsZ_mul_transpose
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
+    gramPrefixZ (n := n) B k hk =
+      prefixRowsZ (n := n) B k hk * (prefixRowsZ (n := n) B k hk).transpose := by
+  classical
+  ext i j
+  -- unfold the matrix product and compare to `dotZ`
+  simp [gramPrefixZ, prefixRowsZ, dotZ, Matrix.mul_apply, Matrix.transpose_apply]
+
+@[simp] lemma prefixRowsZ_full {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
+    prefixRowsZ (n := n) B n (le_rfl) = B := by
+  classical
+  ext i j
+  simp [prefixRowsZ]
+
+@[simp] lemma gramPrefixZ_full {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
+    gramPrefixZ (n := n) B n (le_rfl) = B * B.transpose := by
+  simpa [gramPrefixZ_eq_prefixRowsZ_mul_transpose] using
+    (gramPrefixZ_eq_prefixRowsZ_mul_transpose (n := n) (B := B) (k := n) (hk := le_rfl))
+
+/-!
+### Size-reduction as a transvection
+
+Updating a row by `row_k := row_k - q • row_j` is exactly left-multiplication by the transvection
+matrix `transvection k j (-q)`. This makes determinant-invariance proofs (via `det = 1`) clean.
+-/
+
+lemma size_reduceZ_eq_transvection_mul
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (q : ℤ) (hkj : k ≠ j) :
+    size_reduceZ (n := n) B k j q =
+      (Matrix.transvection k j (-q) : Matrix (Fin n) (Fin n) ℤ) * B := by
+  classical
+  ext a b
+  by_cases ha : a = k
+  · subst ha
+    -- transvection adds `(-q)` times row `j` to row `k`
+    simp [size_reduceZ, Matrix.updateRow_self, Matrix.transvection_mul_apply_same, add_comm, add_left_comm,
+      add_assoc, sub_eq_add_neg, smul_eq_mul]
+  · -- other rows unchanged
+    simp [size_reduceZ, Matrix.updateRow_ne, ha, Matrix.transvection_mul_apply_of_ne]
+
+lemma det_gramPrefixZ_size_reduceZ_full
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k j : Fin n) (q : ℤ) (hkj : k ≠ j) :
+    Matrix.det (gramPrefixZ (n := n) (size_reduceZ (n := n) B k j q) n (le_rfl)) =
+      Matrix.det (gramPrefixZ (n := n) B n (le_rfl)) := by
+  classical
+  -- We avoid a matrix-level conjugation proof and work purely at the determinant level:
+  -- `gramPrefixZ B n = B * Bᵀ`, and `size_reduceZ` is left-multiplication by a transvection
+  -- with determinant 1, so `det(B') = det(B)` and hence `det(B' * B'ᵀ) = det(B * Bᵀ)`.
+  let E : Matrix (Fin n) (Fin n) ℤ := Matrix.transvection k j (-q)
+  have hB' : size_reduceZ (n := n) B k j q = E * B := by
+    simpa [E] using
+      (size_reduceZ_eq_transvection_mul (n := n) (B := B) (k := k) (j := j) (q := q) hkj)
+  have hdetE : Matrix.det E = 1 := by
+    simpa [E] using (Matrix.det_transvection_of_ne (i := k) (j := j) (R := ℤ) hkj (-q))
+  have hdetB' : Matrix.det (size_reduceZ (n := n) B k j q) = Matrix.det B := by
+    calc
+      Matrix.det (size_reduceZ (n := n) B k j q)
+          = Matrix.det (E * B) := by simpa [hB']
+      _ = Matrix.det E * Matrix.det B := by simp [Matrix.det_mul]
+      _ = Matrix.det B := by simp [hdetE]
+  -- now compare `det(gram)` via `B * Bᵀ`
+  calc
+    Matrix.det (gramPrefixZ (n := n) (size_reduceZ (n := n) B k j q) n (le_rfl))
+        = Matrix.det ((size_reduceZ (n := n) B k j q) * (size_reduceZ (n := n) B k j q).transpose) := by
+            simp [gramPrefixZ_full]
+    _ = Matrix.det (size_reduceZ (n := n) B k j q) * Matrix.det ((size_reduceZ (n := n) B k j q).transpose) := by
+            simp [Matrix.det_mul]
+    _ = Matrix.det (size_reduceZ (n := n) B k j q) * Matrix.det (size_reduceZ (n := n) B k j q) := by
+            simp [Matrix.det_transpose]
+    _ = Matrix.det B * Matrix.det B := by
+            simp [hdetB']
+    _ = Matrix.det (B * B.transpose) := by
+            -- `det (B * Bᵀ) = det(B) * det(B)`
+            simp [Matrix.det_mul, Matrix.det_transpose, mul_assoc]
+    _ = Matrix.det (gramPrefixZ (n := n) B n (le_rfl)) := by
+            simp [gramPrefixZ_full]
 
 lemma gramPrefixQ_eq_cast_gramPrefixZ
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
