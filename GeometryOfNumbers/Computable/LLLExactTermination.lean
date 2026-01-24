@@ -2462,5 +2462,66 @@ theorem swapCount_at_termMeasure_le
 
 
 
+theorem swapCountGo_le_potentialVN
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k fuel : Nat)
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
+    swapCountGo (n := n) B δ k fuel ≤ potentialVN (n := n) B := by
+  classical
+  induction fuel generalizing B k with
+  | zero =>
+      simp [swapCountGo]
+  | succ fuel ih =>
+      by_cases hk : k < n
+      · by_cases h0 : k = 0
+        · subst h0
+          -- no swap, just move to `k=1`
+          simpa [swapCountGo, hk] using ih (B := B) (k := 1) hli
+        · -- `k>0`: size-reduce then (advance or swap)
+          have hk0 : 0 < k := Nat.pos_of_ne_zero h0
+          let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+          have hpot1 : potentialVN (n := n) B1 = potentialVN (n := n) B :=
+            potentialVN_sizeReduceAllExactWithPrefix (n := n) (B := B) (k := k) hk
+          have hli1 : RowLIQ (n := n) B1 :=
+            RowLIQ_sizeReduceAllExactWithPrefix (n := n) (B := B) (k := k) (hk := hk) hli
+          let km1 : Nat := k - 1
+          have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+          let k' : Fin n := ⟨k, hk⟩
+          let km1' : Fin n := ⟨km1, hkm1⟩
+          by_cases hL : lovaszQ (n := n) B1 k' km1' δ
+          · -- no swap: recurse on `B1`
+            have hrec :
+                swapCountGo (n := n) B1 δ (k + 1) fuel ≤ potentialVN (n := n) B1 :=
+              ih (B := B1) (k := k + 1) hli1
+            simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL, hpot1] using hrec
+          · -- swap: one swap + recurse on swapped basis, and potentialVN strictly decreases
+            let B2 := swap_vectors (n := n) B1 k' km1'
+            have hli2 : RowLIQ (n := n) B2 :=
+              RowLIQ_swap_vectors (n := n) (B := B1) (k := k') (j := km1') hli1
+            have hpot2 : potentialVN (n := n) B2 < potentialVN (n := n) B1 := by
+              have : lovaszQ (n := n) B1 k' km1' δ = false := by
+                simpa using hL
+              simpa [B2] using
+                (potentialVN_swap_adj_lt_of_lovasz_fail (n := n) (B := B1) (δ := δ)
+                  (k := k) (hk := hk) (hk0 := hk0) (hli := hli1) hδlt this)
+            have hrec : swapCountGo (n := n) B2 δ km1 fuel ≤ potentialVN (n := n) B2 :=
+              ih (B := B2) (k := km1) hli2
+            have hrec1 : 1 + swapCountGo (n := n) B2 δ km1 fuel ≤ 1 + potentialVN (n := n) B2 :=
+              Nat.add_le_add_left hrec 1
+            have hpot_succ : 1 + potentialVN (n := n) B2 ≤ potentialVN (n := n) B := by
+              have : potentialVN (n := n) B2 + 1 ≤ potentialVN (n := n) B1 :=
+                Nat.succ_le_of_lt hpot2
+              simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, hpot1] using this
+            have : 1 + swapCountGo (n := n) B2 δ km1 fuel ≤ potentialVN (n := n) B :=
+              le_trans hrec1 hpot_succ
+            simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL, B2] using this
+      · simp [swapCountGo, hk]
+
+theorem swapCount_le_potentialVN
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat)
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
+    swapCount (n := n) B δ limit ≤ potentialVN (n := n) B := by
+  simpa [swapCount] using
+    swapCountGo_le_potentialVN (n := n) (B := B) (δ := δ) (k := 1) (fuel := limit) hli hδlt
+
 end GeometryOfNumbers.Computable
 
