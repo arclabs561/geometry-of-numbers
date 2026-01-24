@@ -4,6 +4,11 @@ import Mathlib.LinearAlgebra.Matrix.Transvection
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.Algebra.BigOperators.Fin
 
+-- This file is intentionally proof-heavy; keep build output usable by silencing
+-- style-only linters that otherwise dominate logs during development.
+set_option linter.unnecessarySimpa false
+set_option linter.unusedSimpArgs false
+
 namespace GeometryOfNumbers.Computable
 
 /-!
@@ -208,13 +213,15 @@ lemma gsoAtQ_mem_gsoPrefixListQ_succ
   -- `gsoAtQ` is `getD i` from the `(i+1)` prefix list, and that index is in-bounds.
   let l : List (Fin n → ℚ) := gsoPrefixListQ (n := n) B (i.1 + 1) (Nat.succ_le_of_lt i.2)
   have hlen : l.length = i.1 + 1 := by
-    simpa [l] using (gsoPrefixListQ_length (n := n) (B := B) (k := i.1 + 1) (hk := Nat.succ_le_of_lt i.2))
+    dsimp [l]
+    exact
+      gsoPrefixListQ_length (n := n) (B := B) (k := i.1 + 1) (hk := Nat.succ_le_of_lt i.2)
   have hi_lt : i.1 < l.length := by simpa [hlen]
   -- turn `getD` into `get`, then use `List.get_mem`.
   let ii : Fin l.length := ⟨i.1, hi_lt⟩
   have hgetD : l.getD i.1 (zeroVecQ (n := n)) = l.get ii := by
     -- `getD_eq_get` is the cleanest form (avoids `getElem` notation)
-    simpa [ii] using (List.getD_eq_get (l := l) (d := zeroVecQ (n := n)) ii)
+    exact List.getD_eq_get (l := l) (d := zeroVecQ (n := n)) ii
   -- `gsoAtQ` definition
   have hgso : gsoAtQ (n := n) B i = l.getD i.1 (zeroVecQ (n := n)) := by
     rfl
@@ -313,8 +320,11 @@ lemma det_gsoRowsQ_mul_transpose_eq_prefixProdNormSqQ_of_RowLIQ
   -- rewrite to `det (diagonal d) = ∏ d`
   have : Matrix.det (gsoRowsQ (n := n) B k hk * (gsoRowsQ (n := n) B k hk).transpose)
         = ∏ i : Fin k, gsoNormSqQ (n := n) B (Fin.castLE hk i) := by
-    simpa [hdiag] using (Matrix.det_diagonal (n := Fin k) (R := ℚ)
-      (d := fun i : Fin k => gsoNormSqQ (n := n) B (Fin.castLE hk i)))
+    -- rewrite the Gram as a diagonal matrix, then apply `det_diagonal`
+    rw [hdiag]
+    exact
+      (Matrix.det_diagonal (n := Fin k) (R := ℚ)
+        (d := fun i : Fin k => gsoNormSqQ (n := n) B (Fin.castLE hk i)))
   -- and `prefixProdNormSqQ` is definitional the same product
   simpa [prefixProdNormSqQ] using this
 
@@ -348,6 +358,10 @@ lemma det_mul_mul_transpose_invariant_of_det_one
             exact congrArg Matrix.det hGram
     _ = Matrix.det A * Matrix.det (M * M.transpose) * Matrix.det (A.transpose) := by
             -- expand determinant over the triple product in two steps
+            have hAX :
+                Matrix.det (A * (M * M.transpose)) =
+                  Matrix.det A * Matrix.det (M * M.transpose) :=
+              Matrix.det_mul A (M * M.transpose)
             calc
               Matrix.det (A * (M * M.transpose) * A.transpose)
                   = Matrix.det (A * (M * M.transpose)) * Matrix.det (A.transpose) := by
@@ -355,9 +369,8 @@ lemma det_mul_mul_transpose_invariant_of_det_one
                       simpa [Matrix.mul_assoc] using
                         (Matrix.det_mul (A * (M * M.transpose)) (A.transpose))
               _ = (Matrix.det A * Matrix.det (M * M.transpose)) * Matrix.det (A.transpose) := by
-                      simpa using (by
-                        -- expand `det (A * (M*Mᵀ))`
-                        simpa using (Matrix.det_mul A (M * M.transpose)))
+                      -- rewrite the left factor using `hAX`
+                      rw [hAX]
               _ = Matrix.det A * Matrix.det (M * M.transpose) * Matrix.det (A.transpose) := by
                       simp [mul_assoc]
     _ = 1 * Matrix.det (M * M.transpose) * 1 := by
@@ -386,7 +399,7 @@ lemma projSumForKPrefix_eq_fin_sum
         simp
     | cons u us ih =>
         intro s
-        simp [List.foldl, List.map, ih (s := s + t u), add_assoc, t]
+        simp [List.foldl, List.map, ih (s := s + t u), t]
 
   -- `foldl` over `map t us` equals its `List.sum` since `+` is commutative/associative here.
   have hfoldl_sum :
@@ -419,7 +432,7 @@ lemma projSumForKPrefix_eq_fin_sum
             simpa using (hmap (s := (0 : Fin n → ℚ)))
     _ = (us.map t).sum := hfoldl_sum
     _ = ∑ i : Fin us.length, t (us[i.1]) := by
-            simpa using hfin.symm
+            exact hfin.symm
     _ = ∑ i : Fin us.length, (muQPrefix (n := n) bk (us[i.1])) • (us[i.1]) := by
             rfl
 
@@ -465,8 +478,10 @@ lemma rowQ_eq_gsoAtQ_add_projSum_fin
         ∑ t : Fin us.length,
           (muQPrefix (n := n) (rowQ (n := n) B i) (us[t.1])) • (us[t.1])
       = rowQ (n := n) B i := by
-    simpa [hgso, hproj, add_assoc] using hdecomp
-  simpa [this, add_comm, add_left_comm, add_assoc]
+    -- turn the goal into `gsoVectorForKPrefix + projSumForKPrefix = bk`
+    rw [← hgso, ← hproj]
+    exact hdecomp
+  simp [this, add_comm, add_left_comm, add_assoc]
 
 /-!
 ### The unit lower-triangular “reconstruction” matrix \(U\)
@@ -481,9 +496,9 @@ For a prefix of length `k`, define the `k×k` matrix `reconUQ` such that (morall
 def reconUQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
     Matrix (Fin k) (Fin k) ℚ :=
   fun i j =>
-    if hij : i = j then
+    if i = j then
       1
-    else if hlt : j.1 < i.1 then
+    else if j.1 < i.1 then
       muQ (n := n) B (Fin.castLE hk i) (Fin.castLE hk j)
     else
       0
@@ -1237,7 +1252,7 @@ If `m < k`, then swapping rows `k` and `k-1` happens strictly *after* the first 
 -/
 
 lemma prefixProdNormSqQ_swap_adj_of_lt
-    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ)
     (k : Nat) (hk : k < n) (hk0 : 0 < k)
     (m : Nat) (hm : m < k) (hli : RowLIQ (n := n) B) :
     let k' : Fin n := ⟨k, hk⟩
@@ -1582,7 +1597,8 @@ lemma gsoNormSqQ_swap_adj_pred_eq
         gsoPrefixListQ (n := n) B k (Nat.le_of_lt hk) = us0 ++ [u_km1] := by
       simpa [hk_succ, us0, hbstar] using hEq
     -- membership in the appended singleton, then rewrite via `hEq'`
-    simpa [hEq'] using (by simp : u_km1 ∈ us0 ++ [u_km1])
+    have : u_km1 ∈ us0 ++ [u_km1] := by simp
+    simpa [hEq'] using this
 
   have hdot : dotQ (n := n) u_k u_km1 = 0 := by
     -- `u_k` is the GS vector for row `k` against the `k`-prefix list; it is orthogonal to members of that list.
@@ -1763,7 +1779,7 @@ lemma potentialVQ_swap_adj_lt_mul_delta_of_lovasz_fail
     by_cases hlt : (t.1 : Nat) < k
     · -- swap is outside the prefix
       simpa [fB, fS, k', km1Nat, km1'] using
-        (prefixProdNormSqQ_swap_adj_of_lt (n := n) (B := B) (δ := δ)
+        (prefixProdNormSqQ_swap_adj_of_lt (n := n) (B := B)
           (k := k) (hk := hk) (hk0 := hk0) (m := t.1) hlt hli)
     · -- `t.1 ≥ k`; since `t ≠ k'`, we have `t.1 > k`, so the swap is within the prefix and only reindexes.
       have hgt : k < t.1 := by
@@ -1953,8 +1969,7 @@ lemma det_gramPrefixZ_size_reduceZ_at_kj
   by_cases hm_le : m ≤ k
   · -- `k` is outside the `m`-prefix, so `prefixRowsZ` is unchanged
     have hk_out : ∀ i : Fin m, (Fin.castLE hm i : Fin n) ≠ ⟨k, hk⟩ := by
-      intro i
-      intro hEq
+      intro i hEq
       have : (Fin.castLE hm i).1 = k := congrArg Fin.val hEq
       have hi_lt : (Fin.castLE hm i).1 < k := by
         -- `i.1 < m ≤ k`
@@ -2068,7 +2083,7 @@ lemma potentialVN_sizeReduceAllExactWithPrefix
 lemma potentialVZ_swap_adj_lt_of_lovasz_fail
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
     (k : Nat) (hk : k < n) (hk0 : 0 < k)
-    (hli : RowLIQ (n := n) B) (hδpos : (0 : ℚ) < δ) (hδlt : δ < 1) :
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
     let k' : Fin n := ⟨k, hk⟩
     let km1Nat : Nat := k - 1
     have hkm1 : km1Nat < n := Nat.lt_trans (Nat.pred_lt (Nat.ne_of_gt hk0)) hk
@@ -2110,7 +2125,7 @@ lemma potentialVZ_swap_adj_lt_of_lovasz_fail
 lemma potentialVN_swap_adj_lt_of_lovasz_fail
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
     (k : Nat) (hk : k < n) (hk0 : 0 < k)
-    (hli : RowLIQ (n := n) B) (hδpos : (0 : ℚ) < δ) (hδlt : δ < 1) :
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
     let k' : Fin n := ⟨k, hk⟩
     let km1Nat : Nat := k - 1
     have hkm1 : km1Nat < n := Nat.lt_trans (Nat.pred_lt (Nat.ne_of_gt hk0)) hk
@@ -2122,7 +2137,7 @@ lemma potentialVN_swap_adj_lt_of_lovasz_fail
   have hz_pos : (0 : ℤ) < potentialVZ (n := n) B := potentialVZ_pos_of_RowLIQ (n := n) (B := B) hli
   have hz_lt : potentialVZ (n := n) (swap_vectors (n := n) B k' km1') < potentialVZ (n := n) B :=
     potentialVZ_swap_adj_lt_of_lovasz_fail (n := n) (B := B) (δ := δ)
-      (k := k) (hk := hk) (hk0 := hk0) hli hδpos hδlt hlov
+      (k := k) (hk := hk) (hk0 := hk0) hli hδlt hlov
   -- convert strict ℤ inequality to strict Nat inequality via `Int.toNat_lt_toNat`
   have : Int.toNat (potentialVZ (n := n) (swap_vectors (n := n) B k' km1')) <
       Int.toNat (potentialVZ (n := n) B) := by
@@ -2257,7 +2272,7 @@ This yields an explicit witness limit for `lllRunExact` (start state `k=1, steps
 theorem lllRunExactGo_finished_of_fuel_ge_termMeasure
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
     (k steps fuel : Nat)
-    (hli : RowLIQ (n := n) B) (hδpos : (0 : ℚ) < δ) (hδlt : δ < 1)
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1)
     (hfuel : termMeasure (n := n) B k + 1 ≤ fuel) :
     (lllRunExactGo (n := n) B δ k steps fuel).reason = .finished := by
   classical
@@ -2318,7 +2333,7 @@ theorem lllRunExactGo_finished_of_fuel_ge_termMeasure
                 simpa using (Bool.eq_false_of_not_eq_true (by intro h; exact hL (by simpa using h)))
               simpa [B2] using
                 (potentialVN_swap_adj_lt_of_lovasz_fail (n := n) (B := B1) (δ := δ)
-                  (k := k) (hk := hk) (hk0 := hk0) (hli := hli1) hδpos hδlt this)
+                  (k := k) (hk := hk) (hk0 := hk0) (hli := hli1) hδlt this)
             have hdec' : termMeasure (n := n) B2 km1 < termMeasure (n := n) B1 k :=
               termMeasure_swap_lt (n := n) (B1 := B1) (B2 := B2) (k := k) hk0 hk hpot2
             have hEqk : termMeasure (n := n) B1 k = termMeasure (n := n) B k :=
@@ -2338,20 +2353,20 @@ theorem lllRunExactGo_finished_of_fuel_ge_termMeasure
 
 theorem lllRunExact_finished_of_RowLIQ
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
-    (hli : RowLIQ (n := n) B) (hδpos : (0 : ℚ) < δ) (hδlt : δ < 1) :
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
     ∃ limit : Nat, (lllRunExact (n := n) B δ limit).reason = .finished := by
   refine ⟨termMeasure (n := n) B 1 + 1, ?_⟩
   -- apply the general fuel bound at the start state
   have hfuel : termMeasure (n := n) B 1 + 1 ≤ termMeasure (n := n) B 1 + 1 := le_rfl
   simpa [lllRunExact] using
     (lllRunExactGo_finished_of_fuel_ge_termMeasure (n := n) (B := B) (δ := δ)
-      (k := 1) (steps := 0) (fuel := termMeasure (n := n) B 1 + 1) hli hδpos hδlt hfuel)
+      (k := 1) (steps := 0) (fuel := termMeasure (n := n) B 1 + 1) hli hδlt hfuel)
 
 theorem lllRunExact_exists_limit_LLLReducedQ_of_RowLIQ
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
-    (hli : RowLIQ (n := n) B) (hδpos : (0 : ℚ) < δ) (hδlt : δ < 1) :
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
     ∃ limit : Nat, LLLReducedQ (n := n) (lllRunExact (n := n) B δ limit).basis δ := by
-  rcases lllRunExact_finished_of_RowLIQ (n := n) (B := B) (δ := δ) hli hδpos hδlt with ⟨limit, hfin⟩
+  rcases lllRunExact_finished_of_RowLIQ (n := n) (B := B) (δ := δ) hli hδlt with ⟨limit, hfin⟩
   refine ⟨limit, ?_⟩
   -- reuse the established postcondition lemma from `LLLExactProofs`
   exact GeometryOfNumbers.Computable.lllRunExact_finished_LLLReducedQ_of_RowLIQ

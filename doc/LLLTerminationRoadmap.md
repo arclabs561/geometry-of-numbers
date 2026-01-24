@@ -4,19 +4,19 @@ This note is a **proof-plan artifact** for the `GeometryOfNumbers/Computable` LL
 It is intentionally *non-code* so we can keep the Lean sources `sorry`-free while still
 making forward progress on the hard parts.
 
-## Current contract surface (what we can already prove)
+## Status (January 2026)
 
-- `GeometryOfNumbers/Computable/LLLExact.lean` provides:
-  - the executable loop (`lllRunExactGo` / `lllRunExact`),
-  - checkers `isSizeReducedQ`, `isLovaszReducedQ`, `isLLLReducedQ`,
-  - Prop wrappers `SizeReducedQ`, `LovaszReducedQ`, `LLLReducedQ`.
-- `GeometryOfNumbers/Computable/LLLExactProofs.lean` proves the central postcondition:
-  - `lllRunExact_finished_LLLReducedQ_of_RowLIQ`:
-    if a run finishes, the output satisfies the (Prop) reducedness spec.
+This roadmap started as a “proof plan” while keeping the Lean sources `sorry`-free.
+The core termination proof is now implemented in:
 
-So the *semantic correctness* goal is already stable:
+- `GeometryOfNumbers/Computable/LLLExactTermination.lean`
 
-- **target**: `finished → LLLReducedQ` (and later: a more semantic reformulation of `LLLReducedQ`).
+Current “end-to-end” contract:
+
+- `LLLExact.lean`: executable runner (`lllRunExactGo` / `lllRunExact`) + checkers/specs
+- `LLLExactProofs.lean`: `finished → LLLReducedQ`
+- `LLLExactTermination.lean`: under `RowLIQ` and `δ < 1`, `∃ limit, reason = .finished`
+  (and thus `∃ limit, LLLReducedQ ...`)
 
 ## What “termination” means here
 
@@ -26,9 +26,10 @@ A termination proof is about the *unbounded* algorithmic behavior:
 - show that there exists a bound `T(B, δ)` such that for all `limit ≥ T`,
   the runner reaches `.finished`.
 
-Equivalently: define an unbounded loop and prove it terminates.
+In our implementation, this bound is realized by a concrete measure (`termMeasure`) and a lemma
+of the form “`fuel ≥ termMeasure + 1` implies `.finished`”.
 
-## The classic proof shape (what we’ll formalize)
+## The classic proof shape (now implemented)
 
 LLL termination is traditionally proved using a **potential function** that strictly decreases
 on swaps and is bounded below.
@@ -70,30 +71,13 @@ So the plan is:
 - Lean does the *structural* work,
 - SMT discharges the *numeric inequality* leaves.
 
-## Concrete next lemma milestones (in order)
+## Next steps (what “more progress” means now)
 
-### A. A computable potential definition
-
-- Add `potentialQ : Matrix (Fin n) (Fin n) ℤ → ℚ` (new file recommended).
-- Prove basic facts:
-  - `potentialQ` is a finite product over `Fin n`,
-  - `dotQ v v = 0 ↔ v = 0` (already proved) will be the main lever for “nonzero under `RowLIQ`”.
-
-### B. Swap-step decrease (main hard inequality)
-
-- Prove: when `lovaszQ` fails at `(k, k-1)`, swapping decreases `potentialQ` strictly.
-- This is the best place to use `proofpatch tree-search-nearest --smt-precheck`.
-
-### C. Bound + termination wrapper
-
-- Show `potentialQ` lives in a well-founded set:
-  - either “positive rationals with bounded denominator”, or
-  - “integers after scaling by a common denominator”.
-- Conclude a bound on number of swaps.
-
-### D. From “finite swaps” to “finished”
-
-- Once swaps stop, show `k` only increases until it reaches `n`.
+- **Complexity bounds**: relate `termMeasure` / the potentials to a textbook polynomial-time bound
+  (swap count / iteration count) in a recognizable form.
+- **Statement polish**: expose a “semantic” reducedness theorem closer to common LLL literature
+  (rather than the current checker-shaped `LLLReducedQ`).
+- **Refactoring**: split `LLLExactTermination.lean` if the computable LLL track stays active.
 
 ## References to mirror (structure, not code)
 
