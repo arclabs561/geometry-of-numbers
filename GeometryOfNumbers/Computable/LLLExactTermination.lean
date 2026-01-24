@@ -2383,6 +2383,83 @@ theorem lllRunExact_exists_limit_LLLReducedQ_of_RowLIQ
   exact GeometryOfNumbers.Computable.lllRunExact_finished_LLLReducedQ_of_RowLIQ
     (n := n) (B := B) (δ := δ) (limit := limit) hli hfin
 
+/-!
+## A tiny “complexity counter”: how many swaps did we do?
+
+To move toward recognizable complexity bounds, it helps to have a computable counter that mirrors
+the runner and increments exactly on Lovász-failing branches (the swap steps).
+
+This is not yet a *textbook* swap bound; it’s a thin hook we can use to state “swap count ≤ fuel”
+and then later refine it using potential arguments.
+-/
+
+def swapCountGo {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k fuel : Nat) : Nat :=
+  match fuel with
+  | 0 => 0
+  | fuel' + 1 =>
+      if hk : k < n then
+        if h0 : k = 0 then
+          swapCountGo (n := n) B δ 1 fuel'
+        else
+          let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+          let km1 : Nat := k - 1
+          have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+          let k' : Fin n := ⟨k, hk⟩
+          let km1' : Fin n := ⟨km1, hkm1⟩
+          if lovaszQ (n := n) B1 k' km1' δ then
+            swapCountGo (n := n) B1 δ (k + 1) fuel'
+          else
+            let B2 := swap_vectors (n := n) B1 k' km1'
+            1 + swapCountGo (n := n) B2 δ km1 fuel'
+      else
+        0
+
+def swapCount {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat) : Nat :=
+  swapCountGo (n := n) B δ 1 limit
+
+theorem swapCountGo_le_fuel
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k fuel : Nat) :
+    swapCountGo (n := n) B δ k fuel ≤ fuel := by
+  induction fuel generalizing B k with
+  | zero =>
+      simp [swapCountGo]
+  | succ fuel ih =>
+      by_cases hk : k < n
+      · by_cases h0 : k = 0
+        · subst h0
+          -- `swapCountGo ... 1 fuel ≤ fuel`, so also `≤ fuel+1`
+          have h := ih (B := B) (k := 1)
+          simpa [swapCountGo, hk] using (le_trans h (Nat.le_succ fuel))
+        · -- `k>0`: size-reduce, then either advance or swap
+          let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+          let km1 : Nat := k - 1
+          have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+          let k' : Fin n := ⟨k, hk⟩
+          let km1' : Fin n := ⟨km1, hkm1⟩
+          by_cases hL : lovaszQ (n := n) B1 k' km1' δ
+          · -- no swap: recurse without increment
+            have h := ih (B := B1) (k := k + 1)
+            simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL] using (le_trans h (Nat.le_succ fuel))
+          · -- swap: `1 + rec ≤ fuel+1`
+            let B2 := swap_vectors (n := n) B1 k' km1'
+            have h := ih (B := B2) (k := km1)
+            have h' : swapCountGo (n := n) B2 δ km1 fuel + 1 ≤ fuel + 1 :=
+              Nat.add_le_add_right h 1
+            -- rewrite `x + 1` as `1 + x`
+            simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL, B2, Nat.add_assoc, Nat.add_comm,
+              Nat.add_left_comm] using h'
+      · simp [swapCountGo, hk]
+
+theorem swapCount_le_limit
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat) :
+    swapCount (n := n) B δ limit ≤ limit := by
+  simpa [swapCount] using swapCountGo_le_fuel (n := n) (B := B) (δ := δ) (k := 1) (fuel := limit)
+
+theorem swapCount_at_termMeasure_le
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
+    swapCount (n := n) B δ (termMeasure (n := n) B 1 + 1) ≤ termMeasure (n := n) B 1 + 1 := by
+  simpa using swapCount_le_limit (n := n) (B := B) (δ := δ) (limit := termMeasure (n := n) B 1 + 1)
+
 
 
 end GeometryOfNumbers.Computable

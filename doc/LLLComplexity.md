@@ -81,6 +81,9 @@ lemmas correspond to which “leaf” obligations in Lean.
 - Van Hoeij–Novocin, *Gradual sub-lattice reduction and a new complexity for factoring polynomials* (2010).
   Useful for thinking about complexity bounds that depend on an output norm bound rather than raw
   input bit-length. `http://arxiv.org/abs/1002.0739`
+- Novocin–Stehlé–Villard, *An LLL-reduction algorithm with quasi-linear time complexity* (STOC 2011, extended abstract).
+  This is the key reference once we want to move from “swap-count bound” to **bit complexity** bounds.
+  Open PDF (HAL): `https://ens-lyon.hal.science/ensl-00534899/file/L1-hal.pdf`
 - Lyu–Ling, *Boosted KZ and LLL Algorithms* (2017). A modern view of LLL variants; occasionally
   helpful for framing alternative potentials. `http://arxiv.org/abs/1703.03303`
 
@@ -111,8 +114,11 @@ What this suggests for our repo:
 
 1. **Monotone-fuel wrapper** (done): a theorem of the form
    `limit ≥ termMeasure(B,1)+1 → finished`. (This is now in `LLLExactTermination.lean`.)
-2. **Swap-count extraction**: define `swapCount` for a run trace (or bound it indirectly), and
-   prove `swapCount ≤ termMeasure(B,1)` (or a tighter bound via the `potentialVN` drop argument).
+2. **Swap-count extraction** (done, basic): define a computable `swapCount` that mirrors the runner,
+   and prove the “sanity bounds”:
+   - `swapCount ≤ limit` (always), and
+   - `swapCount (limit = termMeasure+1) ≤ termMeasure+1`.
+   This is now in `LLLExactTermination.lean` as `swapCountGo` / `swapCount`.
 3. **Textbook-potential lemma pack**:
    - show `Ψ = Φ` (pure algebra / `Finset` products),
    - isolate the exact “swap decreases Φ by factor δ” lemma in the statement form used in books.
