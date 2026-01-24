@@ -84,6 +84,29 @@ lemmas correspond to which “leaf” obligations in Lean.
 - Lyu–Ling, *Boosted KZ and LLL Algorithms* (2017). A modern view of LLL variants; occasionally
   helpful for framing alternative potentials. `http://arxiv.org/abs/1703.03303`
 
+### What to mirror from Chen–Stehlé–Villard (high signal)
+
+The paper `http://arxiv.org/abs/1805.03418` is valuable because it restates the standard
+termination/complexity decomposition in a way that matches our existing Lean structure:
+
+- **Lemma 2.1 (swap step facts)**: the swap only affects two adjacent Gram–Schmidt norms, preserves
+  their product, and increases the “bad” ratio by a constant factor.
+- **Classical potential** (their Eq. (6)): a log-sum potential
+  \(\Pi(B) = \sum_{i=1}^{n-1} (n-i)\log \lVert b_i^\*\rVert\),
+  which is equivalent to a multiplicative potential (avoid logs in Lean by working with products).
+- **Potential drop per swap**: they show a *uniform* lower bound on potential decrease per swap
+  (their Proposition 3.2 uses \(\log(2/\sqrt{3})\) for \(\delta=3/4\)).
+- **A refined potential \(\Pi_k\)**: tailored to “unbalanced” bases (many small vs many large GS
+  norms), yielding a better bound on swap count for structured inputs.
+
+What this suggests for our repo:
+
+- keep our multiplicative `Ψ`/`Φ` as the “baseline textbook” potential,
+- add an **optional refined potential** (a `k`-split analogue) once we have a concrete target family
+  of inputs (e.g. the “orthogonal lattice” shaped bases, or the Legendre/Ankeny bridge matrices),
+- prove a bound in the style “each swap decreases the potential by at least a fixed multiplicative
+  factor”, then turn it into a **log-free swap count bound** using `pow` monotonicity.
+
 ## Concrete next Lean lemma targets (in order)
 
 1. **Monotone-fuel wrapper** (done): a theorem of the form
