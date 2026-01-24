@@ -161,6 +161,26 @@ lemma gramPrefixQ_eq_cast_gramPrefixZ
   -- unfold to `Finset` sums and use `intCast` distributivity
   simp [gramPrefixQ, gramPrefixZ, dotQ, dotZ, rowQ]
 
+lemma det_gramPrefixQ_eq_cast_det_gramPrefixZ
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
+    Matrix.det (gramPrefixQ (n := n) B k hk) =
+      ((Matrix.det (gramPrefixZ (n := n) B k hk) : ℤ) : ℚ) := by
+  classical
+  -- rewrite `gramPrefixQ` as an entrywise cast of the ℤ Gram matrix
+  have hcast := gramPrefixQ_eq_cast_gramPrefixZ (n := n) (B := B) (k := k) hk
+  have hdet := congrArg Matrix.det hcast
+  -- turn `det (cast matrix)` into `cast (det matrix)`
+  -- (`Int.cast_det` is stated as `(M.det : R) = (M.map (fun x => (x : R))).det`)
+  -- so we use it in the reverse direction.
+  have hdet_cast :
+      ((Matrix.det (gramPrefixZ (n := n) B k hk) : ℤ) : ℚ)
+        =
+        Matrix.det ((gramPrefixZ (n := n) B k hk).map fun x => (x : ℚ)) := by
+    simpa using (Int.cast_det (R := ℚ) (M := gramPrefixZ (n := n) B k hk))
+  -- finish: identify the RHS matrix with the one from `hcast`
+  -- (both are definitional entrywise casts)
+  simpa [Matrix.map_apply] using hdet.trans hdet_cast.symm
+
 /-!
 #### Swap invariance at full prefix `k = n`
 
