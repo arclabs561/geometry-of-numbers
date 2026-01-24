@@ -2362,6 +2362,17 @@ theorem lllRunExact_finished_of_RowLIQ
     (lllRunExactGo_finished_of_fuel_ge_termMeasure (n := n) (B := B) (δ := δ)
       (k := 1) (steps := 0) (fuel := termMeasure (n := n) B 1 + 1) hli hδlt hfuel)
 
+theorem lllRunExact_finished_of_limit_ge_termMeasure
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (limit : Nat)
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1)
+    (hlimit : termMeasure (n := n) B 1 + 1 ≤ limit) :
+    (lllRunExact (n := n) B δ limit).reason = .finished := by
+  -- same proof as the witness lemma, but for any larger fuel/limit
+  simpa [lllRunExact] using
+    (lllRunExactGo_finished_of_fuel_ge_termMeasure (n := n) (B := B) (δ := δ)
+      (k := 1) (steps := 0) (fuel := limit) hli hδlt hlimit)
+
 theorem lllRunExact_exists_limit_LLLReducedQ_of_RowLIQ
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
     (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :

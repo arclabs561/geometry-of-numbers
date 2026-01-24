@@ -30,8 +30,12 @@ Independent of the primary proof tracks, the library targets a **computable** LL
 - `GeometryOfNumbers/Computable/LLLExactProofs.lean`: correctness lemmas supporting the eventual postcondition
 - `GeometryOfNumbers/Computable/LLL.lean`: noncomputable (ℝ) loop scaffold
 
-Current emphasis is on **step correctness** + a falsifiable postcondition (`finished → reduced`), before attempting
-termination/complexity proofs.
+Status:
+
+- **Correctness**: `finished → LLLReducedQ` is proved in `LLLExactProofs.lean`.
+- **Termination**: `∃ limit, (lllRunExact B δ limit).reason = .finished` (under `RowLIQ` and `δ < 1`) is proved
+  in `LLLExactTermination.lean`.
+- **Next**: relate the proof’s measure/potential to a *recognizable* complexity bound (swap/iteration count).
 
 ## Ankeny's Proof (`GeometryOfNumbers/Legendre/Ankeny.lean`)
 
