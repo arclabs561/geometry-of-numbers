@@ -39,6 +39,7 @@ lean_lib «Experiments» {
     `HenselLiftTwoSquares,
     `LegendreRemainingResidues,
     `LLLBasic,
+    `LLLAnkenyBridge,
     `LLLRational,
     `SuccessiveMinimaBasic,
     `SuccessiveMinimaZ2,

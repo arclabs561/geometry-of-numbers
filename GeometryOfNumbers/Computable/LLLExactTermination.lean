@@ -114,6 +114,26 @@ def gramPrefixQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤
       (rowQ (n := n) B (Fin.castLE hk j))
 
 /-!
+For some termination lemmas it is convenient to talk about the `k×n` matrix of the first `k` rows of
+`B` (cast to `ℚ`).
+-/
+
+def prefixRowsQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n) :
+    Matrix (Fin k) (Fin n) ℚ :=
+  fun i j => rowQ (n := n) B (Fin.castLE hk i) j
+
+@[simp] lemma prefixRowsQ_apply {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n)
+    (i : Fin k) (j : Fin n) :
+    prefixRowsQ (n := n) B k hk i j = rowQ (n := n) B (Fin.castLE hk i) j := by
+  rfl
+
+@[simp] lemma gramPrefixQ_apply {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k ≤ n)
+    (i j : Fin k) :
+    gramPrefixQ (n := n) B k hk i j =
+      ∑ t : Fin n, prefixRowsQ (n := n) B k hk i t * prefixRowsQ (n := n) B k hk j t := by
+  simp [gramPrefixQ, prefixRowsQ, dotQ]
+
+/-!
 ### Integer Gram matrix (for discrete lower bounds later)
 
 `gramPrefixZ` is the same prefix Gram matrix but computed in `ℤ`. This is the object whose
