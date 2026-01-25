@@ -8,9 +8,7 @@
 # - `must_include_any` is a post-filter applied to (title + abstract), lowercased substring match.
 # - All timeouts are best-effort; network can still be flaky.
 
-[research.presets.lll_complexity]
-query = "LLL swap count potential function Lovász condition"
-must_include_any = ["lll", "lenstra", "lovasz", "lattice"]
+[research.defaults]
 max_results = 12
 timeout_ms = 20000
 llm_summary = true
@@ -20,15 +18,11 @@ llm_max_top = 3
 llm_max_list_items = 12
 llm_max_str_chars = 160
 
+[research.presets.lll_complexity]
+query = "LLL swap count potential function Lovász condition"
+must_include_any = ["lll", "lenstra", "lovasz", "lattice"]
+
 [research.presets.sum_of_three_squares]
 query = "sum of three squares theorem Legendre mod 8 proof outline"
 must_include_any = ["three squares", "legendre", "sum of three squares", "quadratic forms", "lattice"]
-max_results = 10
-timeout_ms = 20000
-llm_summary = true
-llm_timeout_s = 25
-llm_summary_kind = "formalization_v2"
-llm_max_top = 3
-llm_max_list_items = 12
-llm_max_str_chars = 160
 
