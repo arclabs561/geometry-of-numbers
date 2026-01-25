@@ -15,6 +15,7 @@ max_results = 12
 timeout_ms = 20000
 llm_summary = true
 llm_timeout_s = 25
+llm_summary_kind = "formalization_v2"
 
 [research.presets.sum_of_three_squares]
 query = "sum of three squares theorem Legendre mod 8 proof outline"
@@ -23,4 +24,5 @@ max_results = 10
 timeout_ms = 20000
 llm_summary = true
 llm_timeout_s = 25
+llm_summary_kind = "formalization_v2"
 
