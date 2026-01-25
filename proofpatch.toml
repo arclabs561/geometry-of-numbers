@@ -1,0 +1,26 @@
+# proofpatch.toml
+#
+# Repo-owned configuration for proofpatch.
+# This file is intentionally small and human-editable; proofpatch treats it as optional.
+#
+# Notes:
+# - `query` is passed to arXiv as `all:<query>`.
+# - `must_include_any` is a post-filter applied to (title + abstract), lowercased substring match.
+# - All timeouts are best-effort; network can still be flaky.
+
+[research.presets.lll_complexity]
+query = "LLL swap count potential function Lovász condition"
+must_include_any = ["lll", "lenstra", "lovasz", "lattice"]
+max_results = 12
+timeout_ms = 20000
+llm_summary = true
+llm_timeout_s = 25
+
+[research.presets.sum_of_three_squares]
+query = "sum of three squares theorem Legendre mod 8 proof outline"
+must_include_any = ["three squares", "legendre", "sum of three squares", "quadratic forms", "lattice"]
+max_results = 10
+timeout_ms = 20000
+llm_summary = true
+llm_timeout_s = 25
+
