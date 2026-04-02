@@ -1,3 +1,33 @@
+[hints.defaults]
+# Repo-owned, opt-in acceleration packs for proofpatch.
+# Keeping these here (in the target repo) lets proofpatch stay repo-agnostic.
+enabled_packs = ["gon-number-theory", "gon-real-bounds"]
+
+[hints.packs.gon-number-theory]
+
+[[hints.packs.gon-number-theory.rules]]
+when_contains_all = ["⊢ Odd", "% 8 ="]
+candidates = [
+  # Bridge modulo facts to `Odd` using `omega` + `Nat.odd_iff`.
+  # NOTE: `proofpatch` will rewrite the `n` identifier if it can infer a different `% 8 =` LHS.
+  "by\n  have h2 : n % 2 = 1 := by omega\n  exact Nat.odd_iff.2 h2",
+]
+
+[hints.packs.gon-real-bounds]
+
+[[hints.packs.gon-real-bounds.rules]]
+when_contains_all = ["Real.pi / 3", "⊢", "<"]
+candidates = [
+  "by\n  have hpi : (3 : ℝ) < Real.pi := by\n    simpa using Real.pi_gt_three\n  have h3 : (0 : ℝ) < 3 := by norm_num\n  have hdiv : (3 : ℝ) / 3 < Real.pi / 3 := div_lt_div_of_pos_right hpi h3\n  have : (1 : ℝ) < Real.pi / 3 := by simpa [div_eq_mul_inv] using hdiv\n  simpa using this",
+]
+
+[[hints.packs.gon-real-bounds.rules]]
+when_contains_all = ["Real.pi", "/ 3", "⊢", "<"]
+when_contains_any = ["Real.sqrt 2", "√2"]
+candidates = [
+  "by\n  have hpi : (3 : ℝ) < Real.pi := by\n    simpa using Real.pi_gt_three\n  have hs2 : (1 : ℝ) < Real.sqrt 2 := Real.one_lt_sqrt_two\n  nlinarith [hpi, hs2]",
+]
+
 # proofpatch.toml
 #
 # Repo-owned configuration for proofpatch.
@@ -6,6 +36,7 @@
 # Notes:
 # - `query` is passed to arXiv as `all:<query>`.
 # - `must_include_any` is a post-filter applied to (title + abstract), lowercased substring match.
+# - `must_include_all` is a post-filter where *all* tokens must appear (use this to avoid “lattice QCD” noise).
 # - All timeouts are best-effort; network can still be flaky.
 
 [research.defaults]
@@ -19,8 +50,28 @@ llm_max_list_items = 12
 llm_max_str_chars = 160
 
 [research.presets.lll_complexity]
-query = "LLL swap count potential function Lovász condition"
-must_include_any = ["lll", "lenstra", "lovasz", "lattice"]
+# Aim this preset at “swap/iteration count bounds via a potential function” (not LLL variants).
+# In practice, the `must_include_any` filter matters as much as the raw query.
+query = "LLL swap count bound potential function orthogonal lattice Stehle Villard"
+must_include_any = [
+  "lll",
+  "lovasz",
+  "lattice",
+]
+must_include_all = ["lll", "orthogonal lattice"]
+
+[research.presets.lll_fuel_stability]
+# Aim this preset at “fuel-bounded executors / termination + stability under more fuel”.
+# This is closer to the *program semantics* story than the classic potential-function story.
+query = "fuel bounded recursion LLL algorithm termination proof semantics stability monotone fuel"
+must_include_any = ["lll", "lovasz", "lattice", "termination", "bound", "iteration"]
+must_include_all = ["lll", "lattice"]
+
+[research.presets.lll_potential]
+# Classic termination proofs: potential function decreases on swaps (Lovász fails).
+query = "LLL algorithm potential function termination proof Lovasz condition swap decrease"
+must_include_any = ["lll", "lovasz", "lattice", "potential", "termination"]
+must_include_all = ["lll", "lovasz"]
 
 [research.presets.sum_of_three_squares]
 query = "sum of three squares theorem Legendre mod 8 proof outline"

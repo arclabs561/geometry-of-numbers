@@ -71,6 +71,11 @@ So the plan is:
 - Lean does the *structural* work,
 - SMT discharges the *numeric inequality* leaves.
 
+Practical note (tooling):
+
+- `proofpatch tree-search-nearest --goal-dump --smt-precheck ...` now computes an initial goal snapshot
+  and can use that snapshot to drive SMT ranking even when using deterministic candidates (no Lean-oracle).
+
 ## Next steps (what “more progress” means now)
 
 - **Complexity bounds**: relate `termMeasure` / the potentials to a textbook polynomial-time bound

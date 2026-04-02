@@ -27,7 +27,10 @@ Textbook LLL analyses usually use a multiplicative potential such as
 \Phi(B) := \prod_{i=0}^{n-1} \lVert b_i^\*\rVert^2^{(n-1-i)}.
 \]
 
-In `LLLExactTermination.lean` we used the “product of prefix volumes” version:
+In `LLLExactTermination.lean` we use the “product of prefix volumes” version (`potentialVQ`),
+and keep the “textbook exponent” form as `potentialPhiQ` (a named reference).
+
+The file’s default `potentialQ` is an alias for `potentialVQ` (good default for proofs).
 \[
 \Psi(B) := \prod_{k=0}^{n-1} V_k(B),
 \quad
@@ -65,6 +68,11 @@ Because we also build an integer/Nat-valued potential `potentialVN` and show it 
 on every Lovász-failing swap, we automatically get:
 
 - number of swaps is at most `potentialVN(B₀)` (minus 1).
+
+Concrete theorems (so this doesn’t drift):
+
+- `swapCountGo_le_potentialVN`: `swapCountGo B δ k fuel ≤ potentialVN B`
+- `swapCount_le_potentialVN`: `swapCount B δ limit ≤ potentialVN B`
 
 This is *mathematically correct* but not the classical bound (it is typically enormous).
 To get a useful bound, we want a **multiplicative decrease** story (or a log bound), and we want a
@@ -109,6 +117,21 @@ What this suggests for our repo:
   of inputs (e.g. the “orthogonal lattice” shaped bases, or the Legendre/Ankeny bridge matrices),
 - prove a bound in the style “each swap decreases the potential by at least a fixed multiplicative
   factor”, then turn it into a **log-free swap count bound** using `pow` monotonicity.
+
+## Optional tooling: `proofpatch research-auto` (LL ops)
+
+This repo ships a small `proofpatch.toml` with a preset meant for this file:
+
+```bash
+proofpatch research-auto --repo . --preset lll_complexity --output-json /tmp/lll_complexity_research.json
+```
+
+The `lll_complexity` preset uses **two** filters:
+
+- `must_include_any`: keep results “LLL-ish” (avoid SWAP/QCD hits).
+- `must_include_all`: pin to a specific family/phrase (e.g. `"orthogonal lattice"`).
+
+This is not a dependency of the Lean proof (it’s just a way to keep research notes reproducible).
 
 ## Concrete next Lean lemma targets (in order)
 

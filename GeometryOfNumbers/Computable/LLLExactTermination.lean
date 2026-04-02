@@ -24,20 +24,22 @@ The goal is to keep this development:
 See `doc/LLLTerminationRoadmap.md` for the proof plan.
 -/
 
-/-- The classic LLL potential, specialized to the exact-ℚ Gram–Schmidt track.
+/-- The classic exponent-weighted LLL potential, specialized to the exact-ℚ Gram–Schmidt track.
 
 \[
 \Phi(B) := \prod_{i=0}^{n-1} \bigl(\|b_i^\*\|^2\bigr)^{(n-1-i)}.
 \]
 
-We keep it in `ℚ` so later proofs can stay in rational arithmetic.
+Note: in this file, the **canonical** potential for proofs is the prefix-volume product
+`potentialVQ` (order-invariant by construction). We keep `potentialPhiQ` only as a named
+reference to the “textbook exponent” form.
 -/
-def potentialQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℚ :=
+def potentialPhiQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℚ :=
   (Finset.univ : Finset (Fin n)).prod fun i =>
     (gsoNormSqQ (n := n) B i) ^ (n - 1 - i.1)
 
-@[simp] lemma potentialQ_def {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
-    potentialQ (n := n) B =
+@[simp] lemma potentialPhiQ_def {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
+    potentialPhiQ (n := n) B =
       (Finset.univ : Finset (Fin n)).prod (fun i => (gsoNormSqQ (n := n) B i) ^ (n - 1 - i.1)) := by
   rfl
 
@@ -96,6 +98,149 @@ def potentialVQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℚ :=
 @[simp] lemma potentialVQ_def {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
     potentialVQ (n := n) B =
       (Finset.univ : Finset (Fin n)).prod (fun k => prefixProdNormSqQ (n := n) B k.1 (Nat.le_of_lt k.2)) := by
+  rfl
+
+/-- Combinatorial identity behind `potentialVQ_eq_potentialPhiQ`:
+count how many prefixes contain a given index. -/
+lemma prod_prefixes_eq_pow_card_Ioi {n : ℕ} (a : Fin n → ℚ) :
+    (∏ x : Fin n, ∏ i : Fin x.1,
+        a ⟨i.1, Nat.lt_of_lt_of_le i.2 (Nat.le_of_lt x.2)⟩) =
+      ∏ j : Fin n, a j ^ (n - 1 - (j : Nat)) := by
+  classical
+  -- Turn the nested product over prefixes into a product over a sigma type.
+  let α : Fin n → Type := fun k => Fin k.1
+  let lift : Sigma α → Fin n := fun p =>
+    ⟨p.2.1, Nat.lt_of_lt_of_le p.2.2 (Nat.le_of_lt p.1.2)⟩
+  let f : Sigma α → ℚ := fun p => a (lift p)
+
+  have hlhs :
+      (∏ x : Fin n, ∏ i : Fin x.1,
+          a ⟨i.1, Nat.lt_of_lt_of_le i.2 (Nat.le_of_lt x.2)⟩) =
+        ∏ p : Sigma α, f p := by
+    simpa [f, lift, α] using (Fintype.prod_sigma (f := f)).symm
+
+  have hfiber :
+      (∏ p : Sigma α, f p) =
+        ∏ j : Fin n, ∏ p ∈ (Finset.univ : Finset (Sigma α)) with lift p = j, f p := by
+    simpa [f] using
+      (Finset.prod_fiberwise (s := (Finset.univ : Finset (Sigma α))) (g := lift) (f := f)).symm
+
+  have hpow :
+      (∏ j : Fin n, ∏ p ∈ (Finset.univ : Finset (Sigma α)) with lift p = j, f p) =
+        ∏ j : Fin n, a j ^ ((Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j)).card := by
+    classical
+    refine Finset.univ.prod_congr rfl ?_
+    intro j hj
+    have hreindex :
+        (∏ p ∈ (Finset.univ : Finset (Sigma α)) with lift p = j, f p) =
+          ∏ p ∈ (Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j), f p := by
+      simp [Finset.prod_filter]
+    have hconst :
+        ∀ p ∈ (Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j), f p = a j := by
+      intro p hp
+      have : lift p = j := (Finset.mem_filter.1 hp).2
+      simpa [f, this]
+    simpa [hreindex, f] using
+      (Finset.prod_eq_pow_card
+        (s := (Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j))
+        (f := f) (b := a j) hconst)
+
+  have hcard :
+      (∏ j : Fin n, a j ^ ((Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j)).card) =
+        ∏ j : Fin n, a j ^ (n - 1 - (j : Nat)) := by
+    classical
+    refine Finset.univ.prod_congr rfl ?_
+    intro j hj
+    have hcard' :
+        ((Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j)).card =
+          (Finset.Ioi j).card := by
+      classical
+      let fiber : Finset (Sigma α) :=
+        (Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j)
+      have : fiber.card = (Finset.Ioi j).card := by
+        classical
+        refine Finset.card_bij (s := fiber) (t := Finset.Ioi j)
+          (i := fun p _ => p.1)
+          (hi := by
+            intro p hp
+            have hpj : lift p = j := (Finset.mem_filter.1 hp).2
+            have hjval : p.2.1 = (j : Nat) := by
+              simpa [lift] using congrArg Fin.val hpj
+            have : (j : Nat) < (p.1 : Nat) := by
+              simpa [hjval] using p.2.2
+            exact (Finset.mem_Ioi.2 ((Fin.lt_def).2 this)))
+          (i_inj := by
+            intro p1 hp1 p2 hp2 hEq
+            cases p1 with
+            | mk k1 i1 =>
+              cases p2 with
+              | mk k2 i2 =>
+                have hk : k1 = k2 := hEq
+                subst hk
+                have hi1 : lift ⟨k1, i1⟩ = j := (Finset.mem_filter.1 hp1).2
+                have hi2 : lift ⟨k1, i2⟩ = j := (Finset.mem_filter.1 hp2).2
+                have hv1 : i1.1 = (j : Nat) := by simpa [lift] using congrArg Fin.val hi1
+                have hv2 : i2.1 = (j : Nat) := by simpa [lift] using congrArg Fin.val hi2
+                have hi : i1 = i2 := by
+                  apply Fin.ext
+                  simpa [hv1, hv2]
+                subst hi
+                rfl)
+          (i_surj := by
+            intro k hk
+            refine ⟨⟨k, ⟨(j : Nat), ?_⟩⟩, ?_, rfl⟩
+            · have hlt : j < k := (Finset.mem_Ioi.1 hk)
+              exact (Fin.lt_def).1 hlt
+            · refine Finset.mem_filter.2 ?_
+              constructor
+              · exact Finset.mem_univ _
+              · ext
+                rfl)
+      simpa [fiber] using this
+    simpa [hcard'] using (Fin.card_Ioi (n := n) (a := j))
+
+  calc
+    (∏ x : Fin n, ∏ i : Fin x.1,
+        a ⟨i.1, Nat.lt_of_lt_of_le i.2 (Nat.le_of_lt x.2)⟩)
+        = ∏ p : Sigma α, f p := hlhs
+    _ = ∏ j : Fin n, ∏ p ∈ (Finset.univ : Finset (Sigma α)) with lift p = j, f p := hfiber
+    _ = ∏ j : Fin n, a j ^ ((Finset.univ : Finset (Sigma α)).filter (fun p => lift p = j)).card := hpow
+    _ = ∏ j : Fin n, a j ^ (n - 1 - (j : Nat)) := hcard
+
+/-- The prefix-volume product potential `potentialVQ` is definitionally equal to the classic
+exponent-weighted potential `potentialPhiQ`. -/
+lemma potentialVQ_eq_potentialPhiQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
+    potentialVQ (n := n) B = potentialPhiQ (n := n) B := by
+  classical
+  -- Reduce to a purely combinatorial identity:
+  -- each `‖b_i^*‖²` appears once for each prefix `k` with `i < k`, i.e. `n-1-i` times total.
+  have hcomb :
+      (∏ x : Fin n, ∏ i : Fin x.1,
+          gsoNormSqQ (n := n) B ⟨i.1, Nat.lt_of_lt_of_le i.2 (Nat.le_of_lt x.2)⟩) =
+        ∏ j : Fin n, gsoNormSqQ (n := n) B j ^ (n - 1 - (j : Nat)) := by
+    simpa using (prod_prefixes_eq_pow_card_Ioi (n := n) (a := fun j => gsoNormSqQ (n := n) B j))
+
+  calc
+    potentialVQ (n := n) B
+        = ∏ x : Fin n, ∏ i : Fin x.1,
+            gsoNormSqQ (n := n) B ⟨i.1, Nat.lt_of_lt_of_le i.2 (Nat.le_of_lt x.2)⟩ := by
+            simp [potentialVQ, prefixProdNormSqQ]
+    _ = ∏ j : Fin n, gsoNormSqQ (n := n) B j ^ (n - 1 - (j : Nat)) := hcomb
+    _ = potentialPhiQ (n := n) B := by
+        simp [potentialPhiQ]
+
+/-- Canonical LLL potential for this file (alias): use the prefix-volume form.
+
+Historical note: earlier drafts used the name `potentialQ` for the “textbook exponent” potential.
+That definition now lives at `potentialPhiQ`; we keep `potentialQ` as an alias for `potentialVQ`
+because swap-step proofs are cleaner in the prefix-volume formulation (and we proved
+`potentialVQ_eq_potentialPhiQ` to connect back to the classic statement).
+-/
+def potentialQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) : ℚ :=
+  potentialVQ (n := n) B
+
+@[simp] lemma potentialQ_def {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
+    potentialQ (n := n) B = potentialVQ (n := n) B := by
   rfl
 
 @[simp] lemma prefixProdNormSqQ_zero {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) :
@@ -1385,6 +1530,20 @@ lemma prefixProdNormSqQ_pos_of_RowLIQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ)
   have hi1 : i.1 + 1 < n := Nat.lt_of_le_of_lt hik hk
   simpa using gsoNormSqQ_pos_of_RowLIQ (n := n) (B := B) (i := i.1) hi1 hli
 
+lemma potentialPhiQ_pos_of_RowLIQ {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (hli : RowLIQ (n := n) B) :
+    (0 : ℚ) < potentialPhiQ (n := n) B := by
+  -- Reduce to the canonical potential `potentialVQ` via `Ψ = Φ`.
+  have hEq : potentialPhiQ (n := n) B = potentialVQ (n := n) B := by
+    simpa using (potentialVQ_eq_potentialPhiQ (n := n) (B := B)).symm
+  rw [hEq]
+  classical
+  -- product of positive prefix factors
+  simp [potentialVQ]
+  refine Finset.prod_pos ?_
+  intro k hk
+  simpa using
+    (prefixProdNormSqQ_pos_of_RowLIQ (n := n) (B := B) (k := k.1) k.2 hli)
+
 lemma prefixProdNormSqQ_swap_adj_eq
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (k : Nat) (hk : k < n) (hk0 : 0 < k) :
     let k' : Fin n := ⟨k, hk⟩
@@ -1880,6 +2039,59 @@ lemma potentialVQ_swap_adj_lt_mul_delta_of_lovasz_fail
 
   simpa [potentialVQ, fB, fS] using hmain
 
+lemma potentialQ_swap_adj_lt_mul_delta_of_lovasz_fail
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (k : Nat) (hk : k < n) (hk0 : 0 < k) (hli : RowLIQ (n := n) B) :
+    let k' : Fin n := ⟨k, hk⟩
+    let km1Nat : Nat := k - 1
+    have hkm1 : km1Nat < n := Nat.lt_trans (Nat.pred_lt (Nat.ne_of_gt hk0)) hk
+    let km1' : Fin n := ⟨km1Nat, hkm1⟩
+    lovaszQ (n := n) B k' km1' δ = false →
+      potentialQ (n := n) (swap_vectors (n := n) B k' km1') < δ * potentialQ (n := n) B := by
+  intro k' km1Nat hkm1 km1' hlov
+  -- `potentialQ` is an alias for `potentialVQ` in this file.
+  have h :=
+    (potentialVQ_swap_adj_lt_mul_delta_of_lovasz_fail (n := n) (B := B) (δ := δ)
+      (k := k) (hk := hk) (hk0 := hk0) hli) hlov
+  -- The lemma is stated with `let`-bound swap indices; rewrite them to the locals in this goal.
+  simpa [potentialQ, k', km1Nat, km1', hkm1] using h
+
+/-!
+### Swap-step decrease, textbook form (`potentialPhiQ`)
+
+We also expose the same swap-step inequality phrased in terms of the classic exponent-weighted
+potential `potentialPhiQ`, using `potentialVQ_eq_potentialPhiQ`.
+-/
+
+lemma potentialPhiQ_swap_adj_lt_mul_delta_of_lovasz_fail
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (k : Nat) (hk : k < n) (hk0 : 0 < k) (hli : RowLIQ (n := n) B) :
+    let k' : Fin n := ⟨k, hk⟩
+    let km1Nat : Nat := k - 1
+    have hkm1 : km1Nat < n := Nat.lt_trans (Nat.pred_lt (Nat.ne_of_gt hk0)) hk
+    let km1' : Fin n := ⟨km1Nat, hkm1⟩
+    lovaszQ (n := n) B k' km1' δ = false →
+      potentialPhiQ (n := n) (swap_vectors (n := n) B k' km1') < δ * potentialPhiQ (n := n) B := by
+  intro k' km1Nat hkm1 km1' hlov
+  let S : Matrix (Fin n) (Fin n) ℤ := swap_vectors (n := n) B k' km1'
+  have hV :=
+    (potentialVQ_swap_adj_lt_mul_delta_of_lovasz_fail (n := n) (B := B) (δ := δ)
+      (k := k) (hk := hk) (hk0 := hk0) hli) hlov
+  -- Rewrite via `potentialVQ_eq_potentialPhiQ` on both sides.
+  have hSV : potentialVQ (n := n) S = potentialPhiQ (n := n) S :=
+    potentialVQ_eq_potentialPhiQ (n := n) (B := S)
+  have hBV : potentialVQ (n := n) B = potentialPhiQ (n := n) B :=
+    potentialVQ_eq_potentialPhiQ (n := n) (B := B)
+  -- Turn `potentialVQ S < δ * potentialVQ B` into `potentialPhiQ S < δ * potentialPhiQ B`
+  -- without unfolding either potential.
+  have hV' : potentialPhiQ (n := n) S < δ * potentialVQ (n := n) B := by
+    have hV2 := hV
+    rw [hSV] at hV2
+    exact hV2
+  have hB' : δ * potentialVQ (n := n) B = δ * potentialPhiQ (n := n) B := by
+    rw [hBV]
+  exact lt_of_lt_of_eq hV' hB'
+
 /-!
 ## Termination: a Nat-valued potential + a strictly decreasing measure
 
@@ -2373,6 +2585,94 @@ theorem lllRunExact_finished_of_limit_ge_termMeasure
     (lllRunExactGo_finished_of_fuel_ge_termMeasure (n := n) (B := B) (δ := δ)
       (k := 1) (steps := 0) (fuel := limit) hli hδlt hlimit)
 
+/-!
+### Fuel stability (semantic): once finished, extra fuel is irrelevant
+
+Because `lllRunExactGo` is fuel-bounded (fuel only stops execution early via `fuel = 0`),
+we get the “semantic stability” property:
+
+- If a run finishes with `fuel`, then running with `fuel + d` yields the **same** result.
+
+This is useful when treating `limit` as a *search budget* rather than a parameter that changes
+the algorithm.
+-/
+
+theorem lllRunExactGo_succ_eq_of_finished
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (k steps fuel : Nat) :
+    (lllRunExactGo (n := n) B δ k steps fuel).reason = .finished →
+      lllRunExactGo (n := n) B δ k steps (fuel + 1) =
+        lllRunExactGo (n := n) B δ k steps fuel := by
+  classical
+  induction fuel generalizing B k steps with
+  | zero =>
+      intro hfin
+      simp [lllRunExactGo] at hfin
+  | succ fuel ih =>
+      intro hfin
+      by_cases hk : k < n
+      · by_cases h0 : k = 0
+        · subst h0
+          have hfin' :
+              (lllRunExactGo (n := n) B δ 1 (steps + 1) fuel).reason = .finished := by
+            simpa [lllRunExactGo, hk] using hfin
+          have h := ih (B := B) (k := 1) (steps := steps + 1) hfin'
+          -- unfold one step on both sides; reduce to the IH equality
+          simpa [lllRunExactGo, hk, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+        · let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+          let km1 : Nat := k - 1
+          have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+          let k' : Fin n := ⟨k, hk⟩
+          let km1' : Fin n := ⟨km1, hkm1⟩
+          by_cases hL : lovaszQ (n := n) B1 k' km1' δ
+          · have hfin' :
+                (lllRunExactGo (n := n) B1 δ (k + 1) (steps + 1) fuel).reason = .finished := by
+              simpa [lllRunExactGo, hk, h0, B1, km1, hkm1, k', km1', hL] using hfin
+            have h := ih (B := B1) (k := k + 1) (steps := steps + 1) hfin'
+            simpa [lllRunExactGo, hk, h0, B1, km1, hkm1, k', km1', hL, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+          · let B2 := swap_vectors (n := n) B1 k' km1'
+            have hfin' :
+                (lllRunExactGo (n := n) B2 δ km1 (steps + 1) fuel).reason = .finished := by
+              simpa [lllRunExactGo, hk, h0, B1, km1, hkm1, k', km1', hL, B2] using hfin
+            have h := ih (B := B2) (k := km1) (steps := steps + 1) hfin'
+            simpa [lllRunExactGo, hk, h0, B1, km1, hkm1, k', km1', hL, B2, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using h
+      · -- already finished at this step; fuel doesn’t matter
+        simp [lllRunExactGo, hk]
+
+theorem lllRunExactGo_add_eq_of_finished
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (k steps fuel d : Nat) :
+    (lllRunExactGo (n := n) B δ k steps fuel).reason = .finished →
+      lllRunExactGo (n := n) B δ k steps (fuel + d) =
+        lllRunExactGo (n := n) B δ k steps fuel := by
+  intro hfin
+  induction d with
+  | zero =>
+      simp
+  | succ d ih =>
+      have h0 :
+          lllRunExactGo (n := n) B δ k steps (fuel + d) =
+            lllRunExactGo (n := n) B δ k steps fuel :=
+        ih
+      have hfin_d :
+          (lllRunExactGo (n := n) B δ k steps (fuel + d)).reason = .finished := by
+        simpa [h0.symm] using hfin
+      have hs :=
+        lllRunExactGo_succ_eq_of_finished (n := n) (B := B) (δ := δ) (k := k) (steps := steps)
+          (fuel := fuel + d) hfin_d
+      -- `(fuel + d) + 1 = fuel + (d + 1)`
+      simpa [Nat.add_assoc] using (hs.trans h0)
+
+theorem lllRunExact_add_eq_of_finished
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (limit d : Nat) :
+    (lllRunExact (n := n) B δ limit).reason = .finished →
+      lllRunExact (n := n) B δ (limit + d) = lllRunExact (n := n) B δ limit := by
+  intro hfin
+  simpa [lllRunExact, Nat.add_assoc] using
+    (lllRunExactGo_add_eq_of_finished (n := n) (B := B) (δ := δ)
+      (k := 1) (steps := 0) (fuel := limit) (d := d) hfin)
+
 theorem lllRunExact_exists_limit_LLLReducedQ_of_RowLIQ
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
     (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
@@ -2450,10 +2750,100 @@ theorem swapCountGo_le_fuel
               Nat.add_left_comm] using h'
       · simp [swapCountGo, hk]
 
+theorem swapCountGo_succ_le
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k fuel : Nat) :
+    swapCountGo (n := n) B δ k (fuel + 1) ≤ swapCountGo (n := n) B δ k fuel + 1 := by
+  induction fuel generalizing B k with
+  | zero =>
+      have h := swapCountGo_le_fuel (n := n) (B := B) (δ := δ) (k := k) (fuel := 1)
+      simpa [swapCountGo] using h
+  | succ fuel ih =>
+      classical
+      by_cases hk : k < n
+      · by_cases h0 : k = 0
+        · subst h0
+          simpa [swapCountGo, hk] using ih (B := B) (k := 1)
+        · let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+          let km1 : Nat := k - 1
+          have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+          let k' : Fin n := ⟨k, hk⟩
+          let km1' : Fin n := ⟨km1, hkm1⟩
+          by_cases hL : lovaszQ (n := n) B1 k' km1' δ
+          · simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL, Nat.add_assoc, Nat.add_comm,
+              Nat.add_left_comm] using
+              ih (B := B1) (k := k + 1)
+          · let B2 := swap_vectors (n := n) B1 k' km1'
+            have hrec := ih (B := B2) (k := km1)
+            have hrec' :
+                1 + swapCountGo (n := n) B2 δ km1 (fuel + 1) ≤
+                  1 + (swapCountGo (n := n) B2 δ km1 fuel + 1) :=
+              Nat.add_le_add_left hrec 1
+            simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL, B2,
+              Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hrec'
+      · simp [swapCountGo, hk, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+
+theorem swapCountGo_add_le
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k fuel d : Nat) :
+    swapCountGo (n := n) B δ k (fuel + d) ≤ swapCountGo (n := n) B δ k fuel + d := by
+  induction d with
+  | zero =>
+      simp
+  | succ d ih =>
+      have hstep :=
+        swapCountGo_succ_le (n := n) (B := B) (δ := δ) (k := k) (fuel := fuel + d)
+      have h1 :
+          swapCountGo (n := n) B δ k (fuel + d + 1) ≤
+            swapCountGo (n := n) B δ k (fuel + d) + 1 := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hstep
+      have h2 :
+          swapCountGo (n := n) B δ k (fuel + d) + 1 ≤
+            (swapCountGo (n := n) B δ k fuel + d) + 1 :=
+        Nat.add_le_add_right ih 1
+      exact le_trans h1 (by simpa [Nat.add_assoc] using h2)
+
 theorem swapCount_le_limit
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (limit : Nat) :
     swapCount (n := n) B δ limit ≤ limit := by
   simpa [swapCount] using swapCountGo_le_fuel (n := n) (B := B) (δ := δ) (k := 1) (fuel := limit)
+
+theorem swapCountGo_mono_fuel
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) (k fuel1 fuel2 : Nat)
+    (hle : fuel1 ≤ fuel2) :
+    swapCountGo (n := n) B δ k fuel1 ≤ swapCountGo (n := n) B δ k fuel2 := by
+  classical
+  induction fuel2 generalizing B k fuel1 with
+  | zero =>
+      have hf1 : fuel1 = 0 := Nat.eq_zero_of_le_zero hle
+      subst hf1
+      simp [swapCountGo]
+  | succ fuel2 ih =>
+      cases fuel1 with
+      | zero =>
+          simp [swapCountGo]
+      | succ fuel1 =>
+          have hle' : fuel1 ≤ fuel2 := Nat.succ_le_succ_iff.mp hle
+          by_cases hk : k < n
+          · by_cases h0 : k = 0
+            · subst h0
+              simpa [swapCountGo, hk] using ih (B := B) (k := 1) (fuel1 := fuel1) hle'
+            · let B1 := sizeReduceAllExactWithPrefix (n := n) B k hk
+              let km1 : Nat := k - 1
+              have hkm1 : km1 < n := Nat.lt_trans (Nat.pred_lt h0) hk
+              let k' : Fin n := ⟨k, hk⟩
+              let km1' : Fin n := ⟨km1, hkm1⟩
+              by_cases hL : lovaszQ (n := n) B1 k' km1' δ
+              · simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL] using
+                  ih (B := B1) (k := k + 1) (fuel1 := fuel1) hle'
+              · let B2 := swap_vectors (n := n) B1 k' km1'
+                have hrec :=
+                  ih (B := B2) (k := km1) (fuel1 := fuel1) hle'
+                have hrec' :
+                    1 + swapCountGo (n := n) B2 δ km1 fuel1 ≤
+                      1 + swapCountGo (n := n) B2 δ km1 fuel2 :=
+                  Nat.add_le_add_left hrec 1
+                simpa [swapCountGo, hk, h0, B1, km1, hkm1, k', km1', hL, B2,
+                  Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hrec'
+          · simp [swapCountGo, hk]
 
 theorem swapCount_at_termMeasure_le
     {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ) :
@@ -2522,6 +2912,20 @@ theorem swapCount_le_potentialVN
     swapCount (n := n) B δ limit ≤ potentialVN (n := n) B := by
   simpa [swapCount] using
     swapCountGo_le_potentialVN (n := n) (B := B) (δ := δ) (k := 1) (fuel := limit) hli hδlt
+
+theorem lllRunExact_finished_and_swapCount_bounds
+    {n : ℕ} (B : Matrix (Fin n) (Fin n) ℤ) (δ : ℚ)
+    (hli : RowLIQ (n := n) B) (hδlt : δ < 1) :
+    let limit : Nat := termMeasure (n := n) B 1 + 1
+    (lllRunExact (n := n) B δ limit).reason = .finished ∧
+      swapCount (n := n) B δ limit ≤ limit ∧
+      swapCount (n := n) B δ limit ≤ potentialVN (n := n) B := by
+  intro limit
+  refine And.intro ?_ (And.intro ?_ ?_)
+  · exact lllRunExact_finished_of_limit_ge_termMeasure (n := n) (B := B) (δ := δ)
+      (hli := hli) hδlt (limit := limit) (by rfl)
+  · exact swapCount_le_limit (n := n) (B := B) (δ := δ) (limit := limit)
+  · exact swapCount_le_potentialVN (n := n) (B := B) (δ := δ) (limit := limit) hli hδlt
 
 end GeometryOfNumbers.Computable
 

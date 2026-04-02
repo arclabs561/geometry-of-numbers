@@ -37,6 +37,13 @@ prepush:
 report:
     ./Scripts/check.sh report
 
+# Create an auditable SMT repro capsule from a `pp_dump` JSON (useful for sharing/debugging).
+#
+# Example:
+#   just smt-capsule tmp/proofpatch/pp_dump.json tmp/proofpatch/smt_capsule
+smt-capsule pp_dump_json bundle_dir:
+    proofpatch smt-repro --input-json {{pp_dump_json}} --bundle-dir {{bundle_dir}}
+
 # Build all experiment roots explicitly (keeps them compiling without the full build).
 experiments:
     {{lake_bin}} build AnkenyCheck
