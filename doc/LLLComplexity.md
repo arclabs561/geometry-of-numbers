@@ -118,21 +118,6 @@ What this suggests for our repo:
 - prove a bound in the style “each swap decreases the potential by at least a fixed multiplicative
   factor”, then turn it into a **log-free swap count bound** using `pow` monotonicity.
 
-## Optional tooling: `proofpatch research-auto` (LL ops)
-
-This repo ships a small `proofpatch.toml` with a preset meant for this file:
-
-```bash
-proofpatch research-auto --repo . --preset lll_complexity --output-json /tmp/lll_complexity_research.json
-```
-
-The `lll_complexity` preset uses **two** filters:
-
-- `must_include_any`: keep results “LLL-ish” (avoid SWAP/QCD hits).
-- `must_include_all`: pin to a specific family/phrase (e.g. `"orthogonal lattice"`).
-
-This is not a dependency of the Lean proof (it’s just a way to keep research notes reproducible).
-
 ## Concrete next Lean lemma targets (in order)
 
 1. **Monotone-fuel wrapper** (done): a theorem of the form

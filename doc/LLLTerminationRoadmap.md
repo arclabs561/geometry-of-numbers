@@ -4,7 +4,7 @@ This note is a **proof-plan artifact** for the `GeometryOfNumbers/Computable` LL
 It is intentionally *non-code* so we can keep the Lean sources `sorry`-free while still
 making forward progress on the hard parts.
 
-## Status (January 2026)
+## Status
 
 This roadmap started as a “proof plan” while keeping the Lean sources `sorry`-free.
 The core termination proof is now implemented in:
@@ -70,11 +70,6 @@ So the plan is:
 
 - Lean does the *structural* work,
 - SMT discharges the *numeric inequality* leaves.
-
-Practical note (tooling):
-
-- `proofpatch tree-search-nearest --goal-dump --smt-precheck ...` now computes an initial goal snapshot
-  and can use that snapshot to drive SMT ranking even when using deterministic candidates (no Lean-oracle).
 
 ## Next steps (what “more progress” means now)
 

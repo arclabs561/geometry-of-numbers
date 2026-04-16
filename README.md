@@ -1,207 +1,82 @@
-## Geometry of Numbers (Lean)
+## Geometry of Numbers (Lean 4)
 
-[![Lean Action CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](https://github.com/arclabs561/geometry-of-numbers)
-[![Lean](https://img.shields.io/badge/Lean-4.27.0--rc1-informational)](https://github.com/arclabs561/geometry-of-numbers/blob/main/lean-toolchain)
+[![CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
 
-Lean 4 formalization work around a geometry-of-numbers route to:
+Lean 4 formalization of geometry-of-numbers proofs: Legendre's three-square theorem via Ankeny's descent, Fermat's polygonal number theorem via Cauchy/Nathanson, and a computable exact-rational LLL implementation with verified termination.
 
-- **Legendre’s three-square theorem** (Ankeny 1957 + Minkowski)
-- **Cauchy’s reduction** for Fermat’s polygonal number theorem
+The codebase is `sorry`-free and builds against current Mathlib.
 
-This repo is intended to stay **buildable and `sorry`-free**; see `just status` / `lake exe status_report`.
-Some modules are still **scaffolds** in the sense of “compiles, but not the final story” (e.g. the LLL work).
+### Proved theorems
 
-Dual-licensed under MIT or Apache-2.0 (see `LICENSE-MIT` / `LICENSE-APACHE`).
+```lean
+-- Legendre's Three-Square Theorem (GeometryOfNumbers/Legendre/Main.lean)
+theorem sum_three_squares_iff (n : ℕ) :
+    (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n
 
-### Status (checkable)
+-- Gauss's Triangular Number Theorem (GeometryOfNumbers/Cauchy/Main.lean)
+theorem gauss_triangular (n : ℕ) :
+    ∃ a b c : ℕ, triangular a + triangular b + triangular c = n
 
-- `./Scripts/check.sh pre-commit` (fast lane)
-- `./Scripts/check.sh pre-push` (CI-ish lane; includes `regen-check`)
-- `just status` (`lake exe status_report`, should report 0 `sorry` tokens)
-
-### Progress map (rough; January 2026)
-
-Approximate “how far along are we” by chapter. Percentages are **best-effort** and reflect:
-- **proof completeness** (not just compilation),
-- **API stability** (how likely we are to rewrite interfaces),
-- and whether the chapter has a clean “top theorem” statement with a trustworthy proof story.
-
-| Chapter / track | Estimate | Why we think that | Next milestone (what “progress” means) | Uncertainty / forks |
-|---|---:|---|---|---|
-| **Legendre / Ankeny (three squares)** | **95%** | `sum_three_squares_iff` is proved and `sorry`-free; proof is coherent and exported from `GeometryOfNumbers/Legendre/Main.lean`. | Make the “Minkowski call-site” story more legible (optional), and tighten docs around the descent pipeline. | Low. Mostly packaging / exposition. |
-| **Cauchy/Nathanson (polygonal numbers)** | **95%** | `gauss_triangular` and `fermat_polygonal` are proved; medium-regime evidence is regenerated + checked (`regen-check`). | Improve the surrounding explanation of the generated-table boundary and how the regimes partition (optional). | Low. Mostly “why these cases” exposition. |
-| **Core (shared infrastructure)** | **80%** | The pieces needed by Legendre + Cauchy are stable; some “Core” files are intentionally exploratory/scaffolded. | Decide which core stubs become real shared APIs vs stay as local scaffolds. | Medium. Depends on future theorems (successive minima / reduction theory). |
-| **Computable LLL (exact, ℚ GS)** | **85%** | The executable runner (`lllRunExact`) has a Prop-level postcondition (`finished → LLLReducedQ`) and a termination witness (`∃ limit, reason = finished`) under `RowLIQ` and `δ < 1`. | Factor the termination/correctness story into smaller reusable lemmas and add a “semantic” reducedness theorem (closer to the usual LLL statements). | Medium. Mostly refactoring + statement polishing. |
-| **LLL complexity bounds (iterations / swaps)** | **5–15%** | We have an explicit measure (`termMeasure`) proving termination, but no attempt yet to match classic LLL polynomial-time bounds. | Prove a more standard potential bound (and/or relate `termMeasure` to textbook potentials) to recover a recognizable complexity story. | High. Multiple formalization strategies; may need additional number-theory/denominator control lemmas. |
-
-### Quickstart
-
-Install Lean (one-time; pinned by `lean-toolchain`):
-
-```bash
-curl -sSf https://elan.lean-lang.org/elan-init.sh | sh
+-- Fermat's Polygonal Number Theorem (GeometryOfNumbers/Cauchy/Main.lean)
+theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
+    ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n
 ```
 
-Or via Homebrew (macOS):
+The computable LLL track (`GeometryOfNumbers/Computable/`) provides an exact rational
+Gram-Schmidt LLL loop with a proved postcondition (`finished` implies `LLLReducedQ`)
+and a termination witness under row linear independence.
+
+### Building
+
+Requires [elan](https://github.com/leanprover/elan) (installs the pinned Lean toolchain automatically).
 
 ```bash
-brew install elan-init
-elan-init -y
-```
-
-Build and run local checks:
-
-```bash
-# If `lake` isn't on PATH, use `~/.elan/bin/lake` (or just use `just`, which defaults to it).
 lake build
-./Scripts/check.sh pre-commit
-./Scripts/check.sh pre-push
 ```
 
-Fast feedback loop (recommended during active work):
+Run checks:
 
 ```bash
-just fast
-just status
-just ankeny
-just regen-check
+just status          # should report 0 sorry tokens
+just fast            # quick feedback loop
+just regen-check     # regenerate + verify Cauchy medium-regime tables
 ```
 
-### Generated artifacts + safety
+### Structure
 
-- **Generated tables are audited**: `just regen-check` regenerates Cauchy medium-regime tables into `.generated/` and fails on drift.
-- **Artifacts are local-only**: `tmp/` and `.generated/` are gitignored.
-- **Secrets**: `.env` is gitignored. Don’t commit API keys; prefer env vars or a local `.env` file.
+```
+GeometryOfNumbers/
+  Core/             Shared infrastructure (polygonal defs, Minkowski wrapper,
+                    successive minima, determinants, modular squares)
+  Legendre/         Ankeny descent + three-square theorem entry point
+  Cauchy/           Polygonal number reduction + generated medium-regime tables
+  Computable/       Exact-ℚ LLL loop, correctness proofs, termination
 
-### proofpatch integration (optional)
+Experiments/        Compilation-checked scratch files and sanity probes
+Scripts/            Status report, linters, pre-commit checks
+```
 
-This repo can optionally use the `proofpatch` CLI during `pre-commit` to generate bounded reports and diff reviews:
+### Key formulas
 
-- [proofpatch](https://github.com/arclabs561/proofpatch)
+Three-square exceptions have the form $n = 4^a(8k+7)$.
 
-All outputs go under `tmp/proofpatch/` by default (gitignored).
-
-### Two formulas
-
-Three-square “exception” numbers have the form:
-
-$$
-n = 4^a(8k+7).
-$$
-
-Ankeny’s descent is organized around the ternary quadratic form:
+Ankeny's descent uses the ternary quadratic form:
 
 $$
 Q(x,y,z) = 2qx^2 + y^2 + nz^2.
 $$
 
-## What’s here (roughly)
+For `s >= 5`, the Cauchy/Nathanson reduction produces
+$n = \sum_{i=1}^4 P(s,x_i) + r$ with $0 \le r \le s-4$,
+then pads with `0/1` polygonals.
 
-- `GeometryOfNumbers.lean`: public import root
-- `GeometryOfNumbers/Core/`: reusable lemmas/definitions
-  - note: `Core/QuadraticLattice.lean` is an interface stub (not used by the main proofs yet)
-  - note: `Core/Composition.lean` is exploratory (definitions only; proof work lives elsewhere)
-- `GeometryOfNumbers/Legendre/`: the Ankeny proof path and the three-square theorem entry point
-- `GeometryOfNumbers/Cauchy/`: polygonal-number reduction (proved; uses generated medium-regime tables)
-- `GeometryOfNumbers/Computable/LLL.lean`: noncomputable (ℝ) loop scaffold
-- `GeometryOfNumbers/Computable/LLLExact.lean`: computable (ℚ) exact LLL loop + `lllRunExact` runner
-- `GeometryOfNumbers/Computable/LLLExactProofs.lean`: correctness lemmas supporting the LLL postcondition proof
-- `Experiments/`: small probes and scratch files; these must compile under `lake build` and should stay `sorry`-free
-  (use `Archive/` for dead ends / historical notes, and keep it `sorry`-free too so `lake exe status_report` stays meaningful)
+### References
 
-### Tooling
-
-`./Scripts/check.sh pre-commit` runs `lake exe gon_checks` + lint-style. If a sibling checkout of `../proofpatch`
-exists (or `proofpatch` is on PATH), it also runs a bounded “review-diff” step via the Rust helper CLI
-(non-blocking unless strict). Back-compat: a `../proofloops` checkout is also recognized (legacy name).
-
-Controls:
-- `GON_LLM_REVIEW=0` disables the review step
-- `GON_LLM_REVIEW_STRICT=1` makes “no reviewer available” / “review failed” fail the check
-- `GON_ARTIFACT_DIR` sets the local artifact directory (default: `tmp/proofpatch/`; legacy: `tmp/proofloops/`)
-- `GON_LLM_REVIEW_PRINT=0` suppresses printing `review_text` to stdout (JSON artifact still written)
-- `GON_LLM_REVIEW_FAIL_VERDICT=request_changes` fails the check if the reviewer verdict is `request_changes`
-- `GON_LLM_REVIEW_VERIFY_TIMEOUT_S` / `GON_LLM_REVIEW_VERIFY_MAX_FILES` tune how much Lean verification `review-diff` performs
-
-If LLM review is enabled, `./Scripts/check.sh` also supports bounding the prompt pack (useful when
-providers have tight context windows):
-
-- `GON_LLM_REVIEW_MAX_TOTAL_BYTES` (default: 40000)
-- `GON_LLM_REVIEW_PER_FILE_BYTES` (default: 8000)
-- `GON_LLM_REVIEW_TRANSCRIPT_BYTES` (default: 8000)
-
-## Structure
-
-```
-GeometryOfNumbers/
-  Core/
-    Basic.lean            -- Polygonal number definitions and identities.
-    QuadraticLattice.lean -- Quadratic forms ↔ lattices (scaffold).
-    SuccessiveMinima.lean -- Lattice spectral theory.
-    SuccessiveMinimaTheorems.lean -- Theorem layer (monotonicity, etc.).
-    Composition.lean      -- Composition-law scaffolding.
-    ModularSquares.lean   -- Local solvability conditions.
-    Determinant.lean      -- Lattice determinant and covolume links.
-    MinkowskiEngine.lean  -- Thin wrapper around Mathlib's Minkowski theorem (stable call-site).
-  Computable/
-    LLL.lean              -- LLL scaffold.
-  Legendre/
-    AnkenyLemmas.lean     -- Squarefree decomposition and mod-8 logic.
-    Ankeny.lean           -- Ankeny (1957) descent proof.
-    Main.lean             -- Legendre's Three-Square Theorem entry point.
-  Cauchy/
-    Main.lean             -- Cauchy Lemma and Fermat Polygonal Theorem reduction.
-    MediumTablesSmall.lean -- Generated (sharded) medium-regime tables for `5 ≤ s ≤ 23`.
-    MediumTablesMge22.lean -- Generated medium-regime tables for `s-2 ≥ 22`.
-    MediumTablesSmall/      -- Shards `S05..S23` imported by `MediumTablesSmall.lean`.
-
-Scripts/
-  StatusReport.lean          -- Project status summary generator.
-
-Experiments/
-  CheckZMod.lean             -- Congruence bridge validation.
-  AnkenyCheck.lean           -- Ankeny prime existence probes.
-  LLLBasic.lean              -- LLL step and Gram-Schmidt probing.
-  SuccessiveMinimaBasic.lean -- Successive minima: definitions + notes.
-  SuccessiveMinimaZ2.lean    -- ℤ² + unit disk: tiny exercised lemma (witness nonempty, λ₁ ≤ 1).
-  PoissonTheta.lean          -- Poisson summation → theta identity (Mathlib infrastructure check).
-  BhargavaCubes.lean         -- Discriminant invariant checks.
-  DescentValuation.lean      -- Valuation contradiction formalization.
-```
-
-## Entry points (some are scaffolds)
-
-**Legendre's Three-Square Theorem** (target):
-```lean
-theorem sum_three_squares_iff (n : ℕ) :
-    (∃ x y z : ℕ, x ^ 2 + y ^ 2 + z ^ 2 = n) ↔ ¬ is_three_square_exception n
-```
-
-**Gauss's Triangular Number Theorem** (target):
-```lean
-theorem gauss_triangular (n : ℕ) :
-    ∃ a b c : ℕ, triangular a + triangular b + triangular c = n
-```
-
-**Fermat's Polygonal Number Theorem** (target):
-```lean
-theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
-    ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n
-```
-
-## Note: Nathanson (1987)
-For the `s ≥ 5` case, we target the Cauchy/Nathanson reduction in the “four terms + residue” form
-$n = \sum_{i=1}^4 P(s,x_i) + r$ with $0 \le r \le s-4$, then pad with `0/1` polygonals.
-
-There is a known residue-class gap in some short presentations; we are following the modern
-streamlined route (e.g. Nathanson’s book treatment / the Whitty talk notes) rather than relying on
-an unverified modulo argument.
-
-## References
-
-- Legendre, A. M. (1798). *Essai sur la théorie des nombres*.
-- Cauchy, A. L. (1813). *Démonstration du théorème général de Fermat sur les nombres polygones*.
-- Ankeny, N. C. (1957). *Sums of three squares*. Proceedings of the American Mathematical Society.
+- Ankeny, N. C. (1957). *Sums of three squares*. Proceedings of the AMS.
+- Cauchy, A. L. (1813). *Demonstration du theoreme general de Fermat sur les nombres polygones*.
+- Legendre, A. M. (1798). *Essai sur la theorie des nombres*.
 - Nathanson, M. B. (1987). *A short proof of Cauchy's polygonal number theorem*.
-- Bhargava, M. (2004). *Higher composition laws*. Annals of Mathematics.
+
+### License
+
+Dual-licensed under MIT or Apache-2.0.

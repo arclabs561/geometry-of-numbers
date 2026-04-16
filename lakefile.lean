@@ -7,7 +7,7 @@ package «geometry_of_numbers» {
 }
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4" @ "cced109deab25b4322e1a12b877335e092322b74"
+  "https://github.com/leanprover-community/mathlib4"
 
 @[default_target]
 lean_lib «GeometryOfNumbers» {

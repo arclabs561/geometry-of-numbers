@@ -23,7 +23,7 @@
     - `GeometryOfNumbers/Cauchy/MediumTablesSmall.lean` importing shards `MediumTablesSmall/S05..S23.lean`
     - `GeometryOfNumbers/Cauchy/MediumTablesMge22.lean` for the \(s-2 \ge 22\) regime
 
-## Project Status (January 2026)
+## Project Status
 *   `lake exe status_report` reports **0** `sorry` tokens across `GeometryOfNumbers/`, `Scripts/`, and `Experiments/`.
 *   `./Scripts/check.sh pre-commit` and `./Scripts/check.sh pre-push` are green (including the generated-table `regen-check` lane).
 *   Main entrypoints:

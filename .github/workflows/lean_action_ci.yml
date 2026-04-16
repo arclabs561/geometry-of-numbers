@@ -5,16 +5,8 @@ on:
   pull_request:
   workflow_dispatch:
 
-# NOTE:
-# This repo is a hobby/proof workspace. CI is intentionally minimal and should be robust
-# against upstream GitHub Action churn.
-#
-# We keep Pages permissions because other workflows may publish artifacts, but this CI job
-# does not currently deploy docs.
 permissions:
-  contents: read # Read access to repository contents
-  pages: write # Write access to GitHub Pages
-  id-token: write # Write access to ID tokens
+  contents: read
 
 jobs:
   build:

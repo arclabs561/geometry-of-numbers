@@ -1,0 +1,7 @@
+repository:
+  description: "Lean 4 formalization of Legendre's three-square theorem, Fermat's polygonal number theorem, and computable LLL"
+  homepage: ""
+  topics: lean4, formalization, number-theory, geometry-of-numbers, mathlib
+  default_branch: main
+  has_wiki: false
+  has_projects: false
