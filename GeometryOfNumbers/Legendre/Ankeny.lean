@@ -243,9 +243,9 @@ we build an explicit ℤ-span lattice from a concrete ℝ-basis and compute the 
 The associated matrix (with basis vectors as columns) is:
 
 ```text
-⎡ n    2q   b ⎤
-⎢ 0    2q   b ⎥
-⎣ 0     0   1 ⎦
+[ n    2q   b ]
+| 0    2q   b |
+[ 0     0   1 ]
 ```
 
 so `det = 2*n*q`. -/

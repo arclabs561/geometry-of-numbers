@@ -87,9 +87,9 @@ We build a basis by starting from the standard basis `b0 := Pi.basisFun` and map
 invertible linear map whose matrix is:
 
 ```text
-⎡ n  0  u ⎤
-⎢ 0  n  v ⎥
-⎣ 0  0  1 ⎦
+[ n  0  u ]
+| 0  n  v |
+[ 0  0  1 ]
 ```
 
 This matrix is upper triangular, so its determinant is \(n^2\), hence nonzero when `n > 0`.
@@ -180,9 +180,9 @@ lemma descent_lattice_eq_zspan (n : ℕ) (u v : ℤ) (hn : 0 < n) :
     descent_lattice n u v = (Submodule.span ℤ (Set.range (descent_basis n u v hn))).toAddSubgroup := by
   classical
   -- For this explicit `descent_basis`, the basis vectors are the columns of the matrix:
-  --   ⎡ n  0  u ⎤
-  --   ⎢ 0  n  v ⎥
-  --   ⎣ 0  0  1 ⎦
+  --   [ n  0  u ]
+  --   | 0  n  v |
+  --   [ 0  0  1 ]
   -- so the ℤ-span consists of all triples `(x,y,z)` with
   --   x = n*a + u*z,  y = n*b + v*z.
   let b0 : E := ![(n : ℝ), 0, 0]
