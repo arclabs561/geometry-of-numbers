@@ -6,7 +6,7 @@ import Lean
 This is a small “project-owned” checker executable intended for CI.
 
 It is intentionally conservative and text-based:
-- fail if `Scripts/nolints-style.txt` is non-empty (we want waivers to be explicit and rare)
+- fail if `scripts/nolints-style.txt` is non-empty (we want waivers to be explicit and rare)
 - fail if we accidentally paste “strikethrough” linter-markup characters into `.lean` files
 
 This is not meant to replace mathlib tooling (`lint-style`, docgen, etc.).
@@ -33,7 +33,7 @@ partial def collectLeanFiles (dir : System.FilePath) : IO (Array System.FilePath
   return out
 
 def checkNoStyleWaivers : IO Unit := do
-  let p : System.FilePath := "Scripts/nolints-style.txt"
+  let p : System.FilePath := "scripts/nolints-style.txt"
   let s ← IO.FS.readFile p
   let badLines :=
     s.splitOn "\n"
