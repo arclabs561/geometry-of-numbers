@@ -13,9 +13,9 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
-      - uses: leanprover/lean-action@v1
+      - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1.5.0
         with:
           use-mathlib-cache: true
 
@@ -26,7 +26,7 @@ jobs:
           "$HOME/.elan/bin/lake" build GeometryOfNumbers:docs
 
       - name: upload docs artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: doc-gen4-html
           path: docbuild/.lake/build/doc
