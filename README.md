@@ -30,6 +30,15 @@ output satisfies the executable `LLLReducedQ` predicate. For row-linearly
 independent bases and $\delta < 1$, a proved bound supplies enough fuel to
 finish.
 
+For the executable runner and its termination result, import the direct module:
+
+```lean
+import GeometryOfNumbers.Computable.LLLExactTermination
+```
+
+This exposes `lllRunExact` and its termination theorem,
+`lllRunExact_finished_of_RowLIQ`.
+
 ### Verification boundary
 
 `#print axioms` reports Lean's standard logical axioms for the Legendre and
