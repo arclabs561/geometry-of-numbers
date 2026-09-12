@@ -3,6 +3,7 @@ import GeometryOfNumbers.Computable.LLLExactProofs
 import Mathlib.LinearAlgebra.Matrix.Transvection
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.List.Fold
 
 -- This file is intentionally proof-heavy; keep build output usable by silencing
 -- style-only linters that otherwise dominate logs during development.
@@ -2928,4 +2929,3 @@ theorem lllRunExact_finished_and_swapCount_bounds
   · exact swapCount_le_potentialVN (n := n) (B := B) (δ := δ) (limit := limit) hli hδlt
 
 end GeometryOfNumbers.Computable
-

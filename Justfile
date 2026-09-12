@@ -10,6 +10,7 @@ lake_bin := env_var_or_default("LAKE", env_var("HOME") + "/.elan/bin/lake")
 fast:
     {{lake_bin}} build GeometryOfNumbers.Legendre.Main
     {{lake_bin}} build GeometryOfNumbers.Legendre.Ankeny
+    {{lake_bin}} build GeometryOfNumbers.Computable.LLLExactTermination
     {{lake_bin}} build Scripts.StatusReport
     {{lake_bin}} build Scripts.AnkenyCheck
     {{lake_bin}} build CheckMinkowski
@@ -20,6 +21,12 @@ status:
 ankeny:
     {{lake_bin}} exe ankeny_check
 
+# Execute the small finite regression witnesses. This is intentionally a
+# separate lane: `lake exe` compiles native artifacts and is slower than proof checking.
+runtime:
+    {{lake_bin}} exe lll_demo
+    {{lake_bin}} exe ankeny_check
+
 checks:
     {{lake_bin}} exe gon_checks
 
@@ -27,7 +34,7 @@ checks:
 regen-check:
     uv run Scripts/regen_check_medium_tables.py
 
-# Run the canonical repo check profiles (includes proofpatch integration when available).
+# Run the canonical repo check profiles (includes proofyloops integration when available).
 precommit:
     ./Scripts/check.sh pre-commit
 
@@ -40,9 +47,9 @@ report:
 # Create an auditable SMT repro capsule from a `pp_dump` JSON (useful for sharing/debugging).
 #
 # Example:
-#   just smt-capsule tmp/proofpatch/pp_dump.json tmp/proofpatch/smt_capsule
+#   just smt-capsule tmp/proofyloops/pp_dump.json tmp/proofyloops/smt_capsule
 smt-capsule pp_dump_json bundle_dir:
-    proofpatch smt-repro --input-json {{pp_dump_json}} --bundle-dir {{bundle_dir}}
+    proofyloops smt-repro --input-json {{pp_dump_json}} --bundle-dir {{bundle_dir}}
 
 # Build all experiment roots explicitly (keeps them compiling without the full build).
 experiments:
@@ -70,4 +77,3 @@ experiments:
 # Slow lane: full build (includes big tables).
 all:
     {{lake_bin}} build
-

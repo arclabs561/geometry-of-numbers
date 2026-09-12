@@ -16,6 +16,14 @@ def demo3 : IO Unit := do
   let δ : ℚ := (3 : ℚ) / 4
   let run := lllRunExact (n := 2) B δ (limit := 50)
   let Bout := run.basis
+  -- This executable is also a small runtime regression check. These are finite,
+  -- concrete facts about the demo input, not a replacement for the general proofs.
+  unless run.steps == 3 && run.final_k == 2 do
+    throw <| IO.userError s!"unexpected LLL run summary: steps={run.steps}, final_k={run.final_k}"
+  unless rowList Bout 0 == [-1, 0] && rowList Bout 1 == [0, 1] do
+    throw <| IO.userError s!"unexpected LLL output basis: {rowList Bout 0}, {rowList Bout 1}"
+  unless isLLLReducedQ (n := 2) Bout δ do
+    throw <| IO.userError "LLL output did not satisfy the executable reducedness check"
   showBasis "input" B
   showBasis "lll_exact output" Bout
   IO.println s!"steps={run.steps} final_k={run.final_k} reason={repr run.reason}"

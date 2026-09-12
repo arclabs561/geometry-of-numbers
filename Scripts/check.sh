@@ -19,13 +19,13 @@ cd "$repo_root"
 source "$repo_root/Scripts/lib.sh"
 resolve_lake
 
-# Local artifacts (HTML + JSON) live under `tmp/proofpatch/` by default.
+# Local artifacts (HTML + JSON) live under `tmp/proofyloops/` by default.
 #
 # Back-compat:
-# - Older scripts/docs used `tmp/proofloops/`.
-# - We still *read* legacy inputs from there if the new location is absent.
-artifact_dir="${GON_ARTIFACT_DIR:-tmp/proofpatch}"
-legacy_artifact_dir="tmp/proofloops"
+# - Earlier scripts used `tmp/proofpatch/` and then `tmp/proofloops/`.
+# - We still *read* legacy inputs from either location if the canonical location is absent.
+artifact_dir="${GON_ARTIFACT_DIR:-tmp/proofyloops}"
+legacy_artifact_dirs=("tmp/proofpatch" "tmp/proofloops")
 mkdir -p "$artifact_dir"
 
 profile="${1:-}"
@@ -55,7 +55,7 @@ case "$profile" in
     precommit_build="${GON_PRECOMMIT_BUILD:-1}"
     if [[ "$precommit_build" != "0" ]]; then
       echo "[check:pre-commit] lake build (smoke: key entrypoints)"
-      "$LAKE" build GeometryOfNumbers GeometryOfNumbers.Legendre.Main GeometryOfNumbers.Cauchy.Main
+      "$LAKE" build GeometryOfNumbers GeometryOfNumbers.Legendre.Main GeometryOfNumbers.Cauchy.Main GeometryOfNumbers.Computable.LLLExactTermination
 
       # After a successful smoke build, emit a compact, structured summary of the current proof
       # frontier. This is primarily for humans/agents (so they don’t have to parse raw warnings).
@@ -63,9 +63,9 @@ case "$profile" in
       # Opt out with `GON_PRECOMMIT_SUMMARY=0`.
       precommit_summary="${GON_PRECOMMIT_SUMMARY:-1}"
       if [[ "$precommit_summary" != "0" ]]; then
-        echo "[check:pre-commit] proof frontier summary (proofpatch report)"
+        echo "[check:pre-commit] proof frontier summary (proofyloops report)"
         if ! resolve_proof_cli; then
-          echo "[check:pre-commit] proofpatch not available; skipping summary" >&2
+          echo "[check:pre-commit] proofyloops not available; skipping summary" >&2
         else
           out_html="${GON_PRECOMMIT_REPORT_HTML:-$artifact_dir/status.html}"
           files=(
@@ -92,13 +92,13 @@ case "$profile" in
         req+=(--require-key)
       fi
 
-      # Project-agnostic LLM diff review lives in `proofpatch` (Rust CLI).
+      # Project-agnostic LLM diff review lives in `proofyloops` (Rust CLI).
       if ! resolve_proof_cli; then
         if [[ "$strict" != "0" ]]; then
-          echo "[check:pre-commit] proofpatch not available (need ../proofpatch or proofpatch on PATH)" >&2
+          echo "[check:pre-commit] proofyloops not available (need ../proofyloops or proofyloops on PATH)" >&2
           exit 1
         else
-          echo "[check:pre-commit] proofpatch not available; skipping llm-review" >&2
+          echo "[check:pre-commit] proofyloops not available; skipping llm-review" >&2
           set -e
           # Skip (non-blocking). Keep going with the rest of the profile.
           true
@@ -118,7 +118,7 @@ case "$profile" in
         max_total_bytes="${GON_LLM_REVIEW_MAX_TOTAL_BYTES:-40000}"
         per_file_bytes="${GON_LLM_REVIEW_PER_FILE_BYTES:-8000}"
         transcript_bytes="${GON_LLM_REVIEW_TRANSCRIPT_BYTES:-8000}"
-      # Verification inside `proofpatch review-diff` reduces hallucinated “this file won’t build”
+      # Verification inside `proofyloops review-diff` reduces hallucinated “this file won’t build”
       # claims by providing a ground-truth `verify` summary for some `.lean` files.
       #
       # Keep the default bounded and fast; override if you want deeper coverage.
@@ -133,7 +133,7 @@ case "$profile" in
         --max-total-bytes "$max_total_bytes" --per-file-bytes "$per_file_bytes" --transcript-bytes "$transcript_bytes" \
         --output-json "$out_prompt_json" >/dev/null 2>&1 || true
 
-        if [[ "$PP_EXE" == "proofpatch" ]]; then
+        if [[ "$PP_EXE" == "proofyloops" ]]; then
           pp_run_fresh review-diff --repo "$repo_root" --scope "$review_scope" \
           --verify-timeout-s "$verify_timeout_s" --verify-max-files "$verify_max_files" \
             --max-total-bytes "$max_total_bytes" --per-file-bytes "$per_file_bytes" --transcript-bytes "$transcript_bytes" \
@@ -246,7 +246,7 @@ case "$profile" in
     echo "[check:report] building status report -> $out_html"
 
     if ! resolve_proof_cli; then
-      echo "[check:report] proofpatch not available (need ../proofpatch or proofpatch on PATH)" >&2
+      echo "[check:report] proofyloops not available (need ../proofyloops or proofyloops on PATH)" >&2
       exit 2
     fi
 
@@ -278,17 +278,22 @@ case "$profile" in
     #
     # Workflow:
     # - Put any MCP tool outputs you care about into:
-    #     tmp/proofpatch/research/raw.json
+    #     tmp/proofyloops/research/raw.json
     # - Then run:
     #     ./Scripts/check.sh report
     # - This will emit:
-    #     tmp/proofpatch/research/research-notes.json
+    #     tmp/proofyloops/research/research-notes.json
     #
-    # This keeps `proofpatch` pure (it does not execute MCP calls), while making it easy to
+    # This keeps `proofyloops` pure (it does not execute MCP calls), while making it easy to
     # fold external search results back into the local proof loop.
     raw_research="${GON_RESEARCH_RAW_JSON:-$artifact_dir/research/raw.json}"
-    if [[ ! -f "$raw_research" ]] && [[ -f "$legacy_artifact_dir/research/raw.json" ]]; then
-      raw_research="$legacy_artifact_dir/research/raw.json"
+    if [[ ! -f "$raw_research" ]]; then
+      for legacy_artifact_dir in "${legacy_artifact_dirs[@]}"; do
+        if [[ -f "$legacy_artifact_dir/research/raw.json" ]]; then
+          raw_research="$legacy_artifact_dir/research/raw.json"
+          break
+        fi
+      done
     fi
     if [[ -f "$raw_research" ]]; then
       research_notes="$artifact_dir/research/research-notes.json"
@@ -339,7 +344,7 @@ case "$profile" in
     duck_on="${GON_LLM_DUCK:-0}"
     if [[ "$duck_on" != "0" ]]; then
       echo "[check:report] llm-chat over rubberduck prompts (GON_LLM_DUCK=1)"
-      duck_system='You are a Lean 4/mathlib proof assistant. The user content is JSON from a proofpatch rubberduck-prompt. You MAY call a context-pack tool to fetch more context (imports/excerpt/nearby decls) instead of guessing. Return STRICT JSON (no markdown) with keys: goal, plan (array), lean_steps (array), math_notes (array), questions (array). Keep it minimal and actionable.'
+      duck_system='You are a Lean 4/mathlib proof assistant. The user content is JSON from a proofyloops rubberduck-prompt. You MAY call a context-pack tool to fetch more context (imports/excerpt/nearby decls) instead of guessing. Return STRICT JSON (no markdown) with keys: goal, plan (array), lean_steps (array), math_notes (array), questions (array). Keep it minimal and actionable.'
       # Tool engine selector (defaults to the legacy loop).
       #
       # Values:
@@ -391,6 +396,8 @@ case "$profile" in
   pre-push)
     echo "[check:pre-push] lake build"
     "$LAKE" build
+    echo "[check:pre-push] lake build (LLL exact termination)"
+    "$LAKE" build GeometryOfNumbers.Computable.LLLExactTermination
     echo "[check:pre-push] regen-check (generated tables audit)"
     # This is intentionally not part of pre-commit (too slow).
     # It MUST stay deterministic and should fail on drift.
@@ -408,6 +415,8 @@ case "$profile" in
     # to be runnable locally with a single command.
     echo "[check:ci] lake build"
     "$LAKE" build
+    echo "[check:ci] lake build (LLL exact termination)"
+    "$LAKE" build GeometryOfNumbers.Computable.LLLExactTermination
     echo "[check:ci] regen-check (generated tables audit)"
     uv run Scripts/regen_check_medium_tables.py
     echo "[check:ci] lake lint"
@@ -420,4 +429,3 @@ case "$profile" in
     exit 2
     ;;
 esac
-

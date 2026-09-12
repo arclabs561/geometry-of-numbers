@@ -1,6 +1,6 @@
 [hints.defaults]
-# Repo-owned, opt-in acceleration packs for proofpatch.
-# Keeping these here (in the target repo) lets proofpatch stay repo-agnostic.
+# Repo-owned, opt-in acceleration packs for proofyloops.
+# Keeping these here (in the target repo) lets proofyloops stay repo-agnostic.
 enabled_packs = ["gon-number-theory", "gon-real-bounds"]
 
 [hints.packs.gon-number-theory]
@@ -9,7 +9,7 @@ enabled_packs = ["gon-number-theory", "gon-real-bounds"]
 when_contains_all = ["⊢ Odd", "% 8 ="]
 candidates = [
   # Bridge modulo facts to `Odd` using `omega` + `Nat.odd_iff`.
-  # NOTE: `proofpatch` will rewrite the `n` identifier if it can infer a different `% 8 =` LHS.
+  # NOTE: `proofyloops` will rewrite the `n` identifier if it can infer a different `% 8 =` LHS.
   "by\n  have h2 : n % 2 = 1 := by omega\n  exact Nat.odd_iff.2 h2",
 ]
 
@@ -28,10 +28,10 @@ candidates = [
   "by\n  have hpi : (3 : ℝ) < Real.pi := by\n    simpa using Real.pi_gt_three\n  have hs2 : (1 : ℝ) < Real.sqrt 2 := Real.one_lt_sqrt_two\n  nlinarith [hpi, hs2]",
 ]
 
-# proofpatch.toml
+# proofyloops.toml
 #
-# Repo-owned configuration for proofpatch.
-# This file is intentionally small and human-editable; proofpatch treats it as optional.
+# Repo-owned configuration for proofyloops.
+# This file is intentionally small and human-editable; proofyloops treats it as optional.
 #
 # Notes:
 # - `query` is passed to arXiv as `all:<query>`.
@@ -76,4 +76,3 @@ must_include_all = ["lll", "lovasz"]
 [research.presets.sum_of_three_squares]
 query = "sum of three squares theorem Legendre mod 8 proof outline"
 must_include_any = ["three squares", "legendre", "sum of three squares", "quadratic forms", "lattice"]
-

@@ -16,9 +16,9 @@ resolve_lake() {
   fi
 }
 
-# Proof helper CLI resolution (`proofpatch`, back-compat `proofloops`).
+# Proof helper CLI resolution (`proofyloops`, with earlier names as fallbacks).
 PP_KIND="none"     # none|exe|cargo
-PP_EXE=""          # proofpatch|proofloops
+PP_EXE=""          # proofyloops|proofpatch|proofloops
 PP_BIN=""          # path or command name (when PP_KIND=exe)
 PP_MANIFEST=""     # Cargo.toml (when PP_KIND=cargo)
 PP_ROOT=""         # sibling checkout root (best effort; may be empty)
@@ -34,14 +34,59 @@ resolve_proof_cli() {
     return 1
   fi
 
-  if [[ -d "$repo_root/../proofpatch" ]]; then
+  if [[ -d "$repo_root/../proofyloops" ]]; then
+    PP_ROOT="$repo_root/../proofyloops"
+  elif [[ -d "$repo_root/../proofpatch" ]]; then
+    # Back-compat: checkout has not yet been renamed.
     PP_ROOT="$repo_root/../proofpatch"
   elif [[ -d "$repo_root/../proofloops" ]]; then
-    # Back-compat: older checkout name.
+    # Back-compat: oldest checkout name.
     PP_ROOT="$repo_root/../proofloops"
   fi
 
-  # Prefer `proofpatch` (new name).
+  # Prefer the canonical `proofyloops` binary and current package layout.
+  if [[ -n "$PP_ROOT" ]]; then
+    for p in \
+      "$PP_ROOT/target/release/proofyloops" \
+      "$PP_ROOT/target/debug/proofyloops" \
+      "$PP_ROOT/proofyloops-cli/target/release/proofyloops" \
+      "$PP_ROOT/proofyloops-cli/target/debug/proofyloops" \
+      "$PP_ROOT/proofyloops-core/target/release/proofyloops" \
+      "$PP_ROOT/proofyloops-core/target/debug/proofyloops"
+    do
+      if [[ -x "$p" ]]; then
+        PP_KIND="exe"
+        PP_EXE="proofyloops"
+        PP_BIN="$p"
+        return 0
+      fi
+    done
+  fi
+  if command -v proofyloops >/dev/null 2>&1; then
+    PP_KIND="exe"
+    PP_EXE="proofyloops"
+    PP_BIN="proofyloops"
+    return 0
+  fi
+  # Cargo fallback: pick the package manifest that actually defines `proofyloops`.
+  #
+  # The current binary lives in `proofyloops-cli/`; an early layout used the core crate.
+  if [[ -n "$PP_ROOT" ]] && command -v cargo >/dev/null 2>&1; then
+    if [[ -f "$PP_ROOT/proofyloops-cli/Cargo.toml" ]]; then
+      PP_KIND="cargo"
+      PP_EXE="proofyloops"
+      PP_MANIFEST="$PP_ROOT/proofyloops-cli/Cargo.toml"
+      return 0
+    fi
+    if [[ -f "$PP_ROOT/proofyloops-core/Cargo.toml" ]]; then
+      PP_KIND="cargo"
+      PP_EXE="proofyloops"
+      PP_MANIFEST="$PP_ROOT/proofyloops-core/Cargo.toml"
+      return 0
+    fi
+  fi
+
+  # Back-compat: `proofpatch` (previous name/layout).
   if [[ -n "$PP_ROOT" ]]; then
     for p in \
       "$PP_ROOT/target/release/proofpatch" \
@@ -65,10 +110,6 @@ resolve_proof_cli() {
     PP_BIN="proofpatch"
     return 0
   fi
-  # Cargo fallback: pick the package manifest that actually defines the `proofpatch` binary.
-  #
-  # In newer `proofpatch` layouts, the binary lives in `proofpatch-cli/` (package `proofpatch-cli`,
-  # bin name `proofpatch`). Older layouts used `proofpatch-core/`.
   if [[ -n "$PP_ROOT" ]] && command -v cargo >/dev/null 2>&1; then
     if [[ -f "$PP_ROOT/proofpatch-cli/Cargo.toml" ]]; then
       PP_KIND="cargo"
@@ -84,7 +125,7 @@ resolve_proof_cli() {
     fi
   fi
 
-  # Back-compat: `proofloops` (older name/layout).
+  # Back-compat: `proofloops` (oldest name/layout).
   if [[ -n "$PP_ROOT" ]]; then
     for p in \
       "$PP_ROOT/target/release/proofloops" \
@@ -135,13 +176,23 @@ pp_run() {
 # Prefer a “fresh” cargo run when available.
 #
 # Rationale: in a super-workspace, it's common to have a stale prebuilt binary under
-# `../proofpatch/target/release/` while the source has moved on. For the LLM review path, using the
+# `../proofyloops/target/release/` while the source has moved on. For the LLM review path, using the
 # current sources matters because it controls prompt-bounding and redaction behavior.
 pp_run_fresh() {
   local subcmd="${1:-}"
   shift || true
   # Prefer running from sources (fresh) when we have a sibling checkout.
-  # Use whichever crate manifest defines the `proofpatch` binary in this checkout.
+  # Use whichever crate manifest defines the selected CLI in this checkout.
+  if [[ "$PP_EXE" == "proofyloops" ]] && [[ -n "$PP_ROOT" ]] && command -v cargo >/dev/null 2>&1; then
+    if [[ -f "$PP_ROOT/proofyloops-cli/Cargo.toml" ]]; then
+      cargo run --manifest-path "$PP_ROOT/proofyloops-cli/Cargo.toml" --bin proofyloops -- "$subcmd" "$@"
+      return $?
+    fi
+    if [[ -f "$PP_ROOT/proofyloops-core/Cargo.toml" ]]; then
+      cargo run --manifest-path "$PP_ROOT/proofyloops-core/Cargo.toml" --bin proofyloops -- "$subcmd" "$@"
+      return $?
+    fi
+  fi
   if [[ "$PP_EXE" == "proofpatch" ]] && [[ -n "$PP_ROOT" ]] && command -v cargo >/dev/null 2>&1; then
     if [[ -f "$PP_ROOT/proofpatch-cli/Cargo.toml" ]]; then
       cargo run --manifest-path "$PP_ROOT/proofpatch-cli/Cargo.toml" --bin proofpatch -- "$subcmd" "$@"
@@ -159,4 +210,3 @@ pp_run_fresh() {
   fi
   pp_run "$subcmd" "$@"
 }
-

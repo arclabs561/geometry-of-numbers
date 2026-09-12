@@ -79,22 +79,28 @@ def findB (n q : ℕ) : Option ℕ :=
   (List.range q).find? (fun b => ((b : ZMod q) ^ 2) == (-(n : ZMod q)))
 
 def run : IO Unit := do
-  let ns := [3, 11, 19, 27] -- include 27: still 3 mod 8, but not squarefree
-  for n in ns do
+  -- Fixed, finite regression cases for this scratch harness. They exercise the
+  -- prime search and the square-root witness search, but do not establish the
+  -- general Ankeny theorem.
+  let cases := [(3, 13), (11, 5), (19, 313), (27, 13)]
+  for (n, expectedQ) in cases do
     match findAnkenyPrime n 20000 with
     | none =>
-        IO.println s!"n={n}: no q found within limit"
+        throw <| IO.userError s!"n={n}: no q found within limit"
     | some q =>
+        unless q == expectedQ do
+          throw <| IO.userError s!"n={n}: expected q={expectedQ}, got q={q}"
+        unless ankenyPrimeOk n q do
+          throw <| IO.userError s!"n={n}, q={q}: prime-choice predicate failed"
         IO.println (checkAnkenyCondition n q)
-        if q.Prime then
-          match findB n q with
-          | none => IO.println "  (no b found with b^2 ≡ -n mod q in [0,q))"
-          | some b =>
-              IO.println s!"  witness b={b} with (b^2 ≡ -n mod q) [checked by brute force]"
-        else
-          pure ()
+        match findB n q with
+        | none =>
+            throw <| IO.userError s!"n={n}, q={q}: no b found with b^2 ≡ -n mod q"
+        | some b =>
+            unless ((b : ZMod q) ^ 2) == (-(n : ZMod q)) do
+              throw <| IO.userError s!"n={n}, q={q}, b={b}: witness check failed"
+            IO.println s!"  witness b={b} with (b^2 ≡ -n mod q) [checked by brute force]"
 
 -- `#eval` is intentionally omitted here; keep this file as a static scratchpad.
 
 end Experiments.AnkenyCheck
-
