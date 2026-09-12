@@ -74,5 +74,14 @@ must_include_any = ["lll", "lovasz", "lattice", "potential", "termination"]
 must_include_all = ["lll", "lovasz"]
 
 [research.presets.sum_of_three_squares]
-query = "sum of three squares theorem Legendre mod 8 proof outline"
+query = "sum of three squares theorem residue classes mod 8 remaining cases 2 5 6"
+when_decl_contains = ["sum_three_squares", "Legendre"]
 must_include_any = ["three squares", "legendre", "sum of three squares", "quadratic forms", "lattice"]
+
+[research.presets.cauchy_lemma]
+query = "Cauchy lemma b^2 < 4a 0 < b^2 + 2b - 3a + 4 a = sum of four squares b = sum of variables"
+when_decl_contains = ["cauchy_lemma"]
+
+[research.presets.fermat_polygonal]
+query = "Fermat polygonal number theorem Nathanson proof b^2 < 4a 3a < b^2 + 2b + 4 Cauchy lemma"
+when_decl_contains = ["nathanson", "polygonal"]

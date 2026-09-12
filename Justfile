@@ -49,7 +49,7 @@ report:
 # Example:
 #   just smt-capsule tmp/proofyloops/pp_dump.json tmp/proofyloops/smt_capsule
 smt-capsule pp_dump_json bundle_dir:
-    proofyloops smt-repro --input-json {{pp_dump_json}} --bundle-dir {{bundle_dir}}
+    ./Scripts/smt_capsule.sh {{quote(pp_dump_json)}} {{quote(bundle_dir)}}
 
 # Build all experiment roots explicitly (keeps them compiling without the full build).
 experiments:

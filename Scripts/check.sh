@@ -323,19 +323,25 @@ case "$profile" in
     # (These are inputs to an agent/human loop, not proofs.)
     out_dir="$(dirname "$out_html")"
     set +e
+    rubberduck_rc=0
     echo "[check:report] rubberduck prompts -> $out_dir"
-    pp_run_fresh rubberduck-prompt --repo "$repo_root" --file "GeometryOfNumbers/Legendre/Main.lean" \
+    if ! pp_run_fresh rubberduck-prompt --repo "$repo_root" --file "GeometryOfNumbers/Legendre/Main.lean" \
       --lemma "sum_three_squares_of_not_exception" \
-      --output-json "$out_dir/rubberduck-legendre.json"
-    pp_run_fresh rubberduck-prompt --repo "$repo_root" --file "GeometryOfNumbers/Cauchy/Main.lean" \
+      --output-json "$out_dir/rubberduck-legendre.json"; then
+      rubberduck_rc=1
+    fi
+    if ! pp_run_fresh rubberduck-prompt --repo "$repo_root" --file "GeometryOfNumbers/Cauchy/Main.lean" \
       --lemma "nathanson_parameters_large" \
-      --output-json "$out_dir/rubberduck-nathanson.json"
-    pp_run_fresh rubberduck-prompt --repo "$repo_root" --file "GeometryOfNumbers/Cauchy/Main.lean" \
+      --output-json "$out_dir/rubberduck-nathanson.json"; then
+      rubberduck_rc=1
+    fi
+    if ! pp_run_fresh rubberduck-prompt --repo "$repo_root" --file "GeometryOfNumbers/Cauchy/Main.lean" \
       --lemma "cauchy_lemma" \
-      --output-json "$out_dir/rubberduck-cauchy_lemma.json"
-    rc=$?
+      --output-json "$out_dir/rubberduck-cauchy_lemma.json"; then
+      rubberduck_rc=1
+    fi
     set -e
-    if [[ $rc -ne 0 ]]; then
+    if [[ $rubberduck_rc -ne 0 ]]; then
       echo "[check:report] warning: rubberduck prompt generation failed (non-blocking)" >&2
     fi
 
@@ -362,15 +368,21 @@ case "$profile" in
       # Avoid mixing stale outputs from previous runs.
       rm -f "$out_dir"/duckreply-*.json
       set +e
-      pp_run_fresh llm-chat --repo "$repo_root" --tools "$duck_tools" --system "$duck_system" --user-file "$out_dir/rubberduck-legendre.json" --timeout-s 120 \
-        --output-json "$out_dir/duckreply-legendre.json"
-      pp_run_fresh llm-chat --repo "$repo_root" --tools "$duck_tools" --system "$duck_system" --user-file "$out_dir/rubberduck-nathanson.json" --timeout-s 120 \
-        --output-json "$out_dir/duckreply-nathanson.json"
-      pp_run_fresh llm-chat --repo "$repo_root" --tools "$duck_tools" --system "$duck_system" --user-file "$out_dir/rubberduck-cauchy_lemma.json" --timeout-s 120 \
-        --output-json "$out_dir/duckreply-cauchy_lemma.json"
-      rc=$?
+      duck_rc=0
+      if ! pp_run_fresh llm-chat --repo "$repo_root" --tools "$duck_tools" --system "$duck_system" --user-file "$out_dir/rubberduck-legendre.json" --timeout-s 120 \
+        --output-json "$out_dir/duckreply-legendre.json"; then
+        duck_rc=1
+      fi
+      if ! pp_run_fresh llm-chat --repo "$repo_root" --tools "$duck_tools" --system "$duck_system" --user-file "$out_dir/rubberduck-nathanson.json" --timeout-s 120 \
+        --output-json "$out_dir/duckreply-nathanson.json"; then
+        duck_rc=1
+      fi
+      if ! pp_run_fresh llm-chat --repo "$repo_root" --tools "$duck_tools" --system "$duck_system" --user-file "$out_dir/rubberduck-cauchy_lemma.json" --timeout-s 120 \
+        --output-json "$out_dir/duckreply-cauchy_lemma.json"; then
+        duck_rc=1
+      fi
       set -e
-      if [[ $rc -ne 0 ]]; then
+      if [[ $duck_rc -ne 0 ]]; then
         echo "[check:report] warning: llm-chat failed (non-blocking)" >&2
       elif command -v jq >/dev/null 2>&1; then
         echo "[check:report] duckreply summary"
@@ -423,6 +435,8 @@ case "$profile" in
     "$LAKE" lint
     echo "[check:ci] lint-style"
     ./Scripts/run_lint_style.sh "${lint_style_args[@]+"${lint_style_args[@]}"}"
+    echo "[check:ci] proofyloops integration"
+    ./Scripts/test_proofyloops_integration.sh
     ;;
   *)
     echo "usage: ./Scripts/check.sh {pre-commit|pre-push|ci|report} [--github]" >&2
