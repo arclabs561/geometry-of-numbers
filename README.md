@@ -2,9 +2,11 @@
 
 [![CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
 
-Lean 4 formalization of geometry-of-numbers proofs: Legendre's three-square theorem via Ankeny's descent, Fermat's polygonal number theorem via Cauchy/Nathanson, and a computable exact-rational LLL implementation with verified termination.
+Formalizes Legendre's three-square theorem, Fermat's polygonal number theorem,
+and an exact-rational LLL procedure in Lean 4.
 
-The codebase is `sorry`-free and builds against current Mathlib.
+The sources contain no `sorry` placeholders and use the Lean toolchain and
+Mathlib revision pinned in this repository.
 
 ### Proved theorems
 
@@ -22,22 +24,32 @@ theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
     ∃ terms : Fin s → ℕ, (∑ i, polygonal s (terms i)) = n
 ```
 
-The computable LLL track (`GeometryOfNumbers/Computable/`) provides an exact rational
-Gram-Schmidt LLL loop with a proved postcondition (`finished` implies `LLLReducedQ`)
-and a termination witness under row linear independence.
+The computable LLL track (`GeometryOfNumbers/Computable/`) provides a
+fuel-bounded, exact-rational Gram--Schmidt LLL loop. If a run finishes, its
+output satisfies the executable `LLLReducedQ` predicate. For row-linearly
+independent bases and $\delta < 1$, a proved bound supplies enough fuel to
+finish.
+
+### Verification boundary
+
+`#print axioms` reports Lean's standard logical axioms for the Legendre and
+LLL results. `fermat_polygonal` also uses generated `native_decide` checks for
+the Cauchy medium-regime tables, so compiled native evaluation is part of that
+theorem's trust boundary.
 
 ### Building
 
 Requires [elan](https://github.com/leanprover/elan) (installs the pinned Lean toolchain automatically).
 
 ```bash
+lake exe cache get
 lake build
 ```
 
 Run checks:
 
 ```bash
-just status          # should report 0 sorry tokens
+just status          # reports placeholder-token counts
 just fast            # quick feedback loop
 just regen-check     # regenerate + verify Cauchy medium-regime tables
 ```
