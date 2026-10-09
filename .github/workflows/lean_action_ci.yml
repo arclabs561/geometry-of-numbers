@@ -4,6 +4,8 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
 
 permissions:
   contents: read
@@ -35,6 +37,9 @@ jobs:
         run: |
           "$HOME/.elan/bin/lake" build
           "$HOME/.elan/bin/lake" lint
+      - name: axiom audit
+        run: |
+          "$HOME/.elan/bin/lake" env lean Scripts/AxiomAudit.lean
       - name: lint-style (check)
         run: |
           ./Scripts/check.sh ci --github
