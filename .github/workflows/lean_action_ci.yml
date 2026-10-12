@@ -39,6 +39,7 @@ jobs:
           "$HOME/.elan/bin/lake" lint
       - name: axiom audit
         run: |
+          "$HOME/.elan/bin/lake" build GeometryOfNumbers.Computable.LLLExactTermination
           "$HOME/.elan/bin/lake" env lean Scripts/AxiomAudit.lean
       - name: lint-style (check)
         run: |
