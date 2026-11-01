@@ -1,4 +1,4 @@
-## Geometry of Numbers (Lean 4)
+# Geometry of Numbers (Lean 4)
 
 [![CI](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/arclabs561/geometry-of-numbers/actions/workflows/lean_action_ci.yml)
 
@@ -8,7 +8,7 @@ and an exact-rational LLL procedure in Lean 4.
 The sources contain no `sorry` placeholders and use the Lean toolchain and
 Mathlib revision pinned in this repository.
 
-### Proved theorems
+## Proved theorems
 
 ```lean
 -- Legendre's Three-Square Theorem (GeometryOfNumbers/Legendre/Main.lean)
@@ -25,7 +25,7 @@ theorem fermat_polygonal (s : ℕ) (hs : 3 ≤ s) (n : ℕ) :
 ```
 
 The computable LLL track (`GeometryOfNumbers/Computable/`) provides a
-fuel-bounded, exact-rational Gram--Schmidt LLL loop. If a run finishes, its
+fuel-bounded, exact-rational Gram-Schmidt LLL loop. If a run finishes, its
 output satisfies the executable `LLLReducedQ` predicate. For row-linearly
 independent bases and $\delta < 1$, a proved bound supplies enough fuel to
 finish.
@@ -39,14 +39,16 @@ import GeometryOfNumbers.Computable.LLLExactTermination
 This exposes `lllRunExact` and its termination theorem,
 `lllRunExact_finished_of_RowLIQ`.
 
-### Verification boundary
+## Verification boundary
 
-`#print axioms` reports Lean's standard logical axioms for the Legendre and
-LLL results. `fermat_polygonal` also uses generated `native_decide` checks for
+`#print axioms` reports only Lean's standard axioms (`propext`,
+`Classical.choice`, `Quot.sound`) for the Legendre, Gauss and LLL results.
+`fermat_polygonal` also uses generated `native_decide` checks for
 the Cauchy medium-regime tables, so compiled native evaluation is part of that
-theorem's trust boundary.
+theorem's trust boundary. CI checks these axiom lists with
+`lake env lean Scripts/AxiomAudit.lean`.
 
-### Building
+## Building
 
 Requires [elan](https://github.com/leanprover/elan) (installs the pinned Lean toolchain automatically).
 
@@ -63,7 +65,7 @@ just fast            # quick feedback loop
 just regen-check     # regenerate + verify Cauchy medium-regime tables
 ```
 
-### Structure
+## Structure
 
 ```
 GeometryOfNumbers/
@@ -72,12 +74,13 @@ GeometryOfNumbers/
   Legendre/         Ankeny descent + three-square theorem entry point
   Cauchy/           Polygonal number reduction + generated medium-regime tables
   Computable/       Exact-ℚ LLL loop, correctness proofs, termination
+  NumberTheory/     Modular-arithmetic helper lemmas
 
 Experiments/        Compilation-checked scratch files and sanity probes
 Scripts/            Status report, linters, pre-commit checks
 ```
 
-### Key formulas
+## Key formulas
 
 Three-square exceptions have the form $n = 4^a(8k+7)$.
 
@@ -91,13 +94,13 @@ For `s >= 5`, the Cauchy/Nathanson reduction produces
 $n = \sum_{i=1}^4 P(s,x_i) + r$ with $0 \le r \le s-4$,
 then pads with `0/1` polygonals.
 
-### References
+## References
 
 - Ankeny, N. C. (1957). *Sums of three squares*. Proceedings of the AMS.
 - Cauchy, A. L. (1813). *Demonstration du theoreme general de Fermat sur les nombres polygones*.
 - Legendre, A. M. (1798). *Essai sur la theorie des nombres*.
 - Nathanson, M. B. (1987). *A short proof of Cauchy's polygonal number theorem*.
 
-### License
+## License
 
 Dual-licensed under MIT or Apache-2.0.
